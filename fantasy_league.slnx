@@ -3,8 +3,8 @@
     <File Path=".dockerignore" />
     <File Path="docker-compose.yml" />
   </Folder>
-  <Project Path="FanstasyLeague.Infrastructure/FantasyLeague.Infrastructure.csproj" />
   <Project Path="FantasyLeague.Application/FantasyLeague.Application.csproj" />
   <Project Path="FantasyLeague.Domain/FantasyLeague.Domain.csproj" />
+  <Project Path="FantasyLeague.Infrastructure/FantasyLeague.Infrastructure.csproj" />
   <Project Path="FantasyLeague.WebApi/FantasyLeague.WebApi.csproj" Id="9c9e6fd4-f195-4e54-9bba-f034c1cb5626" />
 </Solution>

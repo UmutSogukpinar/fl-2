@@ -1,5 +1,6 @@
-using FantasyLeague.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
+
+using FantasyLeague.Infrastructure.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 

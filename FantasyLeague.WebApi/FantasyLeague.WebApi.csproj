@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FanstasyLeague.Infrastructure\FantasyLeague.Infrastructure.csproj" />
+    <ProjectReference Include="..\FantasyLeague.Infrastructure\FantasyLeague.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

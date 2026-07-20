@@ -3,6 +3,7 @@ using System;
 using FantasyLeague.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FantasyLeague.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260720205816_AddUniqueNbaPlayerId")]
+    partial class AddUniqueNbaPlayerId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,79 +24,6 @@ namespace FantasyLeague.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("FantasyLeague.Domain.Entities.FantasyTeam", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("LeagueId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("OwnerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.HasIndex("LeagueId", "Name")
-                        .IsUnique();
-
-                    b.HasIndex("LeagueId", "OwnerId")
-                        .IsUnique();
-
-                    b.ToTable("fantasy_teams", (string)null);
-                });
-
-            modelBuilder.Entity("FantasyLeague.Domain.Entities.League", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CommissionerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("MaxTeams")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("Season")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CommissionerId");
-
-                    b.ToTable("leagues", (string)null);
-                });
 
             modelBuilder.Entity("FantasyLeague.Domain.Entities.NbaPlayer", b =>
                 {
@@ -197,8 +127,7 @@ namespace FantasyLeague.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("NbaPlayerId", "Season")
-                        .IsUnique();
+                    b.HasIndex("NbaPlayerId");
 
                     b.ToTable("player_stats", (string)null);
                 });
@@ -233,36 +162,6 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("FantasyLeague.Domain.Entities.FantasyTeam", b =>
-                {
-                    b.HasOne("FantasyLeague.Domain.Entities.League", "League")
-                        .WithMany("Teams")
-                        .HasForeignKey("LeagueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FantasyLeague.Domain.Entities.User", "Owner")
-                        .WithMany("FantasyTeams")
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("League");
-
-                    b.Navigation("Owner");
-                });
-
-            modelBuilder.Entity("FantasyLeague.Domain.Entities.League", b =>
-                {
-                    b.HasOne("FantasyLeague.Domain.Entities.User", "Commissioner")
-                        .WithMany("CommissionedLeagues")
-                        .HasForeignKey("CommissionerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Commissioner");
-                });
-
             modelBuilder.Entity("FantasyLeague.Domain.Entities.PlayerStats", b =>
                 {
                     b.HasOne("FantasyLeague.Domain.Entities.NbaPlayer", "NbaPlayer")
@@ -274,21 +173,9 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.Navigation("NbaPlayer");
                 });
 
-            modelBuilder.Entity("FantasyLeague.Domain.Entities.League", b =>
-                {
-                    b.Navigation("Teams");
-                });
-
             modelBuilder.Entity("FantasyLeague.Domain.Entities.NbaPlayer", b =>
                 {
                     b.Navigation("SeasonStats");
-                });
-
-            modelBuilder.Entity("FantasyLeague.Domain.Entities.User", b =>
-                {
-                    b.Navigation("CommissionedLeagues");
-
-                    b.Navigation("FantasyTeams");
                 });
 #pragma warning restore 612, 618
         }

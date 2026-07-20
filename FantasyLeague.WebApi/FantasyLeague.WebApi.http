@@ -4,3 +4,8 @@ GET {{FantasyLeague.WebApi_HostAddress}}/health
 Accept: application/json
 
 ###
+
+POST {{FantasyLeague.WebApi_HostAddress}}/api/nba-players/sync
+Accept: application/json
+
+###

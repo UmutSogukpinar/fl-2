@@ -14,6 +14,9 @@ public sealed class PlayerStatsConfiguration
 
         builder.HasKey(playerStats => playerStats.Id);
 
+        builder.HasIndex(playerStats => new { playerStats.NbaPlayerId, playerStats.Season })
+            .IsUnique();
+
         builder.Property(playerStats => playerStats.NbaPlayerId)
             .IsRequired();
 
@@ -48,6 +51,12 @@ public sealed class PlayerStatsConfiguration
             .IsRequired();
 
         builder.Property(playerStats => playerStats.FieldGoalPercentage)
+            .IsRequired();
+
+        builder.Property(playerStats => playerStats.ThreePointPercentage)
+            .IsRequired();
+
+        builder.Property(playerStats => playerStats.FreeThrowPercentage)
             .IsRequired();
     }
 }

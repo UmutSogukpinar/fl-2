@@ -14,6 +14,9 @@ public sealed class NbaPlayerConfiguration
 
         builder.HasKey(player => player.Id);
 
+        builder.HasIndex(player => player.NbaId)
+            .IsUnique();
+
         builder.Property(player => player.FirstName)
             .IsRequired();
 

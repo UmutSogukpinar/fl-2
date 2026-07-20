@@ -1,13 +1,53 @@
 using Microsoft.EntityFrameworkCore;
 
 using FantasyLeague.Infrastructure.Context;
+using FantasyLeague.Infrastructure.ExternalServices.NbaApi;
+using FantasyLeague.Infrastructure.Repositories;
+using FantasyLeague.Infrastructure.Security;
+using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Services.NbaPlayers;
+using FantasyLeague.Application.Services.FantasyTeams;
+using FantasyLeague.Application.Services.Leagues;
+using FantasyLeague.Application.Services.Users;
+using FantasyLeague.WebApi.Configuration;
+using FantasyLeague.WebApi.ExceptionHandlers;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+builder.Configuration.AddDotEnvFile(
+    Path.Combine(builder.Environment.ContentRootPath, ".env"));
+builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<INbaPlayerSyncService, NbaPlayerSyncService>();
+builder.Services.AddScoped<INbaPlayerRepository, NbaPlayerRepository>();
+builder.Services.AddScoped<ILeagueService, LeagueService>();
+builder.Services.AddScoped<ILeagueRepository, LeagueRepository>();
+builder.Services.AddScoped<IFantasyTeamService, FantasyTeamService>();
+builder.Services.AddScoped<IFantasyTeamRepository, FantasyTeamRepository>();
+builder.Services.Configure<ApiSportsOptions>(
+    builder.Configuration.GetSection(ApiSportsOptions.SectionName));
+builder.Services.AddHttpClient<INbaPlayersApiClient, ApiSportsClient>((serviceProvider, client) =>
+{
+    var options = serviceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<ApiSportsOptions>>()
+        .Value;
+
+    client.BaseAddress = new Uri(options.BaseUrl);
+    client.Timeout = TimeSpan.FromMinutes(2);
+});
 
 var dbSettings = builder.Configuration.GetSection("DbSettings");
 var connectionString = $"Host={dbSettings["Host"]};" +
@@ -19,6 +59,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

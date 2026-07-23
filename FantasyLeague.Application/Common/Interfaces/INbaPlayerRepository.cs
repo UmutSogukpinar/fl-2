@@ -1,3 +1,4 @@
+using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;
 
 namespace FantasyLeague.Application.Common.Interfaces;
@@ -22,4 +23,10 @@ public interface INbaPlayerRepository
         CancellationToken cancellationToken);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
+
+    Task<NbaPlayer?> GetByIdAsync(
+        Guid id,
+        PlayerResponseSize size,
+        CancellationToken cancellationToken
+    );
 }

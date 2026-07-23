@@ -17,7 +17,7 @@ public interface IUserRepository
         Guid? excludedUserId,
         CancellationToken cancellationToken);
 
-    Task AddAsync(User user, CancellationToken cancellationToken);
+    User Add(User user);
 
     void Remove(User user);
 

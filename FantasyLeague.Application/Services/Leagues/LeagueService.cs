@@ -2,6 +2,7 @@ using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces;
 using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
+using FantasyLeague.Application.Mappings;
 using FantasyLeague.Domain.Entities;
 
 namespace FantasyLeague.Application.Services.Leagues;
@@ -15,21 +16,21 @@ public sealed class LeagueService(
         CancellationToken cancellationToken = default)
     {
         var leagues = await leagueRepository.GetAllAsync(cancellationToken);
-        return leagues.Select(Map).ToArray();
+        return leagues.Select(league => league.ToResponse()).ToArray();
     }
 
     public async Task<LeagueResponse> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        return Map(await GetLeagueOrThrowAsync(id, cancellationToken));
+        return (await GetLeagueOrThrowAsync(id, cancellationToken)).ToResponse();
     }
 
     public async Task<LeagueResponse> CreateAsync(
         CreateLeagueRequest request,
         CancellationToken cancellationToken = default)
     {
-        var name = ValidateName(request.Name);
+        ValidateName(request.Name);
         ValidateSeason(request.Season);
         ValidateMaxTeams(request.MaxTeams);
 
@@ -38,19 +39,11 @@ public sealed class LeagueService(
             cancellationToken)
             ?? throw new NotFoundException($"User '{request.CommissionerId}' was not found.");
 
-        var league = new League
-        {
-            Name = name,
-            Description = NormalizeDescription(request.Description),
-            Season = request.Season,
-            MaxTeams = request.MaxTeams,
-            CommissionerId = commissioner.Id,
-            Commissioner = commissioner
-        };
+        var league = request.ToEntity(commissioner);
 
         await leagueRepository.AddAsync(league, cancellationToken);
         await leagueRepository.SaveChangesAsync(cancellationToken);
-        return Map(league);
+        return league.ToResponse();
     }
 
     public async Task<LeagueResponse> UpdateAsync(
@@ -59,7 +52,7 @@ public sealed class LeagueService(
         CancellationToken cancellationToken = default)
     {
         var league = await GetLeagueOrThrowAsync(id, cancellationToken);
-        var name = ValidateName(request.Name);
+        ValidateName(request.Name);
         ValidateMaxTeams(request.MaxTeams);
 
         var currentTeamCount = await teamRepository.CountByLeagueIdAsync(id, cancellationToken);
@@ -70,13 +63,10 @@ public sealed class LeagueService(
                 $"MaxTeams cannot be lower than the current team count ({currentTeamCount}).");
         }
 
-        league.Name = name;
-        league.Description = NormalizeDescription(request.Description);
-        league.MaxTeams = request.MaxTeams;
-        league.UpdatedAt = DateTime.UtcNow;
+        request.MapTo(league);
 
         await leagueRepository.SaveChangesAsync(cancellationToken);
-        return Map(league);
+        return league.ToResponse();
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -118,18 +108,4 @@ public sealed class LeagueService(
         }
     }
 
-    private static string? NormalizeDescription(string? description)
-    {
-        return string.IsNullOrWhiteSpace(description) ? null : description.Trim();
-    }
-
-    private static LeagueResponse Map(League league) => new(
-        league.Id,
-        league.Name,
-        league.Description,
-        league.Season,
-        league.MaxTeams,
-        league.CommissionerId,
-        league.CreatedAt,
-        league.UpdatedAt);
 }

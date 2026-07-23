@@ -160,14 +160,16 @@ public sealed class NbaPlayerSyncService(
         };
     }
 
-    private static decimal Average<T>(IReadOnlyCollection<T> values, Func<T, decimal> selector)
+    private static double Average<T>(IReadOnlyCollection<T> values, Func<T, decimal> selector)
     {
-        return values.Count == 0 ? 0 : Math.Round(values.Average(selector), 2);
+        return values.Count == 0
+            ? 0
+            : decimal.ToDouble(Math.Round(values.Average(selector), 2));
     }
 
-    private static decimal Percentage(int made, int attempted)
+    private static double Percentage(int made, int attempted)
     {
-        return attempted == 0 ? 0 : Math.Round(made * 100m / attempted, 2);
+        return attempted == 0 ? 0 : Math.Round(made * 100d / attempted, 2);
     }
 
     private static NbaPlayer CreatePlayer(ExternalNbaPlayer source) => new()

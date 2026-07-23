@@ -1,0 +1,64 @@
+﻿using FantasyLeague.Application.Common.Exceptions;
+using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
+using FantasyLeague.Application.Mappings;
+using FantasyLeague.Application.Models;
+using FantasyLeague.Domain.Entities;
+
+namespace FantasyLeague.Application.Services.NbaPlayers;
+
+public sealed class NbaPlayerService(INbaPlayerRepository _nbaPlayerRepository) 
+    : INbaPlayerService
+{
+    public async Task<IPlayerResponse> GetNbaPlayerAsync(
+        Guid id, PlayerResponseSize size, CancellationToken cancellation
+    ){
+        return size switch
+        {
+            PlayerResponseSize.Basic => await GetBasicPlayerOrThrowAsync(id, cancellation),
+            PlayerResponseSize.Detailed => await GetDetailedPlayerOrThrowAsync(id, cancellation),
+            PlayerResponseSize.Extended => await GetExtendedPlayerOrThrowAsync(id, cancellation),
+            _ => throw new ArgumentOutOfRangeException(nameof(size), size, "Invalid player response size.")
+        };
+    }
+
+
+    // ================= Utils of GetNbaPlayerAsync() =================
+    private async Task<NbaPlayerBasicResponse> GetBasicPlayerOrThrowAsync(
+        Guid id, 
+        CancellationToken cancellationToken
+    ){
+        var player = await _nbaPlayerRepository.GetByIdAsync(
+            id, PlayerResponseSize.Basic,
+            cancellationToken)
+            ?? throw new NotFoundException($"NBA player '{id}' was not found.");
+
+        return NbaPlayerMappings.ToBasicResponse(player);
+    }
+
+    private async Task<NbaPlayerDetailedResponse> GetDetailedPlayerOrThrowAsync(
+        Guid id,
+        CancellationToken cancellationToken
+    )
+    {
+        var player = await _nbaPlayerRepository.GetByIdAsync(
+            id, PlayerResponseSize.Detailed,
+            cancellationToken)
+            ?? throw new NotFoundException($"NBA player '{id}' was not found.");
+
+        return NbaPlayerMappings.ToDetailedResponse(player);
+    }
+
+    private async Task<NbaPlayerExtendedResponse> GetExtendedPlayerOrThrowAsync(
+        Guid id,
+        CancellationToken cancellationToken
+    )
+    {
+        var player = await _nbaPlayerRepository.GetByIdAsync(
+            id, PlayerResponseSize.Extended,
+            cancellationToken)
+            ?? throw new NotFoundException($"NBA player '{id}' was not found.");
+
+        return NbaPlayerMappings.ToExtendedResponse(player);
+    }
+}

@@ -1,26 +1,28 @@
+using FantasyLeague.Domain.Entities;
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces;
 using FantasyLeague.Application.DTOs.Requests.Users;
 using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Users;
-using FantasyLeague.Domain.Entities;
+using FantasyLeague.Application.Common.Validation;
+using FantasyLeague.Application.Mappings;
 
 namespace FantasyLeague.Application.Services.Users;
 
 public sealed class UserService(
-    IUserRepository userRepository,
-    IPasswordHasher passwordHasher) : IUserService
+    IUserRepository _userRepository,
+    IPasswordHasher _passwordHasher) : IUserService
 {
     public async Task<PagedResponse<UserResponse>> GetAsync(
         GetUsersRequest request,
         CancellationToken cancellationToken = default)
     {
-        var (users, totalCount) = await userRepository.GetPagedAsync(
+        var (users, totalCount) = await _userRepository.GetPagedAsync(
             request.PageNumber,
             request.PageSize,
             cancellationToken);
 
-        var items = users.Select(Map).ToArray();
+        var items = users.Select(user => user.ToResponse()).ToArray();
         var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
 
         return new PagedResponse<UserResponse>(
@@ -36,30 +38,31 @@ public sealed class UserService(
         CancellationToken cancellationToken = default)
     {
         var user = await GetUserOrThrowAsync(id, cancellationToken);
-        return Map(user);
+        return user.ToResponse();
     }
 
     public async Task<UserResponse> CreateAsync(
         CreateUserRequest request,
         CancellationToken cancellationToken = default)
     {
-        var username = NormalizeUsername(request.Username);
-        var email = NormalizeEmail(request.Email);
-        ValidatePassword(request.Password);
+        UserValidation.ValidateCreateUserRequest(request);
 
-        await EnsureUniqueAsync(username, email, null, cancellationToken);
+        var username = request.Username.Trim();
+        var email = request.Email.Trim().ToLowerInvariant();
 
-        var user = new User
-        {
-            Username = username,
-            Email = email,
-            Password = passwordHasher.Hash(request.Password)
-        };
+        await EnsureUniqueAsync(
+            username,
+            email,
+            null,
+            cancellationToken
+        );
 
-        await userRepository.AddAsync(user, cancellationToken);
-        await userRepository.SaveChangesAsync(cancellationToken);
+        var user = request.ToEntity(_passwordHasher.Hash(request.Password));
 
-        return Map(user);
+        _userRepository.Add(user);
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        return user.ToResponse();
     }
 
     public async Task<UserResponse> UpdateAsync(
@@ -68,29 +71,30 @@ public sealed class UserService(
         CancellationToken cancellationToken = default)
     {
         var user = await GetUserOrThrowAsync(id, cancellationToken);
-        var username = NormalizeUsername(request.Username);
-        var email = NormalizeEmail(request.Email);
+
+        UserValidation.ValidateUpdateUserRequest(request);
+
+        var username = request.Username.Trim();
+        var email = request.Email.Trim().ToLowerInvariant();
 
         await EnsureUniqueAsync(username, email, id, cancellationToken);
 
-        user.Username = username;
-        user.Email = email;
-        user.UpdatedAt = DateTime.UtcNow;
+        request.MapTo(user);
 
-        await userRepository.SaveChangesAsync(cancellationToken);
-        return Map(user);
+        await _userRepository.SaveChangesAsync(cancellationToken);
+        return user.ToResponse();
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var user = await GetUserOrThrowAsync(id, cancellationToken);
-        userRepository.Remove(user);
-        await userRepository.SaveChangesAsync(cancellationToken);
+        _userRepository.Remove(user);
+        await _userRepository.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<User> GetUserOrThrowAsync(Guid id, CancellationToken cancellationToken)
     {
-        return await userRepository.GetByIdAsync(id, cancellationToken)
+        return await _userRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException($"User '{id}' was not found.");
     }
 
@@ -100,7 +104,7 @@ public sealed class UserService(
         Guid? excludedUserId,
         CancellationToken cancellationToken)
     {
-        if (await userRepository.ExistsAsync(
+        if (await _userRepository.ExistsAsync(
                 username,
                 email,
                 excludedUserId,
@@ -110,38 +114,4 @@ public sealed class UserService(
         }
     }
 
-    private static string NormalizeUsername(string username)
-    {
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            throw new BadRequestException("Username is required.");
-        }
-
-        return username.Trim();
-    }
-
-    private static string NormalizeEmail(string email)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            throw new BadRequestException("Email is required.");
-        }
-
-        return email.Trim().ToLowerInvariant();
-    }
-
-    private static void ValidatePassword(string password)
-    {
-        if (string.IsNullOrWhiteSpace(password))
-        {
-            throw new BadRequestException("Password is required.");
-        }
-    }
-
-    private static UserResponse Map(User user) => new(
-        user.Id,
-        user.Username,
-        user.Email,
-        user.CreatedAt,
-        user.UpdatedAt);
 }

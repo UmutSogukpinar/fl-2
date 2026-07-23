@@ -2,6 +2,7 @@ using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces;
 using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
+using FantasyLeague.Application.Mappings;
 using FantasyLeague.Domain.Entities;
 
 namespace FantasyLeague.Application.Services.FantasyTeams;
@@ -17,14 +18,14 @@ public sealed class FantasyTeamService(
     {
         await GetLeagueOrThrowAsync(leagueId, cancellationToken);
         var teams = await teamRepository.GetByLeagueIdAsync(leagueId, cancellationToken);
-        return teams.Select(Map).ToArray();
+        return teams.Select(team => team.ToResponse()).ToArray();
     }
 
     public async Task<FantasyTeamResponse> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        return Map(await GetTeamOrThrowAsync(id, cancellationToken));
+        return (await GetTeamOrThrowAsync(id, cancellationToken)).ToResponse();
     }
 
     public async Task<FantasyTeamResponse> CreateAsync(
@@ -50,17 +51,11 @@ public sealed class FantasyTeamService(
             null,
             cancellationToken);
 
-        var team = new FantasyTeam
-        {
-            Name = name,
-            LeagueId = league.Id,
-            OwnerId = owner.Id,
-            Owner = owner
-        };
+        var team = request.ToEntity(league, owner);
 
         await teamRepository.AddAsync(team, cancellationToken);
         await teamRepository.SaveChangesAsync(cancellationToken);
-        return Map(team);
+        return team.ToResponse();
     }
 
     public async Task<FantasyTeamResponse> UpdateAsync(
@@ -78,11 +73,10 @@ public sealed class FantasyTeamService(
             team.Id,
             cancellationToken);
 
-        team.Name = name;
-        team.UpdatedAt = DateTime.UtcNow;
+        request.MapTo(team);
 
         await teamRepository.SaveChangesAsync(cancellationToken);
-        return Map(team);
+        return team.ToResponse();
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -135,11 +129,4 @@ public sealed class FantasyTeamService(
         return name.Trim();
     }
 
-    private static FantasyTeamResponse Map(FantasyTeam team) => new(
-        team.Id,
-        team.Name,
-        team.LeagueId,
-        team.OwnerId,
-        team.CreatedAt,
-        team.UpdatedAt);
 }

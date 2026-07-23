@@ -3,6 +3,7 @@
     <File Path=".dockerignore" />
     <File Path="docker-compose.yml" />
   </Folder>
+  <Project Path="FantasyLeague.Application.Tests/FantasyLeague.Application.Tests.csproj" Id="66eaea1f-686e-41e3-9b7a-fbc40782bccc" />
   <Project Path="FantasyLeague.Application/FantasyLeague.Application.csproj" />
   <Project Path="FantasyLeague.Domain/FantasyLeague.Domain.csproj" />
   <Project Path="FantasyLeague.Infrastructure/FantasyLeague.Infrastructure.csproj" />

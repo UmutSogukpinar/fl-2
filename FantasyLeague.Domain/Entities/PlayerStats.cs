@@ -12,29 +12,33 @@ public class PlayerStats
 
     public int GamesStarted { get; set; }
 
-    public decimal MinutesPerGame { get; set; }
+    public double MinutesPerGame { get; set; }
 
-    public decimal PointsPerGame { get; set; }
+    public double PointsPerGame { get; set; }
 
-    public decimal ReboundsPerGame { get; set; }
+    public double ReboundsPerGame { get; set; }
 
-    public decimal AssistsPerGame { get; set; }
+    public double AssistsPerGame { get; set; }
 
-    public decimal StealsPerGame { get; set; }
+    public double StealsPerGame { get; set; }
 
-    public decimal BlocksPerGame { get; set; }
+    public double BlocksPerGame { get; set; }
 
-    public decimal TurnoversPerGame { get; set; }
+    public double TurnoversPerGame { get; set; }
 
-    public decimal FieldGoalPercentage { get; set; }
+    public double FieldGoalPercentage { get; set; }
 
-    public decimal ThreePointPercentage { get; set; }
+    public double ThreePointPercentage { get; set; }
 
-    public decimal FreeThrowPercentage { get; set; }
+    public double FreeThrowPercentage { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }
 
-    public required NbaPlayer NbaPlayer { get; set; }
+    // TODO: Consider whether is necessary or not
+    // Does this cause a circular reference issue when serializing to JSON?
+    // and increase tight coupling?
+    // If I need to remove it, Should I create another migration?
+    public NbaPlayer? NbaPlayer { get; set; }
 }

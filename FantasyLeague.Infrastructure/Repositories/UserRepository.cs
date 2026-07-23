@@ -44,9 +44,11 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
             cancellationToken);
     }
 
-    public Task AddAsync(User user, CancellationToken cancellationToken)
+    public User Add(User user)
     {
-        return dbContext.Set<User>().AddAsync(user, cancellationToken).AsTask();
+        dbContext.Set<User>().Add(user);
+
+        return user;
     }
 
     public void Remove(User user)

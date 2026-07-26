@@ -6,15 +6,11 @@ namespace FantasyLeague.Application.Mappings;
 
 public static class FantasyTeamMappings
 {
-    public static FantasyTeam ToEntity(
-        this CreateFantasyTeamRequest request,
-        League league,
-        User owner) => new()
+    public static FantasyTeam ToEntity(this CreateFantasyTeamRequest request) => new()
     {
         Name = request.Name.Trim(),
-        LeagueId = league.Id,
-        OwnerId = owner.Id,
-        Owner = owner
+        LeagueId = request.LeagueId,
+        OwnerId = request.OwnerId
     };
 
     public static void MapTo(this UpdateFantasyTeamRequest request, FantasyTeam team)

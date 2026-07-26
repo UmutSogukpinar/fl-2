@@ -26,8 +26,22 @@ public sealed class LeagueConfiguration : IEntityTypeConfiguration<League>
         builder.Property(league => league.MaxTeams)
             .IsRequired();
 
-        builder.HasOne(league => league.Commissioner)
-            .WithMany(user => user.CommissionedLeagues)
+        builder.Property(league => league.Status)
+            .HasConversion<string>()
+            .HasMaxLength(32)
+            .IsRequired();
+
+        builder.Property(league => league.DraftDate);
+
+        builder.Property(league => league.JoinCode)
+            .HasMaxLength(8)
+            .IsRequired();
+
+        builder.HasIndex(league => league.JoinCode)
+            .IsUnique();
+
+        builder.HasOne<User>()
+            .WithMany()
             .HasForeignKey(league => league.CommissionerId)
             .OnDelete(DeleteBehavior.Restrict);
     }

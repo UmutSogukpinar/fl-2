@@ -1,9 +1,10 @@
 using FantasyLeague.Application.Common.Exceptions;
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Normalization;
 using FantasyLeague.Application.Common.Validation;
 using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
+using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
 using FantasyLeague.Domain.Entities;
 
@@ -24,17 +25,15 @@ public sealed class FantasyTeamService(
             leagueId, cancellationToken
         );
 
-        return teams.Select(team => team.ToResponse()).ToArray();
+        return teams;
     }
 
     public async Task<FantasyTeamResponse> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        return (await GetTeamOrThrowAsync(
-                id,
-                cancellationToken))
-            .ToResponse();
+        return await teamRepository.GetResponseByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException($"Fantasy team '{id}' was not found.");
     }
 
     public async Task<FantasyTeamResponse> CreateAsync(
@@ -49,7 +48,7 @@ public sealed class FantasyTeamService(
             request.LeagueId,
             cancellation
         );
-        var owner = await userRepository.GetByIdAsync(
+        _ = await userRepository.GetResponseByIdAsync(
                 request.OwnerId,
                 cancellation
         ) ?? throw new NotFoundException(
@@ -74,7 +73,7 @@ public sealed class FantasyTeamService(
             null,
             cancellation);
 
-        var team = request.ToEntity(league, owner);
+        var team = request.ToEntity();
 
         await teamRepository.AddAsync(team, cancellation);
         await teamRepository.SaveChangesAsync(cancellation);
@@ -86,7 +85,7 @@ public sealed class FantasyTeamService(
         UpdateFantasyTeamRequest request,
         CancellationToken cancellation)
     {
-        var team = await GetTeamOrThrowAsync(id, cancellation);
+        var team = await GetTrackedTeamOrThrowAsync(id, cancellation);
 
         FantasyTeamValidation.ValidateUpdateUserRequest(request);
         FantasyTeamNormalization.NormalizeUpdateUserRequest(ref request);
@@ -94,7 +93,7 @@ public sealed class FantasyTeamService(
         await EnsureUniqueAsync(
             team.LeagueId,
             team.OwnerId,
-            team.Name,
+            request.Name,
             team.Id,
             cancellation
         );
@@ -110,7 +109,7 @@ public sealed class FantasyTeamService(
         CancellationToken cancellation
     )
     {
-        var team = await GetTeamOrThrowAsync(id, cancellation);
+        var team = await GetTrackedTeamOrThrowAsync(id, cancellation);
         teamRepository.Remove(team);
         await teamRepository.SaveChangesAsync(cancellation);
     }
@@ -135,23 +134,23 @@ public sealed class FantasyTeamService(
         }
     }
 
-    private async Task<League> GetLeagueOrThrowAsync(
+    private async Task<LeagueResponse> GetLeagueOrThrowAsync(
         Guid id,
         CancellationToken cancellation
     )
     {
-        return await leagueRepository.GetByIdAsync(id, cancellation) 
+        return await leagueRepository.GetResponseByIdAsync(id, cancellation)
             ?? throw new NotFoundException(
                     $"League '{id}' was not found."
                 );
     }
 
-    private async Task<FantasyTeam> GetTeamOrThrowAsync(
+    private async Task<FantasyTeam> GetTrackedTeamOrThrowAsync(
         Guid id,
         CancellationToken cancellation
     )
     {
-        return await teamRepository.GetByIdAsync(id, cancellation)
+        return await teamRepository.GetTrackedByIdAsync(id, cancellation)
             ?? throw new NotFoundException(
                     $"Fantasy team '{id}' was not found."
                 );

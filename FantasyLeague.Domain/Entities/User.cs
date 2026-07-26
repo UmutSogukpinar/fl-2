@@ -14,7 +14,4 @@ public class User
 
     public DateTime? UpdatedAt { get; set; }
 
-    public ICollection<League> CommissionedLeagues { get; set; } = new List<League>();
-
-    public ICollection<FantasyTeam> FantasyTeams { get; set; } = new List<FantasyTeam>();
 }

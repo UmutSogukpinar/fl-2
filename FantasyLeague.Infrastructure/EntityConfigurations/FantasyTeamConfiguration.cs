@@ -28,8 +28,8 @@ public sealed class FantasyTeamConfiguration : IEntityTypeConfiguration<FantasyT
             .HasForeignKey(team => team.LeagueId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(team => team.Owner)
-            .WithMany(user => user.FantasyTeams)
+        builder.HasOne<User>()
+            .WithMany()
             .HasForeignKey(team => team.OwnerId)
             .OnDelete(DeleteBehavior.Restrict);
     }

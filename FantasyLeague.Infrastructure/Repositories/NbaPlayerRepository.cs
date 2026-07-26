@@ -1,9 +1,9 @@
-using FantasyLeague.Application.Common.Exceptions;
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
+using FantasyLeague.Infrastructure.Repositories.Projections;
 using Microsoft.EntityFrameworkCore;
 
 namespace FantasyLeague.Infrastructure.Repositories;
@@ -55,7 +55,7 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<NbaPlayer?> GetByIdAndSeasonAsync(
+    public async Task<IPlayerResponse?> GetByIdAndSeasonAsync(
         Guid id,
         int season, 
         PlayerResponseSize size,
@@ -63,16 +63,16 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
     ){
         return size switch
         {
-            PlayerResponseSize.Basic => GetByIdAndSeasonBasicAsync(
+            PlayerResponseSize.Basic => await GetBasicAsync(
                                             id,
                                             cancellationToken
                                         ),
             
-            PlayerResponseSize.Detailed => GetByIdAndSeasonDetailedAsync(
+            PlayerResponseSize.Detailed => await GetDetailedAsync(
                                                 id,
                                                 cancellationToken),
 
-            PlayerResponseSize.Extended => GetByIdAndSeasonExtendedAsync(
+            PlayerResponseSize.Extended => await GetExtendedAsync(
                                                 id,
                                                 season,
                                                 cancellationToken
@@ -84,108 +84,37 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
     }
 
 
-    // ===================== Utils of GetByIdAsync() =====================
-
-    private async Task<NbaPlayer?> GetByIdAndSeasonBasicAsync(
+    private Task<NbaPlayerBasicResponse?> GetBasicAsync(
        Guid id,
        CancellationToken cancelllation
     ){
-        var player = await dbContext.Set<NbaPlayer>()
+        return dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(p => new NbaPlayer
-            {
-                Id = p.Id,
-                FirstName = p.FirstName,
-                LastName = p.LastName,
-                Team = p.Team,
-                Position = p.Position,
-            })
-            .SingleOrDefaultAsync(
-                player => player.Id == id,
-                cancelllation);
-
-        return GetPlayerOrThrowAsync(id, player, cancelllation);
+            .Select(NbaPlayerProjections.Basic)
+            .SingleOrDefaultAsync(cancelllation);
     }
 
-    private async Task<NbaPlayer?> GetByIdAndSeasonDetailedAsync(
+    private Task<NbaPlayerDetailedResponse?> GetDetailedAsync(
         Guid id,
         CancellationToken cancellation
     ){
-        var player = await dbContext.Set<NbaPlayer>()
+        return dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(p => new NbaPlayer
-            {
-                Id = p.Id,
-                NbaId = p.NbaId,
-                FirstName = p.FirstName,
-                LastName = p.LastName,
-                Team = p.Team,
-                Position = p.Position,
-                JerseyNumber = p.JerseyNumber,
-                HeightCm = p.HeightCm,
-                WeightKg = p.WeightKg,
-                CreatedAt = p.CreatedAt,
-                UpdatedAt = p.UpdatedAt,
-            })
-            .SingleOrDefaultAsync(
-                player => player.Id == id,
-                cancellation);
-
-        return GetPlayerOrThrowAsync(ref id, ref player, cancellation);
+            .Select(NbaPlayerProjections.Detailed)
+            .SingleOrDefaultAsync(cancellation);
     }
 
-    private async Task<NbaPlayer?> GetByIdAndSeasonExtendedAsync(
+    private Task<NbaPlayerExtendedResponse?> GetExtendedAsync(
         Guid id,
         int season,
         CancellationToken cancellation
     ){
-        var player = await dbContext.Set<NbaPlayer>()
+        return dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(player => player.Id == id)
-            .Select(player => new NbaPlayer
-            {
-                Id = player.Id,
-                NbaId = player.NbaId,
-                FirstName = player.FirstName,
-                LastName = player.LastName,
-                Team = player.Team,
-                Position = player.Position,
-                JerseyNumber = player.JerseyNumber,
-                HeightCm = player.HeightCm,
-                WeightKg = player.WeightKg,
-                CreatedAt = player.CreatedAt,
-                UpdatedAt = player.UpdatedAt,
-
-                SeasonStats = player.SeasonStats
-                    .Where(stat => stat.Season == season)
-                    .Select(stats => new PlayerStats
-                    {
-                        Id = stats.Id,
-                        NbaPlayerId = stats.NbaPlayerId,
-                        Season = stats.Season,
-                        GamesPlayed = stats.GamesPlayed,
-                        PointsPerGame = stats.PointsPerGame,
-                        AssistsPerGame = stats.AssistsPerGame,
-                        ReboundsPerGame = stats.ReboundsPerGame,
-                        StealsPerGame = stats.StealsPerGame,
-                        BlocksPerGame = stats.BlocksPerGame
-                    })
-                    .ToList()
-            })
+            .Select(NbaPlayerProjections.Extended(season))
             .SingleOrDefaultAsync(cancellation);
-
-        return GetPlayerOrThrowAsync(id, player, cancellation);
-    }
-
-    private static NbaPlayer GetPlayerOrThrowAsync(
-        Guid id,
-        NbaPlayer? player,
-        CancellationToken cancellationToken)
-    {
-        return player ??
-            throw new NotFoundException(
-                $"Player with Id '{id}' not found.");
     }
 }

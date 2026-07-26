@@ -4,6 +4,5 @@ namespace FantasyLeague.Application.Services.NbaPlayers;
 
 public interface INbaPlayerSyncService
 {
-    Task<NbaPlayerSyncResponse> SyncActivePlayersAsync(
-        CancellationToken cancellationToken = default);
+    Task<NbaPlayerSyncResponse> SyncActivePlayersAsync(CancellationToken cancellationToken = default);
 }

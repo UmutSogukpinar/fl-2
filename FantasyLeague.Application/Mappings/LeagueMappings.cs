@@ -1,19 +1,23 @@
 using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Domain.Entities;
+using FantasyLeague.Domain.Enums;
+using System.Security.Cryptography;
 
 namespace FantasyLeague.Application.Mappings;
 
 public static class LeagueMappings
 {
-    public static League ToEntity(this CreateLeagueRequest request, User commissioner) => new()
+    public static League ToEntity(this CreateLeagueRequest request) => new()
     {
         Name = request.Name.Trim(),
         Description = NormalizeDescription(request.Description),
         Season = request.Season,
         MaxTeams = request.MaxTeams,
-        CommissionerId = commissioner.Id,
-        Commissioner = commissioner
+        CommissionerId = request.CommissionerId,
+        Status = LeagueStatus.Created,
+        DraftDate = request.DraftDate,
+        JoinCode = Convert.ToHexString(RandomNumberGenerator.GetBytes(4))
     };
 
     public static void MapTo(this UpdateLeagueRequest request, League league)
@@ -21,6 +25,7 @@ public static class LeagueMappings
         league.Name = request.Name.Trim();
         league.Description = NormalizeDescription(request.Description);
         league.MaxTeams = request.MaxTeams;
+        league.DraftDate = request.DraftDate;
         league.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -31,6 +36,9 @@ public static class LeagueMappings
         league.Season,
         league.MaxTeams,
         league.CommissionerId,
+        league.Status,
+        league.DraftDate,
+        league.JoinCode,
         league.CreatedAt,
         league.UpdatedAt);
 

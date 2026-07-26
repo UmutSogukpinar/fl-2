@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.Security;
 
 namespace FantasyLeague.Infrastructure.Security;
 

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.Repositories;
+using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
 
@@ -8,7 +9,7 @@ namespace FantasyLeague.Infrastructure.Repositories;
 
 public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
 {
-    public async Task<(IReadOnlyCollection<User> Items, int TotalCount)> GetPagedAsync(
+    public async Task<(IReadOnlyCollection<UserResponse> Items, int TotalCount)> GetPagedAsync(
         int pageNumber,
         int pageSize,
         CancellationToken cancellationToken)
@@ -19,12 +20,34 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
             .OrderBy(user => user.Username)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
+            .Select(user => new UserResponse(
+                user.Id,
+                user.Username,
+                user.Email,
+                user.CreatedAt,
+                user.UpdatedAt))
             .ToArrayAsync(cancellationToken);
 
         return (users, totalCount);
     }
 
-    public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public Task<UserResponse?> GetResponseByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        return dbContext.Set<User>()
+            .AsNoTracking()
+            .Where(user => user.Id == id)
+            .Select(user => new UserResponse(
+                user.Id,
+                user.Username,
+                user.Email,
+                user.CreatedAt,
+                user.UpdatedAt))
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return dbContext.Set<User>()
             .SingleOrDefaultAsync(user => user.Id == id, cancellationToken);

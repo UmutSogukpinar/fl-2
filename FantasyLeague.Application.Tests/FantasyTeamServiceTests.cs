@@ -1,6 +1,9 @@
 using FantasyLeague.Application.Common.Exceptions;
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
+using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
+using FantasyLeague.Application.DTOs.Responses.Leagues;
+using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Services.FantasyTeams;
 using FantasyLeague.Domain.Entities;
 using Moq;
@@ -31,7 +34,7 @@ public sealed class FantasyTeamServiceTests
         _teamRepository
             .Setup(repository => repository.GetByLeagueIdAsync(
                 league.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([team]);
+            .ReturnsAsync([CreateTeamResponse(team)]);
 
         var result = await _service.GetByLeagueIdAsync(league.Id);
 
@@ -49,16 +52,16 @@ public sealed class FantasyTeamServiceTests
         var request = new CreateFantasyTeamRequest("  Winners  ", league.Id, owner.Id);
         SetupLeague(league);
         _userRepository
-            .Setup(repository => repository.GetByIdAsync(
+            .Setup(repository => repository.GetResponseByIdAsync(
                 owner.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(owner);
+            .ReturnsAsync(CreateUserResponse(owner));
         _teamRepository
             .Setup(repository => repository.CountByLeagueIdAsync(
                 league.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(2);
         _teamRepository
             .Setup(repository => repository.ExistsAsync(
-                league.Id, owner.Id, "Winners", null, It.IsAny<CancellationToken>()))
+                league.Id, owner.Id, "winners", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         FantasyTeam? addedTeam = null;
@@ -68,11 +71,11 @@ public sealed class FantasyTeamServiceTests
             .Callback<FantasyTeam, CancellationToken>((team, _) => addedTeam = team)
             .Returns(Task.CompletedTask);
 
-        var response = await _service.CreateAsync(request);
+        var response = await _service.CreateAsync(request, CancellationToken.None);
 
         Assert.NotNull(addedTeam);
-        Assert.Equal("Winners", addedTeam.Name);
-        Assert.Same(owner, addedTeam.Owner);
+        Assert.Equal("winners", addedTeam.Name);
+        Assert.Equal(owner.Id, addedTeam.OwnerId);
         Assert.Equal(addedTeam.Id, response.Id);
         _teamRepository.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
@@ -86,9 +89,9 @@ public sealed class FantasyTeamServiceTests
         var owner = CreateUser("owner");
         SetupLeague(league);
         _userRepository
-            .Setup(repository => repository.GetByIdAsync(
+            .Setup(repository => repository.GetResponseByIdAsync(
                 owner.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(owner);
+            .ReturnsAsync(CreateUserResponse(owner));
         _teamRepository
             .Setup(repository => repository.CountByLeagueIdAsync(
                 league.Id, It.IsAny<CancellationToken>()))
@@ -96,7 +99,8 @@ public sealed class FantasyTeamServiceTests
 
         var request = new CreateFantasyTeamRequest("Team", league.Id, owner.Id);
 
-        await Assert.ThrowsAsync<ConflictException>(() => _service.CreateAsync(request));
+        await Assert.ThrowsAsync<ConflictException>(
+            () => _service.CreateAsync(request, CancellationToken.None));
         _teamRepository.Verify(
             repository => repository.AddAsync(
                 It.IsAny<FantasyTeam>(), It.IsAny<CancellationToken>()),
@@ -110,21 +114,22 @@ public sealed class FantasyTeamServiceTests
         var owner = CreateUser("owner");
         SetupLeague(league);
         _userRepository
-            .Setup(repository => repository.GetByIdAsync(
+            .Setup(repository => repository.GetResponseByIdAsync(
                 owner.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(owner);
+            .ReturnsAsync(CreateUserResponse(owner));
         _teamRepository
             .Setup(repository => repository.CountByLeagueIdAsync(
                 league.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
         _teamRepository
             .Setup(repository => repository.ExistsAsync(
-                league.Id, owner.Id, "Team", null, It.IsAny<CancellationToken>()))
+                league.Id, owner.Id, "team", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         var request = new CreateFantasyTeamRequest("Team", league.Id, owner.Id);
 
-        await Assert.ThrowsAsync<ConflictException>(() => _service.CreateAsync(request));
+        await Assert.ThrowsAsync<ConflictException>(
+            () => _service.CreateAsync(request, CancellationToken.None));
     }
 
     [Fact]
@@ -133,23 +138,25 @@ public sealed class FantasyTeamServiceTests
         var league = CreateLeague();
         var team = CreateTeam(league);
         _teamRepository
-            .Setup(repository => repository.GetByIdAsync(
+            .Setup(repository => repository.GetTrackedByIdAsync(
                 team.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(team);
         _teamRepository
             .Setup(repository => repository.ExistsAsync(
                 team.LeagueId,
                 team.OwnerId,
-                "Updated",
+                "updated",
                 team.Id,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var response = await _service.UpdateAsync(
-            team.Id, new UpdateFantasyTeamRequest("  Updated  "));
+            team.Id,
+            new UpdateFantasyTeamRequest("  Updated  "),
+            CancellationToken.None);
 
-        Assert.Equal("Updated", team.Name);
-        Assert.Equal("Updated", response.Name);
+        Assert.Equal("updated", team.Name);
+        Assert.Equal("updated", response.Name);
         Assert.NotNull(team.UpdatedAt);
         _teamRepository.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
@@ -161,10 +168,12 @@ public sealed class FantasyTeamServiceTests
     {
         var id = Guid.NewGuid();
         _teamRepository
-            .Setup(repository => repository.GetByIdAsync(id, It.IsAny<CancellationToken>()))
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                id, It.IsAny<CancellationToken>()))
             .ReturnsAsync((FantasyTeam?)null);
 
-        await Assert.ThrowsAsync<NotFoundException>(() => _service.DeleteAsync(id));
+        await Assert.ThrowsAsync<NotFoundException>(
+            () => _service.DeleteAsync(id, CancellationToken.None));
         _teamRepository.Verify(
             repository => repository.Remove(It.IsAny<FantasyTeam>()), Times.Never);
     }
@@ -172,9 +181,9 @@ public sealed class FantasyTeamServiceTests
     private void SetupLeague(League league)
     {
         _leagueRepository
-            .Setup(repository => repository.GetByIdAsync(
+            .Setup(repository => repository.GetResponseByIdAsync(
                 league.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(league);
+            .ReturnsAsync(CreateLeagueResponse(league));
     }
 
     private static User CreateUser(string username) => new()
@@ -194,8 +203,7 @@ public sealed class FantasyTeamServiceTests
             Name = "League",
             Season = 2026,
             MaxTeams = maxTeams,
-            CommissionerId = commissioner.Id,
-            Commissioner = commissioner
+            CommissionerId = commissioner.Id
         };
     }
 
@@ -207,8 +215,35 @@ public sealed class FantasyTeamServiceTests
             Id = Guid.NewGuid(),
             Name = "Team",
             LeagueId = league.Id,
-            OwnerId = owner.Id,
-            Owner = owner
+            OwnerId = owner.Id
         };
     }
+
+    private static FantasyTeamResponse CreateTeamResponse(FantasyTeam team) => new(
+        team.Id,
+        team.Name,
+        team.LeagueId,
+        team.OwnerId,
+        team.CreatedAt,
+        team.UpdatedAt);
+
+    private static LeagueResponse CreateLeagueResponse(League league) => new(
+        league.Id,
+        league.Name,
+        league.Description,
+        league.Season,
+        league.MaxTeams,
+        league.CommissionerId,
+        league.Status,
+        league.DraftDate,
+        league.JoinCode,
+        league.CreatedAt,
+        league.UpdatedAt);
+
+    private static UserResponse CreateUserResponse(User user) => new(
+        user.Id,
+        user.Username,
+        user.Email,
+        user.CreatedAt,
+        user.UpdatedAt);
 }

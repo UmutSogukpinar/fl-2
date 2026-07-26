@@ -1,4 +1,4 @@
-namespace FantasyLeague.Application.Common.Interfaces;
+namespace FantasyLeague.Application.Common.Interfaces.Security;
 
 public interface IPasswordHasher
 {

@@ -1,4 +1,5 @@
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.ExternalServices;
+using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Domain.Entities;
 
@@ -155,8 +156,7 @@ public sealed class NbaPlayerSyncService(
                 games.Sum(game => game.ThreePointersAttempted)),
             FreeThrowPercentage = Percentage(
                 games.Sum(game => game.FreeThrowsMade),
-                games.Sum(game => game.FreeThrowsAttempted)),
-            NbaPlayer = player
+                games.Sum(game => game.FreeThrowsAttempted))
         };
     }
 

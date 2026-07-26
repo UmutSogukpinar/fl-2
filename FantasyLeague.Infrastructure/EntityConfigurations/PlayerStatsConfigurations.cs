@@ -17,6 +17,11 @@ public sealed class PlayerStatsConfiguration
         builder.HasIndex(playerStats => new { playerStats.NbaPlayerId, playerStats.Season })
             .IsUnique();
 
+        builder.HasOne<NbaPlayer>()
+            .WithMany(player => player.SeasonStats)
+            .HasForeignKey(playerStats => playerStats.NbaPlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Property(playerStats => playerStats.NbaPlayerId)
             .IsRequired();
 

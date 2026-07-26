@@ -1,7 +1,7 @@
 ﻿using Moq;
 using Xunit;
 
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Application.Services.NbaPlayers;
 using FantasyLeague.Application.Models;
@@ -39,7 +39,8 @@ public class NbaPlayerTests
         var season = 2025;
 
         var playerId = Guid.NewGuid();
-        var player = CreatePlayer(playerId);
+        IPlayerResponse player = new NbaPlayerBasicResponse(
+            playerId, playerName, playerLastName, playerTeam, playerPosition);
 
         _playerRepository.Setup(repo => repo.GetByIdAndSeasonAsync(
             playerId, season, PlayerResponseSize.Basic, It.IsAny<CancellationToken>())!
@@ -70,9 +71,9 @@ public class NbaPlayerTests
     {
         // Arrange
         var playerId = Guid.NewGuid();
-        var player = CreatePlayer(playerId);
-        player.NbaId = 2544;
-        player.JerseyNumber = 23;
+        var player = new NbaPlayerDetailedResponse(
+            playerId, 2544, "Lebron", "James", "Lakers", "F",
+            23, null, null, DateTime.UtcNow, null);
         var season = 2025;
 
         _playerRepository
@@ -113,17 +114,12 @@ public class NbaPlayerTests
     {
         // Assert
         var playerId = Guid.NewGuid();
-        var player = CreatePlayer(playerId);
         var season = 2025;
-
-        player.SeasonStats.Add(new PlayerStats
-        {
-            NbaPlayerId = playerId,
-            Season = season,
-            GamesPlayed = 10,
-            PointsPerGame = 25.4,
-            NbaPlayer = player
-        });
+        var player = new NbaPlayerExtendedResponse(
+            playerId, 2544, "Lebron", "James", "Lakers", "F",
+            23, null, null, DateTime.UtcNow, null,
+            new PlayerStatsResponse(
+                season, 10, 25.4, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
         _playerRepository
             .Setup(repository => repository.GetByIdAndSeasonAsync(
@@ -144,8 +140,8 @@ public class NbaPlayerTests
         // Assert
         Assert.NotNull(result);
         var response = Assert.IsType<NbaPlayerExtendedResponse>(result);
-        var stats = Assert.Single(response.SeasonStats);
-        Assert.Equal(2026, stats.Season);
+        var stats = Assert.IsType<PlayerStatsResponse>(response.SeasonStats);
+        Assert.Equal(season, stats.Season);
         Assert.Equal(25.4, stats.PointsPerGame);
     }
 
@@ -165,7 +161,7 @@ public class NbaPlayerTests
                         season,
                         PlayerResponseSize.Basic,
                         It.IsAny<CancellationToken>()))
-            .ReturnsAsync((NbaPlayer?)null);
+            .ReturnsAsync((IPlayerResponse?)null);
 
 
         // Act & Assert
@@ -181,17 +177,4 @@ public class NbaPlayerTests
 
     }
 
-    private static NbaPlayer CreatePlayer(Guid id)
-    {
-        var expectedUser = new NbaPlayer
-        {
-            Id = id,
-            FirstName = "Lebron",
-            LastName = "James",
-            Team = "Lakers",
-            Position = "F"
-        };
-
-        return expectedUser;
-    }
 }

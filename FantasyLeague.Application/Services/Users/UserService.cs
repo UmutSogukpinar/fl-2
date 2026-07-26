@@ -1,6 +1,7 @@
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Application.Common.Exceptions;
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.Repositories;
+using FantasyLeague.Application.Common.Interfaces.Security;
 using FantasyLeague.Application.DTOs.Requests.Users;
 using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Users;
@@ -17,12 +18,11 @@ public sealed class UserService(
         GetUsersRequest request,
         CancellationToken cancellationToken = default)
     {
-        var (users, totalCount) = await _userRepository.GetPagedAsync(
+        var (items, totalCount) = await _userRepository.GetPagedAsync(
             request.PageNumber,
             request.PageSize,
             cancellationToken);
 
-        var items = users.Select(user => user.ToResponse()).ToArray();
         var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
 
         return new PagedResponse<UserResponse>(
@@ -37,8 +37,8 @@ public sealed class UserService(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetUserOrThrowAsync(id, cancellationToken);
-        return user.ToResponse();
+        return await _userRepository.GetResponseByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException($"User '{id}' was not found.");
     }
 
     public async Task<UserResponse> CreateAsync(
@@ -70,7 +70,7 @@ public sealed class UserService(
         UpdateUserRequest request,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetUserOrThrowAsync(id, cancellationToken);
+        var user = await GetTrackedUserOrThrowAsync(id, cancellationToken);
 
         UserValidation.ValidateUpdateUserRequest(request);
 
@@ -87,14 +87,16 @@ public sealed class UserService(
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var user = await GetUserOrThrowAsync(id, cancellationToken);
+        var user = await GetTrackedUserOrThrowAsync(id, cancellationToken);
         _userRepository.Remove(user);
         await _userRepository.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<User> GetUserOrThrowAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<User> GetTrackedUserOrThrowAsync(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        return await _userRepository.GetByIdAsync(id, cancellationToken)
+        return await _userRepository.GetTrackedByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException($"User '{id}' was not found.");
     }
 

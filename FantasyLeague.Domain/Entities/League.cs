@@ -1,5 +1,7 @@
 namespace FantasyLeague.Domain.Entities;
 
+using FantasyLeague.Domain.Enums;
+
 public class League
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -14,9 +16,13 @@ public class League
 
     public Guid CommissionerId { get; set; }
 
+    public LeagueStatus Status { get; set; } = LeagueStatus.Created;
+
+    public DateTime? DraftDate { get; set; }
+
+    public string JoinCode { get; set; } = string.Empty;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }
-
-    public required User Commissioner { get; set; }
 }

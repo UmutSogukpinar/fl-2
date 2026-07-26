@@ -5,4 +5,5 @@ public sealed record CreateLeagueRequest(
     string? Description,
     int Season,
     int MaxTeams,
-    Guid CommissionerId);
+    Guid CommissionerId,
+    DateTime? DraftDate = null);

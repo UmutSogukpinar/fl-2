@@ -1,5 +1,5 @@
 using FantasyLeague.Application.Common.Exceptions;
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
@@ -15,15 +15,15 @@ public sealed class LeagueService(
     public async Task<IReadOnlyCollection<LeagueResponse>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        var leagues = await leagueRepository.GetAllAsync(cancellationToken);
-        return leagues.Select(league => league.ToResponse()).ToArray();
+        return await leagueRepository.GetAllAsync(cancellationToken);
     }
 
     public async Task<LeagueResponse> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        return (await GetLeagueOrThrowAsync(id, cancellationToken)).ToResponse();
+        return await leagueRepository.GetResponseByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException($"League '{id}' was not found.");
     }
 
     public async Task<LeagueResponse> CreateAsync(
@@ -34,12 +34,12 @@ public sealed class LeagueService(
         ValidateSeason(request.Season);
         ValidateMaxTeams(request.MaxTeams);
 
-        var commissioner = await userRepository.GetByIdAsync(
+        _ = await userRepository.GetResponseByIdAsync(
             request.CommissionerId,
             cancellationToken)
             ?? throw new NotFoundException($"User '{request.CommissionerId}' was not found.");
 
-        var league = request.ToEntity(commissioner);
+        var league = request.ToEntity();
 
         await leagueRepository.AddAsync(league, cancellationToken);
         await leagueRepository.SaveChangesAsync(cancellationToken);
@@ -51,7 +51,7 @@ public sealed class LeagueService(
         UpdateLeagueRequest request,
         CancellationToken cancellationToken = default)
     {
-        var league = await GetLeagueOrThrowAsync(id, cancellationToken);
+        var league = await GetTrackedLeagueOrThrowAsync(id, cancellationToken);
         ValidateName(request.Name);
         ValidateMaxTeams(request.MaxTeams);
 
@@ -71,14 +71,16 @@ public sealed class LeagueService(
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var league = await GetLeagueOrThrowAsync(id, cancellationToken);
+        var league = await GetTrackedLeagueOrThrowAsync(id, cancellationToken);
         leagueRepository.Remove(league);
         await leagueRepository.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<League> GetLeagueOrThrowAsync(Guid id, CancellationToken cancellationToken)
+    private async Task<League> GetTrackedLeagueOrThrowAsync(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        return await leagueRepository.GetByIdAsync(id, cancellationToken)
+        return await leagueRepository.GetTrackedByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException($"League '{id}' was not found.");
     }
 

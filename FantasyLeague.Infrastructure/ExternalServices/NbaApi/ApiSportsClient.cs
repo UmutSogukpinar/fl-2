@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 
 using FantasyLeague.Application.Common.Exceptions;
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.ExternalServices;
 
 namespace FantasyLeague.Infrastructure.ExternalServices.NbaApi;
 

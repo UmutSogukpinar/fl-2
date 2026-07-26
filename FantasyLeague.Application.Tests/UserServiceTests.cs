@@ -4,8 +4,10 @@ using Moq;
 using Xunit;
 
 using FantasyLeague.Application.Common.Exceptions;
-using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Common.Interfaces.Repositories;
+using FantasyLeague.Application.Common.Interfaces.Security;
 using FantasyLeague.Application.DTOs.Requests.Users;
+using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Domain.Entities;
 
@@ -31,10 +33,10 @@ public class UserServiceTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var expectedUser = CreateUser(userId);
+        var expectedUser = CreateUserResponse(userId);
 
         _repositoryMock
-            .Setup(s => s.GetByIdAsync(
+            .Setup(s => s.GetResponseByIdAsync(
                 userId,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedUser);
@@ -58,10 +60,10 @@ public class UserServiceTests
         // Arrange
         var userId = Guid.NewGuid();
         _repositoryMock
-            .Setup(s => s.GetByIdAsync(
+            .Setup(s => s.GetResponseByIdAsync(
                 userId,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync((User?)null);
+            .ReturnsAsync((UserResponse?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(async () =>
@@ -241,7 +243,7 @@ public class UserServiceTests
         var userId = Guid.NewGuid();
         var expectedUser = CreateUser(userId);
         _repositoryMock
-            .Setup(s => s.GetByIdAsync(
+            .Setup(s => s.GetTrackedByIdAsync(
                 userId,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedUser);
@@ -264,7 +266,7 @@ public class UserServiceTests
         // Arrange
         var userId = Guid.NewGuid();
         _repositoryMock
-            .Setup(s => s.GetByIdAsync(
+            .Setup(s => s.GetTrackedByIdAsync(
                 userId,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
@@ -289,7 +291,7 @@ public class UserServiceTests
 
         var userId = Guid.NewGuid();
         var existingUser = CreateUser(userId);
-        _repositoryMock.Setup(s => s.GetByIdAsync(
+        _repositoryMock.Setup(s => s.GetTrackedByIdAsync(
             userId,
             It.IsAny<CancellationToken>())
         ).ReturnsAsync(existingUser);
@@ -346,7 +348,7 @@ public class UserServiceTests
 
         var userId = Guid.NewGuid();
         var existingUser = CreateUser(userId);
-        _repositoryMock.Setup(s => s.GetByIdAsync(
+        _repositoryMock.Setup(s => s.GetTrackedByIdAsync(
             userId,
             It.IsAny<CancellationToken>())
         ).ReturnsAsync(existingUser);
@@ -381,7 +383,7 @@ public class UserServiceTests
             updateUserEmail
         );
 
-        _repositoryMock.Setup(s => s.GetByIdAsync(
+        _repositoryMock.Setup(s => s.GetTrackedByIdAsync(
                 userId,
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync(existingUser);
@@ -412,7 +414,7 @@ public class UserServiceTests
             updateUserEmail
         );
 
-        _repositoryMock.Setup(s => s.GetByIdAsync(
+        _repositoryMock.Setup(s => s.GetTrackedByIdAsync(
                 userId,
                 It.IsAny<CancellationToken>())
             ).ReturnsAsync(existingUser);
@@ -436,4 +438,11 @@ public class UserServiceTests
 
         return expectedUser;
     }
+
+    private static UserResponse CreateUserResponse(Guid id) => new(
+        id,
+        "Umut",
+        "us.example.com",
+        DateTime.UtcNow,
+        null);
 }

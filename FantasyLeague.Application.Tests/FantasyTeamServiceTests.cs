@@ -1,6 +1,7 @@
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
+using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Users;
@@ -32,13 +33,15 @@ public sealed class FantasyTeamServiceTests
         var team = CreateTeam(league);
         SetupLeague(league);
         _teamRepository
-            .Setup(repository => repository.GetByLeagueIdAsync(
-                league.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([CreateTeamResponse(team)]);
+            .Setup(repository => repository.GetPagedByLeagueIdAsync(
+                league.Id, 1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(([CreateTeamResponse(team)], 1));
 
-        var result = await _service.GetByLeagueIdAsync(league.Id);
+        var result = await _service.GetByLeagueIdAsync(
+            league.Id, new PaginationRequest());
 
-        var response = Assert.Single(result);
+        var response = Assert.Single(result.Items);
+        Assert.Equal(1, result.TotalCount);
         Assert.Equal(team.Id, response.Id);
         Assert.Equal(team.Name, response.Name);
         Assert.Equal(league.Id, response.LeagueId);
@@ -235,7 +238,7 @@ public sealed class FantasyTeamServiceTests
         league.MaxTeams,
         league.CommissionerId,
         league.Status,
-        league.DraftDate,
+        league.Settings.DraftDate,
         league.JoinCode,
         league.CreatedAt,
         league.UpdatedAt);

@@ -1,6 +1,7 @@
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Requests.Leagues;
+using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Services.Leagues;
@@ -30,12 +31,14 @@ public sealed class LeagueServiceTests
     {
         var league = CreateLeague();
         _leagueRepository
-            .Setup(repository => repository.GetAllAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([CreateLeagueResponse(league)]);
+            .Setup(repository => repository.GetPagedAsync(
+                1, 10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(([CreateLeagueResponse(league)], 1));
 
-        var result = await _service.GetAllAsync();
+        var result = await _service.GetAsync(new PaginationRequest());
 
-        var response = Assert.Single(result);
+        var response = Assert.Single(result.Items);
+        Assert.Equal(1, result.TotalCount);
         Assert.Equal(league.Id, response.Id);
         Assert.Equal(league.Name, response.Name);
         Assert.Equal(league.CommissionerId, response.CommissionerId);
@@ -68,7 +71,8 @@ public sealed class LeagueServiceTests
         Assert.Equal("Main league", addedLeague.Description);
         Assert.Equal(commissioner.Id, addedLeague.CommissionerId);
         Assert.Equal(LeagueStatus.Created, addedLeague.Status);
-        Assert.Equal(draftDate, addedLeague.DraftDate);
+        Assert.Equal(draftDate, addedLeague.Settings.DraftDate);
+        Assert.Equal(13, addedLeague.Settings.RosterSize);
         Assert.Equal(8, addedLeague.JoinCode.Length);
         Assert.Equal(addedLeague.Id, response.Id);
         _leagueRepository.Verify(
@@ -160,7 +164,7 @@ public sealed class LeagueServiceTests
         league.MaxTeams,
         league.CommissionerId,
         league.Status,
-        league.DraftDate,
+        league.Settings.DraftDate,
         league.JoinCode,
         league.CreatedAt,
         league.UpdatedAt);

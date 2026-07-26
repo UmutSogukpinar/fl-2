@@ -13,6 +13,13 @@ public sealed class NbaPlayersController(
     INbaPlayerService _nbaPlayerService
 ) : ControllerBase
 {
+    /// <summary>
+    /// Synchronizes active NBA players and their statistics from the external provider.
+    /// </summary>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>A summary of the synchronization operation.</returns>
+    /// <response code="200">The synchronization completed successfully.</response>
+    /// <response code="502">The external NBA provider could not be reached.</response>
     [HttpPost("sync")]
     [ProducesResponseType<NbaPlayerSyncResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status502BadGateway)]
@@ -49,7 +56,8 @@ public sealed class NbaPlayersController(
     /// The specified player or the player's statistics
     /// for the requested season were not found.
     /// </response>
-    /// /// Example request:
+    /// <example>
+    /// Example request:
     /// <code>
     /// GET /api/nba-players?id=3fa85f64-5717-4562-b3fc-2c963f66afa6&amp;season=2025&amp;size=Extended
     /// </code>

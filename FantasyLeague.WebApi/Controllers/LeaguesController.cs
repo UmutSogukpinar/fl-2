@@ -10,6 +10,12 @@ namespace FantasyLeague.WebApi.Controllers;
 [Route("api/leagues")]
 public sealed class LeaguesController(ILeagueService leagueService) : ControllerBase
 {
+    /// <summary>
+    /// Returns all leagues.
+    /// </summary>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>A read-only collection of leagues.</returns>
+    /// <response code="200">The leagues were retrieved successfully.</response>
     [HttpGet]
     [ProducesResponseType<IReadOnlyCollection<LeagueResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyCollection<LeagueResponse>>> GetAllAsync(
@@ -19,6 +25,15 @@ public sealed class LeaguesController(ILeagueService leagueService) : Controller
         return Ok(response);
     }
 
+
+    /// <summary>
+    /// Returns a league by identifier.
+    /// </summary>
+    /// <param name="id">The league's unique identifier.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The requested league.</returns>
+    /// <response code="200">The league was retrieved successfully.</response>
+    /// <response code="404">The specified league was not found.</response>
     [HttpGet("{id:guid}")]
     [ProducesResponseType<LeagueResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -30,6 +45,16 @@ public sealed class LeaguesController(ILeagueService leagueService) : Controller
         return Ok(response);
     }
 
+
+    /// <summary>
+    /// Creates a new league.
+    /// </summary>
+    /// <param name="request">The information required to create the league.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The newly created league.</returns>
+    /// <response code="201">The league was created successfully.</response>
+    /// <response code="400">The request data is invalid.</response>
+    /// <response code="404">The specified commissioner was not found.</response>
     [HttpPost]
     [ProducesResponseType<LeagueResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -42,6 +67,18 @@ public sealed class LeaguesController(ILeagueService leagueService) : Controller
         return CreatedAtAction(nameof(GetByIdAsync), new { id = response.Id }, response);
     }
 
+
+    /// <summary>
+    /// Updates an existing league.
+    /// </summary>
+    /// <param name="id">The league's unique identifier.</param>
+    /// <param name="request">The updated league information.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The updated league.</returns>
+    /// <response code="200">The league was updated successfully.</response>
+    /// <response code="400">The request data is invalid.</response>
+    /// <response code="404">The specified league was not found.</response>
+    /// <response code="409">The update conflicts with the current team count.</response>
     [HttpPut("{id:guid}")]
     [ProducesResponseType<LeagueResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -56,6 +93,15 @@ public sealed class LeaguesController(ILeagueService leagueService) : Controller
         return Ok(response);
     }
 
+
+    /// <summary>
+    /// Deletes a league by identifier.
+    /// </summary>
+    /// <param name="id">The league's unique identifier.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>An empty response.</returns>
+    /// <response code="204">The league was deleted successfully.</response>
+    /// <response code="404">The specified league was not found.</response>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

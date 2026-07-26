@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 
 using FantasyLeague.Application.DTOs.Requests.Leagues;
+using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Services.Leagues;
 
@@ -10,6 +12,7 @@ namespace FantasyLeague.WebApi.Controllers;
 [Route("api/leagues")]
 public sealed class LeaguesController(ILeagueService leagueService) : ControllerBase
 {
+
     /// <summary>
     /// Returns all leagues.
     /// </summary>
@@ -17,11 +20,12 @@ public sealed class LeaguesController(ILeagueService leagueService) : Controller
     /// <returns>A read-only collection of leagues.</returns>
     /// <response code="200">The leagues were retrieved successfully.</response>
     [HttpGet]
-    [ProducesResponseType<IReadOnlyCollection<LeagueResponse>>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyCollection<LeagueResponse>>> GetAllAsync(
+    [ProducesResponseType<PagedResponse<LeagueResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<LeagueResponse>>> GetAsync(
+        [FromQuery] PaginationRequest request,
         CancellationToken cancellationToken)
     {
-        var response = await leagueService.GetAllAsync(cancellationToken);
+        var response = await leagueService.GetAsync(request, cancellationToken);
         return Ok(response);
     }
 

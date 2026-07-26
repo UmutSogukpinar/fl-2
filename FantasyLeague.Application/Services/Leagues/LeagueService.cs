@@ -1,6 +1,8 @@
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Requests.Leagues;
+using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
 using FantasyLeague.Domain.Entities;
@@ -12,10 +14,18 @@ public sealed class LeagueService(
     IFantasyTeamRepository teamRepository,
     IUserRepository userRepository) : ILeagueService
 {
-    public async Task<IReadOnlyCollection<LeagueResponse>> GetAllAsync(
+    public async Task<PagedResponse<LeagueResponse>> GetAsync(
+        PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
-        return await leagueRepository.GetAllAsync(cancellationToken);
+        var (items, totalCount) = await leagueRepository.GetPagedAsync(
+            request.PageNumber, request.PageSize, cancellationToken);
+        return new PagedResponse<LeagueResponse>(
+            items,
+            request.PageNumber,
+            request.PageSize,
+            totalCount,
+            (int)Math.Ceiling(totalCount / (double)request.PageSize));
     }
 
     public async Task<LeagueResponse> GetByIdAsync(
@@ -33,6 +43,7 @@ public sealed class LeagueService(
         ValidateName(request.Name);
         ValidateSeason(request.Season);
         ValidateMaxTeams(request.MaxTeams);
+        ValidateRosterSize(request.RosterSize);
 
         _ = await userRepository.GetResponseByIdAsync(
             request.CommissionerId,
@@ -54,6 +65,7 @@ public sealed class LeagueService(
         var league = await GetTrackedLeagueOrThrowAsync(id, cancellationToken);
         ValidateName(request.Name);
         ValidateMaxTeams(request.MaxTeams);
+        ValidateRosterSize(request.RosterSize);
 
         var currentTeamCount = await teamRepository.CountByLeagueIdAsync(id, cancellationToken);
 
@@ -107,6 +119,14 @@ public sealed class LeagueService(
         if (maxTeams < 2 || maxTeams > 30)
         {
             throw new BadRequestException("MaxTeams must be between 2 and 30.");
+        }
+    }
+
+    private static void ValidateRosterSize(int rosterSize)
+    {
+        if (rosterSize < 1 || rosterSize > 30)
+        {
+            throw new BadRequestException("RosterSize must be between 1 and 30.");
         }
     }
 

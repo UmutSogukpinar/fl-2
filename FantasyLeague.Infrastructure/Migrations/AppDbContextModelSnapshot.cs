@@ -58,6 +58,37 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.ToTable("fantasy_teams", (string)null);
                 });
 
+            modelBuilder.Entity("FantasyLeague.Domain.Entities.FantasyTeamPlayer", b =>
+                {
+                    b.Property<Guid>("FantasyTeamId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("NbaPlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AcquiredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("LeagueId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Slot")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("FantasyTeamId", "NbaPlayerId");
+
+                    b.HasIndex("NbaPlayerId");
+
+                    b.HasIndex("FantasyTeamId", "LeagueId");
+
+                    b.HasIndex("LeagueId", "NbaPlayerId")
+                        .IsUnique();
+
+                    b.ToTable("fantasy_team_players", (string)null);
+                });
+
             modelBuilder.Entity("FantasyLeague.Domain.Entities.League", b =>
                 {
                     b.Property<Guid>("Id")
@@ -73,9 +104,6 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime?>("DraftDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("JoinCode")
                         .IsRequired()
@@ -109,6 +137,27 @@ namespace FantasyLeague.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("leagues", (string)null);
+                });
+
+            modelBuilder.Entity("FantasyLeague.Domain.Entities.LeagueSettings", b =>
+                {
+                    b.Property<Guid>("LeagueId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DraftDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("RosterSize")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(13);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("LeagueId");
+
+                    b.ToTable("league_settings", (string)null);
                 });
 
             modelBuilder.Entity("FantasyLeague.Domain.Entities.NbaPlayer", b =>
@@ -264,6 +313,22 @@ namespace FantasyLeague.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("FantasyLeague.Domain.Entities.FantasyTeamPlayer", b =>
+                {
+                    b.HasOne("FantasyLeague.Domain.Entities.NbaPlayer", null)
+                        .WithMany()
+                        .HasForeignKey("NbaPlayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FantasyLeague.Domain.Entities.FantasyTeam", null)
+                        .WithMany("Players")
+                        .HasForeignKey("FantasyTeamId", "LeagueId")
+                        .HasPrincipalKey("Id", "LeagueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("FantasyLeague.Domain.Entities.League", b =>
                 {
                     b.HasOne("FantasyLeague.Domain.Entities.User", null)
@@ -273,12 +338,32 @@ namespace FantasyLeague.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("FantasyLeague.Domain.Entities.LeagueSettings", b =>
+                {
+                    b.HasOne("FantasyLeague.Domain.Entities.League", null)
+                        .WithOne("Settings")
+                        .HasForeignKey("FantasyLeague.Domain.Entities.LeagueSettings", "LeagueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("FantasyLeague.Domain.Entities.PlayerStats", b =>
                 {
                     b.HasOne("FantasyLeague.Domain.Entities.NbaPlayer", null)
                         .WithMany("SeasonStats")
                         .HasForeignKey("NbaPlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FantasyLeague.Domain.Entities.FantasyTeam", b =>
+                {
+                    b.Navigation("Players");
+                });
+
+            modelBuilder.Entity("FantasyLeague.Domain.Entities.League", b =>
+                {
+                    b.Navigation("Settings")
                         .IsRequired();
                 });
 

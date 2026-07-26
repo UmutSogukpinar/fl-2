@@ -5,7 +5,7 @@ namespace FantasyLeague.Application.Common.Interfaces.Repositories;
 
 public interface ILeagueRepository
 {
-    Task<IReadOnlyCollection<LeagueResponse>> GetAllAsync(CancellationToken cancellationToken);
+    Task<(IReadOnlyCollection<LeagueResponse> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken);
     Task<LeagueResponse?> GetResponseByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<League?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken);
     Task AddAsync(League league, CancellationToken cancellationToken);

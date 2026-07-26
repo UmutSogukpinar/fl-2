@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using FantasyLeague.Application.DTOs.Requests.Users;
+using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Services.Users;
@@ -20,7 +21,7 @@ public sealed class UsersController(IUserService userService) : ControllerBase
     [HttpGet]
     [ProducesResponseType<PagedResponse<UserResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<UserResponse>>> GetAsync(
-        [FromQuery] GetUsersRequest request,
+        [FromQuery] PaginationRequest request,
         CancellationToken cancellationToken)
     {
         var response = await userService.GetAsync(request, cancellationToken);

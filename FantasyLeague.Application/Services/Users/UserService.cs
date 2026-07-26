@@ -3,6 +3,7 @@ using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Interfaces.Security;
 using FantasyLeague.Application.DTOs.Requests.Users;
+using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Common.Validation;
@@ -15,7 +16,7 @@ public sealed class UserService(
     IPasswordHasher _passwordHasher) : IUserService
 {
     public async Task<PagedResponse<UserResponse>> GetAsync(
-        GetUsersRequest request,
+        PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
         var (items, totalCount) = await _userRepository.GetPagedAsync(

@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace FantasyLeague.Application.DTOs.Requests.Users;
+namespace FantasyLeague.Application.DTOs.Requests.Common;
 
-public sealed class GetUsersRequest
+public sealed class PaginationRequest
 {
     [Range(1, int.MaxValue)]
     public int PageNumber { get; init; } = 1;

@@ -13,4 +13,5 @@ public sealed record LeagueResponse(
     DateTime? DraftDate,
     string JoinCode,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    int RosterSize = 13);

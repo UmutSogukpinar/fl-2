@@ -13,6 +13,8 @@ public sealed class FantasyTeamConfiguration : IEntityTypeConfiguration<FantasyT
 
         builder.HasKey(team => team.Id);
 
+        builder.HasAlternateKey(team => new { team.Id, team.LeagueId });
+
         builder.Property(team => team.Name)
             .HasMaxLength(100)
             .IsRequired();
@@ -32,5 +34,6 @@ public sealed class FantasyTeamConfiguration : IEntityTypeConfiguration<FantasyT
             .WithMany()
             .HasForeignKey(team => team.OwnerId)
             .OnDelete(DeleteBehavior.Restrict);
+
     }
 }

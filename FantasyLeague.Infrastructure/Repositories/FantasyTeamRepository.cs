@@ -8,15 +8,21 @@ namespace FantasyLeague.Infrastructure.Repositories;
 
 public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeamRepository
 {
-    public async Task<IReadOnlyCollection<FantasyTeamResponse>> GetByLeagueIdAsync(
+    public async Task<(IReadOnlyCollection<FantasyTeamResponse> Items, int TotalCount)> GetPagedByLeagueIdAsync(
         Guid leagueId,
+        int pageNumber,
+        int pageSize,
         CancellationToken cancellationToken
     )
     {
-        return await dbContext.Set<FantasyTeam>()
+        var query = dbContext.Set<FantasyTeam>()
             .AsNoTracking()
-            .Where(team => team.LeagueId == leagueId)
+            .Where(team => team.LeagueId == leagueId);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
             .OrderBy(team => team.Name)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .Select(team => new FantasyTeamResponse(
                 team.Id,
                 team.Name,
@@ -25,6 +31,8 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
                 team.CreatedAt,
                 team.UpdatedAt))
             .ToArrayAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 
     public Task<FantasyTeamResponse?> GetResponseByIdAsync(

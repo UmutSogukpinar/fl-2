@@ -3,6 +3,8 @@ using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Normalization;
 using FantasyLeague.Application.Common.Validation;
 using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
+using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
@@ -16,16 +18,20 @@ public sealed class FantasyTeamService(
     IUserRepository userRepository
 ) : IFantasyTeamService
 {
-    public async Task<IReadOnlyCollection<FantasyTeamResponse>> GetByLeagueIdAsync(
+    public async Task<PagedResponse<FantasyTeamResponse>> GetByLeagueIdAsync(
         Guid leagueId,
+        PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
         await GetLeagueOrThrowAsync(leagueId, cancellationToken);
-        var teams = await teamRepository.GetByLeagueIdAsync(
-            leagueId, cancellationToken
-        );
-
-        return teams;
+        var (items, totalCount) = await teamRepository.GetPagedByLeagueIdAsync(
+            leagueId, request.PageNumber, request.PageSize, cancellationToken);
+        return new PagedResponse<FantasyTeamResponse>(
+            items,
+            request.PageNumber,
+            request.PageSize,
+            totalCount,
+            (int)Math.Ceiling(totalCount / (double)request.PageSize));
     }
 
     public async Task<FantasyTeamResponse> GetByIdAsync(

@@ -1,4 +1,6 @@
 using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
+using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.Services.FantasyTeams;
 using Microsoft.AspNetCore.Mvc;
@@ -34,16 +36,17 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService) : Co
     /// </code>
     /// </example>
     [HttpGet]
-    [ProducesResponseType<IReadOnlyCollection<FantasyTeamResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResponse<FantasyTeamResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyCollection<FantasyTeamResponse>>>
+    public async Task<ActionResult<PagedResponse<FantasyTeamResponse>>>
     GetByLeagueIdAsync(
         [FromQuery] Guid leagueId,
+        [FromQuery] PaginationRequest request,
         CancellationToken cancellationToken
     )
     {
         var response = await teamService.GetByLeagueIdAsync(
-            leagueId, cancellationToken
+            leagueId, request, cancellationToken
         );
 
         return Ok(response);

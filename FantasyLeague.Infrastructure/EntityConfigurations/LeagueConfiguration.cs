@@ -31,8 +31,6 @@ public sealed class LeagueConfiguration : IEntityTypeConfiguration<League>
             .HasMaxLength(32)
             .IsRequired();
 
-        builder.Property(league => league.DraftDate);
-
         builder.Property(league => league.JoinCode)
             .HasMaxLength(8)
             .IsRequired();

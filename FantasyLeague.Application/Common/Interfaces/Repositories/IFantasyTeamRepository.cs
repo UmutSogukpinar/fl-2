@@ -5,7 +5,7 @@ namespace FantasyLeague.Application.Common.Interfaces.Repositories;
 
 public interface IFantasyTeamRepository
 {
-    Task<IReadOnlyCollection<FantasyTeamResponse>> GetByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken);
+    Task<(IReadOnlyCollection<FantasyTeamResponse> Items, int TotalCount)> GetPagedByLeagueIdAsync(Guid leagueId, int pageNumber, int pageSize, CancellationToken cancellationToken);
     Task<FantasyTeamResponse?> GetResponseByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<FantasyTeam?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<int> CountByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken);

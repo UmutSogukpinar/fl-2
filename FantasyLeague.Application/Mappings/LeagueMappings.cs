@@ -16,7 +16,11 @@ public static class LeagueMappings
         MaxTeams = request.MaxTeams,
         CommissionerId = request.CommissionerId,
         Status = LeagueStatus.Created,
-        DraftDate = request.DraftDate,
+        Settings = new LeagueSettings
+        {
+            DraftDate = request.DraftDate,
+            RosterSize = request.RosterSize
+        },
         JoinCode = Convert.ToHexString(RandomNumberGenerator.GetBytes(4))
     };
 
@@ -25,7 +29,9 @@ public static class LeagueMappings
         league.Name = request.Name.Trim();
         league.Description = NormalizeDescription(request.Description);
         league.MaxTeams = request.MaxTeams;
-        league.DraftDate = request.DraftDate;
+        league.Settings.DraftDate = request.DraftDate;
+        league.Settings.RosterSize = request.RosterSize;
+        league.Settings.UpdatedAt = DateTime.UtcNow;
         league.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -37,10 +43,11 @@ public static class LeagueMappings
         league.MaxTeams,
         league.CommissionerId,
         league.Status,
-        league.DraftDate,
+        league.Settings.DraftDate,
         league.JoinCode,
         league.CreatedAt,
-        league.UpdatedAt);
+        league.UpdatedAt,
+        league.Settings.RosterSize);
 
     private static string? NormalizeDescription(string? description) =>
         string.IsNullOrWhiteSpace(description) ? null : description.Trim();

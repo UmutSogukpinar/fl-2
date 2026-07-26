@@ -9,12 +9,17 @@ namespace FantasyLeague.Infrastructure.Repositories;
 
 public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
 {
-    public async Task<IReadOnlyCollection<LeagueResponse>> GetAllAsync(
+    public async Task<(IReadOnlyCollection<LeagueResponse> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
         CancellationToken cancellationToken)
     {
-        return await dbContext.Set<League>()
-            .AsNoTracking()
+        var query = dbContext.Set<League>().AsNoTracking();
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
             .OrderByDescending(league => league.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .Select(league => new LeagueResponse(
                 league.Id,
                 league.Name,
@@ -23,11 +28,14 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
                 league.MaxTeams,
                 league.CommissionerId,
                 league.Status,
-                league.DraftDate,
+                league.Settings.DraftDate,
                 league.JoinCode,
                 league.CreatedAt,
-                league.UpdatedAt))
+                league.UpdatedAt,
+                league.Settings.RosterSize))
             .ToArrayAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 
     public Task<LeagueResponse?> GetResponseByIdAsync(
@@ -45,16 +53,18 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
                 league.MaxTeams,
                 league.CommissionerId,
                 league.Status,
-                league.DraftDate,
+                league.Settings.DraftDate,
                 league.JoinCode,
                 league.CreatedAt,
-                league.UpdatedAt))
+                league.UpdatedAt,
+                league.Settings.RosterSize))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
     public Task<League?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         return dbContext.Set<League>()
+            .Include(league => league.Settings)
             .SingleOrDefaultAsync(league => league.Id == id, cancellationToken);
     }
 

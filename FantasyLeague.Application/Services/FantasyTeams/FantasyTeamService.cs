@@ -4,6 +4,7 @@ using FantasyLeague.Application.Common.Normalization;
 using FantasyLeague.Application.Common.Validation;
 using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
@@ -84,6 +85,53 @@ public sealed class FantasyTeamService(
         await teamRepository.AddAsync(team, cancellation);
         await teamRepository.SaveChangesAsync(cancellation);
         return team.ToResponse();
+    }
+
+    public Task<FantasyTeamResponse> AddLeagueMemberAsync(
+        Guid leagueId,
+        AddLeagueMemberRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return CreateAsync(
+            new CreateFantasyTeamRequest(request.TeamName, leagueId, request.OwnerId),
+            cancellationToken);
+    }
+
+    public async Task<FantasyTeamResponse> JoinLeagueAsync(
+        JoinLeagueRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.JoinCode))
+        {
+            throw new BadRequestException("JoinCode is required.");
+        }
+
+        var joinCode = request.JoinCode.Trim().ToUpperInvariant();
+        var league = await leagueRepository.GetResponseByJoinCodeAsync(
+            joinCode, cancellationToken)
+            ?? throw new NotFoundException("A league with the supplied join code was not found.");
+
+        return await CreateAsync(
+            new CreateFantasyTeamRequest(request.TeamName, league.Id, request.OwnerId),
+            cancellationToken);
+    }
+
+    public async Task RemoveLeagueMemberAsync(
+        Guid leagueId,
+        Guid teamId,
+        CancellationToken cancellationToken = default)
+    {
+        await GetLeagueOrThrowAsync(leagueId, cancellationToken);
+        var team = await GetTrackedTeamOrThrowAsync(teamId, cancellationToken);
+
+        if (team.LeagueId != leagueId)
+        {
+            throw new NotFoundException(
+                $"Fantasy team '{teamId}' was not found in league '{leagueId}'.");
+        }
+
+        teamRepository.Remove(team);
+        await teamRepository.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<FantasyTeamResponse> UpdateAsync(

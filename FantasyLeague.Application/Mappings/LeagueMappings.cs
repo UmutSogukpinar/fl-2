@@ -8,7 +8,10 @@ namespace FantasyLeague.Application.Mappings;
 
 public static class LeagueMappings
 {
-    public static League ToEntity(this CreateLeagueRequest request) => new()
+    public static League ToEntity(
+        this CreateLeagueRequest request,
+        DateTime? draftDateUtc,
+        string draftTimeZoneId) => new()
     {
         Name = request.Name.Trim(),
         Description = NormalizeDescription(request.Description),
@@ -18,18 +21,24 @@ public static class LeagueMappings
         Status = LeagueStatus.Created,
         Settings = new LeagueSettings
         {
-            DraftDate = request.DraftDate,
+            DraftDate = draftDateUtc,
+            DraftTimeZoneId = draftTimeZoneId,
             RosterSize = request.RosterSize
         },
         JoinCode = Convert.ToHexString(RandomNumberGenerator.GetBytes(4))
     };
 
-    public static void MapTo(this UpdateLeagueRequest request, League league)
+    public static void MapTo(
+        this UpdateLeagueRequest request,
+        League league,
+        DateTime? draftDateUtc,
+        string draftTimeZoneId)
     {
         league.Name = request.Name.Trim();
         league.Description = NormalizeDescription(request.Description);
         league.MaxTeams = request.MaxTeams;
-        league.Settings.DraftDate = request.DraftDate;
+        league.Settings.DraftDate = draftDateUtc;
+        league.Settings.DraftTimeZoneId = draftTimeZoneId;
         league.Settings.RosterSize = request.RosterSize;
         league.Settings.UpdatedAt = DateTime.UtcNow;
         league.UpdatedAt = DateTime.UtcNow;
@@ -47,7 +56,8 @@ public static class LeagueMappings
         league.JoinCode,
         league.CreatedAt,
         league.UpdatedAt,
-        league.Settings.RosterSize);
+        league.Settings.RosterSize,
+        league.Settings.DraftTimeZoneId);
 
     private static string? NormalizeDescription(string? description) =>
         string.IsNullOrWhiteSpace(description) ? null : description.Trim();

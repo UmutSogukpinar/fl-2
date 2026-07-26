@@ -25,7 +25,8 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
                 user.Username,
                 user.Email,
                 user.CreatedAt,
-                user.UpdatedAt))
+                user.UpdatedAt,
+                user.TimeZoneId))
             .ToArrayAsync(cancellationToken);
 
         return (users, totalCount);
@@ -43,7 +44,8 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
                 user.Username,
                 user.Email,
                 user.CreatedAt,
-                user.UpdatedAt))
+                user.UpdatedAt,
+                user.TimeZoneId))
             .SingleOrDefaultAsync(cancellationToken);
     }
 

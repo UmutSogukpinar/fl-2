@@ -18,6 +18,11 @@ public sealed class LeagueSettingsConfiguration : IEntityTypeConfiguration<Leagu
 
         builder.Property(settings => settings.DraftDate);
 
+        builder.Property(settings => settings.DraftTimeZoneId)
+            .HasMaxLength(100)
+            .HasDefaultValue("UTC")
+            .IsRequired();
+
         builder.HasOne<League>()
             .WithOne(league => league.Settings)
             .HasForeignKey<LeagueSettings>(settings => settings.LeagueId)

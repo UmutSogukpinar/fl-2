@@ -8,5 +8,7 @@ public class LeagueSettings
 
     public DateTime? DraftDate { get; set; }
 
+    public string DraftTimeZoneId { get; set; } = "UTC";
+
     public DateTime? UpdatedAt { get; set; }
 }

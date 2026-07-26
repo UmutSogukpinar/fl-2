@@ -20,6 +20,7 @@ public partial class AddLeagueSettings : Migration
                 LeagueId = table.Column<Guid>(type: "uuid", nullable: false),
                 RosterSize = table.Column<int>(type: "integer", nullable: false, defaultValue: 13),
                 DraftDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                DraftTimeZoneId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false, defaultValue: "UTC"),
                 UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
             },
             constraints: table =>

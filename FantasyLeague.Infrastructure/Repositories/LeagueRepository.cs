@@ -32,7 +32,8 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
                 league.JoinCode,
                 league.CreatedAt,
                 league.UpdatedAt,
-                league.Settings.RosterSize))
+                league.Settings.RosterSize,
+                league.Settings.DraftTimeZoneId))
             .ToArrayAsync(cancellationToken);
 
         return (items, totalCount);
@@ -57,7 +58,32 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
                 league.JoinCode,
                 league.CreatedAt,
                 league.UpdatedAt,
-                league.Settings.RosterSize))
+                league.Settings.RosterSize,
+                league.Settings.DraftTimeZoneId))
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<LeagueResponse?> GetResponseByJoinCodeAsync(
+        string joinCode,
+        CancellationToken cancellationToken)
+    {
+        return dbContext.Set<League>()
+            .AsNoTracking()
+            .Where(league => league.JoinCode == joinCode)
+            .Select(league => new LeagueResponse(
+                league.Id,
+                league.Name,
+                league.Description,
+                league.Season,
+                league.MaxTeams,
+                league.CommissionerId,
+                league.Status,
+                league.Settings.DraftDate,
+                league.JoinCode,
+                league.CreatedAt,
+                league.UpdatedAt,
+                league.Settings.RosterSize,
+                league.Settings.DraftTimeZoneId))
             .SingleOrDefaultAsync(cancellationToken);
     }
 

@@ -5,12 +5,16 @@ using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Services.Leagues;
+using FantasyLeague.Application.Services.FantasyTeams;
+using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 
 namespace FantasyLeague.WebApi.Controllers;
 
 [ApiController]
 [Route("api/leagues")]
-public sealed class LeaguesController(ILeagueService leagueService) : ControllerBase
+public sealed class LeaguesController(
+    ILeagueService leagueService,
+    IFantasyTeamService fantasyTeamService) : ControllerBase
 {
 
     /// <summary>
@@ -50,6 +54,83 @@ public sealed class LeaguesController(ILeagueService leagueService) : Controller
     }
 
 
+    [HttpGet("{leagueId:guid}/members")]
+    [ProducesResponseType<PagedResponse<FantasyTeamResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PagedResponse<FantasyTeamResponse>>> GetMembersAsync(
+        Guid leagueId,
+        [FromQuery] PaginationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await fantasyTeamService.GetByLeagueIdAsync(
+            leagueId, request, cancellationToken);
+
+        return Ok(response);
+    }
+
+
+    [HttpPost("{leagueId:guid}/members")]
+    [ProducesResponseType<FantasyTeamResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<FantasyTeamResponse>> AddMemberAsync(
+        Guid leagueId,
+        [FromBody] AddLeagueMemberRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await fantasyTeamService.AddLeagueMemberAsync(
+            leagueId, request, cancellationToken);
+
+        var result = CreatedAtAction(
+            nameof(FantasyTeamsController.GetByIdAsync),
+            "FantasyTeams",
+            new { id = response.Id },
+            response);
+
+        return result;
+    }
+
+
+    [HttpPost("join")]
+    [ProducesResponseType<FantasyTeamResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<FantasyTeamResponse>> JoinAsync(
+        [FromBody] JoinLeagueRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await fantasyTeamService.JoinLeagueAsync(request, cancellationToken);
+
+        var result = CreatedAtAction(
+            nameof(FantasyTeamsController.GetByIdAsync),
+            "FantasyTeams",
+            new { id = response.Id },
+            response
+        );
+
+        return result;
+    }
+
+    [HttpDelete("{leagueId:guid}/members/{teamId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveMemberAsync(
+        Guid leagueId,
+        Guid teamId,
+        CancellationToken cancellationToken)
+    {
+        await fantasyTeamService.RemoveLeagueMemberAsync(
+            leagueId,
+            teamId,
+            cancellationToken
+        );
+
+        return NoContent();
+    }
+
+
     /// <summary>
     /// Creates a new league.
     /// </summary>
@@ -68,7 +149,14 @@ public sealed class LeaguesController(ILeagueService leagueService) : Controller
         CancellationToken cancellationToken)
     {
         var response = await leagueService.CreateAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetByIdAsync), new { id = response.Id }, response);
+
+        var result = CreatedAtAction(
+            nameof(GetByIdAsync),
+            new { id = response.Id },
+            response
+        );
+
+        return result;
     }
 
 

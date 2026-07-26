@@ -14,4 +14,5 @@ public sealed record LeagueResponse(
     string JoinCode,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
-    int RosterSize = 13);
+    int RosterSize = 13,
+    string DraftTimeZoneId = "UTC");

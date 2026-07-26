@@ -1,6 +1,7 @@
 using FantasyLeague.Application.DTOs.Requests.Users;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Domain.Entities;
+using FantasyLeague.Application.Common.Time;
 
 namespace FantasyLeague.Application.Mappings;
 
@@ -10,13 +11,18 @@ public static class UserMappings
     {
         Username = NormalizeUsername(request.Username),
         Email = NormalizeEmail(request.Email),
-        Password = passwordHash
+        Password = passwordHash,
+        TimeZoneId = LocationTimeZoneResolver.Resolve(request.Location)
     };
 
     public static void MapTo(this UpdateUserRequest request, User user)
     {
         user.Username = NormalizeUsername(request.Username);
         user.Email = NormalizeEmail(request.Email);
+        if (request.Location is not null)
+        {
+            user.TimeZoneId = LocationTimeZoneResolver.Resolve(request.Location);
+        }
         user.UpdatedAt = DateTime.UtcNow;
     }
 
@@ -25,7 +31,8 @@ public static class UserMappings
         user.Username,
         user.Email,
         user.CreatedAt,
-        user.UpdatedAt);
+        user.UpdatedAt,
+        user.TimeZoneId);
 
     private static string NormalizeUsername(string username) => username.Trim();
 

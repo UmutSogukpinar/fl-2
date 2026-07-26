@@ -20,5 +20,10 @@ public sealed class UserConfiguration
 
 		builder.Property(user => user.Email)
 			.IsRequired();
+
+		builder.Property(user => user.TimeZoneId)
+			.HasMaxLength(100)
+			.HasDefaultValue("UTC")
+			.IsRequired();
     }
 }

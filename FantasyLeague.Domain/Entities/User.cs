@@ -10,6 +10,8 @@ public class User
 
     public required string Password { get; set; }
 
+    public string TimeZoneId { get; set; } = "UTC";
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }

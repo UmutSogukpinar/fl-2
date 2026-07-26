@@ -6,6 +6,7 @@ using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
 using FantasyLeague.Domain.Entities;
+using FantasyLeague.Application.Common.Time;
 
 namespace FantasyLeague.Application.Services.Leagues;
 
@@ -45,12 +46,15 @@ public sealed class LeagueService(
         ValidateMaxTeams(request.MaxTeams);
         ValidateRosterSize(request.RosterSize);
 
-        _ = await userRepository.GetResponseByIdAsync(
+        var commissioner = await userRepository.GetResponseByIdAsync(
             request.CommissionerId,
             cancellationToken)
             ?? throw new NotFoundException($"User '{request.CommissionerId}' was not found.");
 
-        var league = request.ToEntity();
+        var draftDateUtc = DateTimeUtcConverter.ConvertToUtc(
+            request.DraftDate, commissioner.TimeZoneId);
+        var league = request.ToEntity(
+            draftDateUtc, commissioner.TimeZoneId);
 
         await leagueRepository.AddAsync(league, cancellationToken);
         await leagueRepository.SaveChangesAsync(cancellationToken);
@@ -75,7 +79,15 @@ public sealed class LeagueService(
                 $"MaxTeams cannot be lower than the current team count ({currentTeamCount}).");
         }
 
-        request.MapTo(league);
+        var commissioner = await userRepository.GetResponseByIdAsync(
+            league.CommissionerId, cancellationToken)
+            ?? throw new NotFoundException(
+                $"User '{league.CommissionerId}' was not found.");
+
+        var draftDateUtc = DateTimeUtcConverter.ConvertToUtc(
+            request.DraftDate, commissioner.TimeZoneId);
+        request.MapTo(
+            league, draftDateUtc, commissioner.TimeZoneId);
 
         await leagueRepository.SaveChangesAsync(cancellationToken);
         return league.ToResponse();

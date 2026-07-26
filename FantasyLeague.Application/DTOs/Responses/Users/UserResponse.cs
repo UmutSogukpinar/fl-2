@@ -5,4 +5,5 @@ public sealed record UserResponse(
     string Username,
     string Email,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    string TimeZoneId = "UTC");

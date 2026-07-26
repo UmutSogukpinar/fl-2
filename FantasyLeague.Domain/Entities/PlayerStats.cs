@@ -36,9 +36,5 @@ public class PlayerStats
 
     public DateTime? UpdatedAt { get; set; }
 
-    // TODO: Consider whether is necessary or not
-    // Does this cause a circular reference issue when serializing to JSON?
-    // and increase tight coupling?
-    // If I need to remove it, Should I create another migration?
     public NbaPlayer? NbaPlayer { get; set; }
 }

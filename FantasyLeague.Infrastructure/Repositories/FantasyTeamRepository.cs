@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-
 using FantasyLeague.Application.Common.Interfaces;
+using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
+using Microsoft.EntityFrameworkCore;
 
 namespace FantasyLeague.Infrastructure.Repositories;
 
@@ -10,7 +10,8 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
 {
     public async Task<IReadOnlyCollection<FantasyTeam>> GetByLeagueIdAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         return await dbContext.Set<FantasyTeam>()
             .AsNoTracking()
@@ -19,37 +20,50 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
             .ToArrayAsync(cancellationToken);
     }
 
-    public Task<FantasyTeam?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
+    public Task<FantasyTeam?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken
+    )
     {
         return dbContext.Set<FantasyTeam>()
             .SingleOrDefaultAsync(team => team.Id == id, cancellationToken);
     }
 
-    public Task<int> CountByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken)
+    public Task<int> CountByLeagueIdAsync(
+        Guid leagueId,
+        CancellationToken cancellationToken
+    )
     {
         return dbContext.Set<FantasyTeam>()
             .CountAsync(team => team.LeagueId == leagueId, cancellationToken);
     }
 
-    public Task<bool> ExistsAsync(
+    public async Task<FastasyTeamConflictResult> ExistsAsync(
         Guid leagueId,
         Guid ownerId,
         string name,
         Guid? excludedTeamId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        var normalizedName = name.ToLower();
+        var conflict = await dbContext.Set<FantasyTeam>()
+            .Where(team => team.LeagueId == leagueId 
+                && team.Id == 
+            )
+            .FirstOrDefaultAsync(cancellation);
 
-        return dbContext.Set<FantasyTeam>().AnyAsync(
-            team => team.LeagueId == leagueId
-                && (!excludedTeamId.HasValue || team.Id != excludedTeamId.Value)
-                && (team.OwnerId == ownerId || team.Name.ToLower() == normalizedName),
-            cancellationToken);
+
+        return FastasyTeamConflictResult.None;
+        // return dbContext.Set<FantasyTeam>().AnyAsync(
+       // team => team.LeagueId == leagueId
+        //    && (!excludedTeamId.HasValue || team.Id != excludedTeamId.Value)
+       //     && (team.OwnerId == ownerId || team.Name.ToLower() == normalizedName),
+      //      cancellationToken);
     }
 
     public Task AddAsync(FantasyTeam team, CancellationToken cancellationToken)
     {
-        return dbContext.Set<FantasyTeam>().AddAsync(team, cancellationToken).AsTask();
+        return dbContext.Set<FantasyTeam>()
+            .AddAsync(team, cancellationToken).AsTask();
     }
 
     public void Remove(FantasyTeam team)

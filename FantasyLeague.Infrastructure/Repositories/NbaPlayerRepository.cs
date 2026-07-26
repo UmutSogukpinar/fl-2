@@ -12,8 +12,8 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
 {
     public async Task<IReadOnlyDictionary<int, NbaPlayer>> GetByNbaIdsAsync(
         IReadOnlyCollection<int> nbaIds,
-        CancellationToken cancellationToken)
-    {
+        CancellationToken cancellationToken
+    ){
         return await dbContext.Set<NbaPlayer>()
             .Where(player => nbaIds.Contains(player.NbaId))
             .ToDictionaryAsync(player => player.NbaId, cancellationToken);
@@ -21,18 +21,23 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
 
     public Task AddRangeAsync(
         IEnumerable<NbaPlayer> players,
-        CancellationToken cancellationToken)
-    {
-        return dbContext.Set<NbaPlayer>().AddRangeAsync(players, cancellationToken);
+        CancellationToken cancellationToken
+    ){
+        return dbContext.Set<NbaPlayer>().AddRangeAsync(
+            players, cancellationToken
+        );
     }
 
     public async Task<IReadOnlyDictionary<Guid, PlayerStats>> GetPlayerStatsAsync(
         IReadOnlyCollection<Guid> nbaPlayerIds,
         int season,
-        CancellationToken cancellationToken)
-    {
+        CancellationToken cancellationToken
+    ){
         return await dbContext.Set<PlayerStats>()
-            .Where(stats => stats.Season == season && nbaPlayerIds.Contains(stats.NbaPlayerId))
+            .Where(
+                stats => stats.Season == season && 
+                nbaPlayerIds.Contains(stats.NbaPlayerId)
+            )
             .ToDictionaryAsync(stats => stats.NbaPlayerId, cancellationToken);
     }
 
@@ -40,7 +45,9 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
         IEnumerable<PlayerStats> playerStats,
         CancellationToken cancellationToken)
     {
-        return dbContext.Set<PlayerStats>().AddRangeAsync(playerStats, cancellationToken);
+        return dbContext.Set<PlayerStats>().AddRangeAsync(
+            playerStats, cancellationToken
+        );
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
@@ -48,25 +55,28 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<NbaPlayer?> GetByIdAsync(
+    public Task<NbaPlayer?> GetByIdAndSeasonAsync(
         Guid id,
+        int season, 
         PlayerResponseSize size,
         CancellationToken cancellationToken
-    )
-    {
+    ){
         return size switch
         {
-            PlayerResponseSize.Basic => GetByIdBasicAsync(
+            PlayerResponseSize.Basic => GetByIdAndSeasonBasicAsync(
                                             id,
-                                            cancellationToken),
+                                            cancellationToken
+                                        ),
             
-            PlayerResponseSize.Detailed => GetByIdDetailedAsync(
+            PlayerResponseSize.Detailed => GetByIdAndSeasonDetailedAsync(
                                                 id,
                                                 cancellationToken),
 
-            PlayerResponseSize.Extended => GetByIdExtendedAsync(
+            PlayerResponseSize.Extended => GetByIdAndSeasonExtendedAsync(
                                                 id,
-                                                cancellationToken),
+                                                season,
+                                                cancellationToken
+                                           ),
 
             _ => throw new ArgumentOutOfRangeException(
                     nameof(size), size, "Invalid player response size."),
@@ -76,10 +86,10 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
 
     // ===================== Utils of GetByIdAsync() =====================
 
-    private async Task<NbaPlayer?> GetByIdBasicAsync(
+    private async Task<NbaPlayer?> GetByIdAndSeasonBasicAsync(
        Guid id,
-       CancellationToken cancelllation)
-    {
+       CancellationToken cancelllation
+    ){
         var player = await dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(p => p.Id == id)
@@ -95,13 +105,13 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
                 player => player.Id == id,
                 cancelllation);
 
-        return GetPlayerOrThrowAsync(ref id, ref player, cancelllation);
+        return GetPlayerOrThrowAsync(id, player, cancelllation);
     }
 
-    private async Task<NbaPlayer?> GetByIdDetailedAsync(
+    private async Task<NbaPlayer?> GetByIdAndSeasonDetailedAsync(
         Guid id,
-        CancellationToken cancellation)
-    {
+        CancellationToken cancellation
+    ){
         var player = await dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(p => p.Id == id)
@@ -126,10 +136,11 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
         return GetPlayerOrThrowAsync(ref id, ref player, cancellation);
     }
 
-    private async Task<NbaPlayer?> GetByIdExtendedAsync(
-    Guid id,
-    CancellationToken cancellation)
-    {
+    private async Task<NbaPlayer?> GetByIdAndSeasonExtendedAsync(
+        Guid id,
+        int season,
+        CancellationToken cancellation
+    ){
         var player = await dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(player => player.Id == id)
@@ -148,6 +159,7 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
                 UpdatedAt = player.UpdatedAt,
 
                 SeasonStats = player.SeasonStats
+                    .Where(stat => stat.Season == season)
                     .Select(stats => new PlayerStats
                     {
                         Id = stats.Id,
@@ -164,12 +176,12 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
             })
             .SingleOrDefaultAsync(cancellation);
 
-        return GetPlayerOrThrowAsync(ref id, ref player, cancellation);
+        return GetPlayerOrThrowAsync(id, player, cancellation);
     }
 
-    private NbaPlayer GetPlayerOrThrowAsync(
-        ref Guid id,
-        ref NbaPlayer? player,
+    private static NbaPlayer GetPlayerOrThrowAsync(
+        Guid id,
+        NbaPlayer? player,
         CancellationToken cancellationToken)
     {
         return player ??

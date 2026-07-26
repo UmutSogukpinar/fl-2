@@ -24,8 +24,9 @@ public interface INbaPlayerRepository
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
 
-    Task<NbaPlayer?> GetByIdAsync(
+    Task<NbaPlayer?> GetByIdAndSeasonAsync(
         Guid id,
+        int season,
         PlayerResponseSize size,
         CancellationToken cancellationToken
     );

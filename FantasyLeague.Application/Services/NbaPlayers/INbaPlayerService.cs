@@ -14,8 +14,9 @@ public interface INbaPlayerService
     // <returns>A task that represents the asynchronous operation
     // and returns the player information based on the provided identifier.
     // </returns>
-    Task<IPlayerResponse> GetNbaPlayerAsync(
+    Task<IPlayerResponse> GetNbaPlayerByIdAndYearAsync(
         Guid id,
+        int season,
         PlayerResponseSize responseSize,
         CancellationToken cancellationToken
     );

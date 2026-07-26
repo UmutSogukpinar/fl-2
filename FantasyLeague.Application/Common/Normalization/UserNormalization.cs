@@ -7,27 +7,37 @@ namespace FantasyLeague.Application.Common.Normalization
 {
     internal class UserNormalization
     {
-
-        public static void NormalizeCreateUserRequest(CreateUserRequest request)
+        public static void NormalizeCreateUserRequest(
+            ref CreateUserRequest request
+        )
         {
-            NormalizeEmail(request.Email);  
-            NormalizeUsername(request.Username);
+            request = request with
+            {
+                Username = request.Username,
+                Email = request.Email
+            };
         }
 
-        public static void NormalizeUpdateUserRequest(UpdateUserRequest request)
+        public static void NormalizeUpdateUserRequest(
+            ref UpdateUserRequest request
+        )
         {
-            NormalizeEmail(request.Email);
-            NormalizeUsername(request.Username);
+            request = request with
+            {
+                Username = NormalizeUsername(request.Username),
+                Email = NormalizeEmail(request.Email)
+            };
         }
 
-        private static void NormalizeEmail(string? email)
+        // ================== Utils ==================
+        private static string NormalizeEmail(string? email)
         {
-            email = email?.ToLower();
+            return email?.Trim().ToLowerInvariant()!;
         }
 
-        private static void NormalizeUsername(string? username)
+        private static string NormalizeUsername(string? username)
         {
-            username = username?.ToLower();
+            return username?.ToLower()!;
         }
     }
 }

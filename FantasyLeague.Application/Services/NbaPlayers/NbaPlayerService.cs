@@ -10,27 +10,38 @@ namespace FantasyLeague.Application.Services.NbaPlayers;
 public sealed class NbaPlayerService(INbaPlayerRepository _nbaPlayerRepository) 
     : INbaPlayerService
 {
-    public async Task<IPlayerResponse> GetNbaPlayerAsync(
-        Guid id, PlayerResponseSize size, CancellationToken cancellation
+    public async Task<IPlayerResponse> GetNbaPlayerByIdAndYearAsync(
+        Guid id,
+        int season,
+        PlayerResponseSize size,
+        CancellationToken cancellation
     ){
         return size switch
         {
-            PlayerResponseSize.Basic => await GetBasicPlayerOrThrowAsync(id, cancellation),
-            PlayerResponseSize.Detailed => await GetDetailedPlayerOrThrowAsync(id, cancellation),
-            PlayerResponseSize.Extended => await GetExtendedPlayerOrThrowAsync(id, cancellation),
-            _ => throw new ArgumentOutOfRangeException(nameof(size), size, "Invalid player response size.")
+            PlayerResponseSize.Basic => await GetBasicPlayerOrThrowAsync(
+                id, season, cancellation
+            ),
+            PlayerResponseSize.Detailed => await GetDetailedPlayerOrThrowAsync(
+                id, season, cancellation
+            ),
+            PlayerResponseSize.Extended => await GetExtendedPlayerOrThrowAsync(
+                id, season, cancellation
+            ),
+            _ => throw new ArgumentOutOfRangeException(
+                    nameof(size), size, "Invalid player response size."
+                 )
         };
     }
 
 
     // ================= Utils of GetNbaPlayerAsync() =================
     private async Task<NbaPlayerBasicResponse> GetBasicPlayerOrThrowAsync(
-        Guid id, 
+        Guid id,
+        int season,
         CancellationToken cancellationToken
     ){
-        var player = await _nbaPlayerRepository.GetByIdAsync(
-            id, PlayerResponseSize.Basic,
-            cancellationToken)
+        var player = await _nbaPlayerRepository.GetByIdAndSeasonAsync(
+            id, season, PlayerResponseSize.Basic, cancellationToken)
             ?? throw new NotFoundException($"NBA player '{id}' was not found.");
 
         return NbaPlayerMappings.ToBasicResponse(player);
@@ -38,12 +49,12 @@ public sealed class NbaPlayerService(INbaPlayerRepository _nbaPlayerRepository)
 
     private async Task<NbaPlayerDetailedResponse> GetDetailedPlayerOrThrowAsync(
         Guid id,
+        int season,
         CancellationToken cancellationToken
     )
     {
-        var player = await _nbaPlayerRepository.GetByIdAsync(
-            id, PlayerResponseSize.Detailed,
-            cancellationToken)
+        var player = await _nbaPlayerRepository.GetByIdAndSeasonAsync(
+            id, season, PlayerResponseSize.Detailed, cancellationToken)
             ?? throw new NotFoundException($"NBA player '{id}' was not found.");
 
         return NbaPlayerMappings.ToDetailedResponse(player);
@@ -51,13 +62,15 @@ public sealed class NbaPlayerService(INbaPlayerRepository _nbaPlayerRepository)
 
     private async Task<NbaPlayerExtendedResponse> GetExtendedPlayerOrThrowAsync(
         Guid id,
+        int season,
         CancellationToken cancellationToken
     )
     {
-        var player = await _nbaPlayerRepository.GetByIdAsync(
-            id, PlayerResponseSize.Extended,
-            cancellationToken)
-            ?? throw new NotFoundException($"NBA player '{id}' was not found.");
+        var player = await _nbaPlayerRepository.GetByIdAndSeasonAsync(
+            id, season, PlayerResponseSize.Extended, cancellationToken
+            ) ?? throw new NotFoundException(
+                    $"NBA player '{id}' was not found."
+                 );
 
         return NbaPlayerMappings.ToExtendedResponse(player);
     }

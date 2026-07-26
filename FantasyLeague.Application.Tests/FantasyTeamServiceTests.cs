@@ -2,6 +2,7 @@ using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Users;
@@ -220,6 +221,59 @@ public sealed class FantasyTeamServiceTests
             LeagueId = league.Id,
             OwnerId = owner.Id
         };
+    }
+
+    [Fact]
+    public async Task JoinLeagueAsync_ResolvesCodeAndCreatesTeam()
+    {
+        var league = CreateLeague();
+        league.JoinCode = "ABC12345";
+        var owner = CreateUser("owner");
+        SetupLeague(league);
+        _leagueRepository
+            .Setup(repository => repository.GetResponseByJoinCodeAsync(
+                "ABC12345", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateLeagueResponse(league));
+        _userRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                owner.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUserResponse(owner));
+        _teamRepository
+            .Setup(repository => repository.CountByLeagueIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+        _teamRepository
+            .Setup(repository => repository.ExistsAsync(
+                league.Id, owner.Id, "new team", null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _teamRepository
+            .Setup(repository => repository.AddAsync(
+                It.IsAny<FantasyTeam>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await _service.JoinLeagueAsync(
+            new JoinLeagueRequest("  abc12345  ", "New Team", owner.Id));
+
+        Assert.Equal(league.Id, response.LeagueId);
+        Assert.Equal(owner.Id, response.OwnerId);
+        Assert.Equal("new team", response.Name);
+    }
+
+    [Fact]
+    public async Task RemoveLeagueMemberAsync_WhenTeamBelongsToAnotherLeague_ThrowsNotFound()
+    {
+        var league = CreateLeague();
+        var otherLeague = CreateLeague();
+        var team = CreateTeam(otherLeague);
+        SetupLeague(league);
+        _teamRepository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                team.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(team);
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.RemoveLeagueMemberAsync(league.Id, team.Id));
+        _teamRepository.Verify(repository => repository.Remove(team), Times.Never);
     }
 
     private static FantasyTeamResponse CreateTeamResponse(FantasyTeam team) => new(

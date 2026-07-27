@@ -15,6 +15,7 @@ public sealed class LeagueServiceTests
 {
     private readonly Mock<ILeagueRepository> _leagueRepository = new();
     private readonly Mock<IFantasyTeamRepository> _teamRepository = new();
+    private readonly Mock<ILeagueSetupRepository> _leagueSetupRepository = new();
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly LeagueService _service;
 
@@ -23,6 +24,7 @@ public sealed class LeagueServiceTests
         _service = new LeagueService(
             _leagueRepository.Object,
             _teamRepository.Object,
+            _leagueSetupRepository.Object,
             _userRepository.Object);
     }
 
@@ -83,7 +85,8 @@ public sealed class LeagueServiceTests
     [Fact]
     public async Task CreateAsync_WhenCommissionerDoesNotExist_ThrowsNotFoundException()
     {
-        var request = new CreateLeagueRequest("League", null, 2026, 10, Guid.NewGuid());
+        var request = new CreateLeagueRequest(
+            "League", null, 2026, 10, Guid.NewGuid(), DateTime.UtcNow.AddDays(1));
 
         _userRepository
             .Setup(repository => repository.GetResponseByIdAsync(
@@ -109,7 +112,8 @@ public sealed class LeagueServiceTests
                 league.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(8);
 
-        var request = new UpdateLeagueRequest("Updated", null, 7);
+        var request = new UpdateLeagueRequest(
+            "Updated", null, 7, DateTime.UtcNow.AddDays(1));
 
         await Assert.ThrowsAsync<ConflictException>(
             () => _service.UpdateAsync(league.Id, request));
@@ -154,6 +158,20 @@ public sealed class LeagueServiceTests
             MaxTeams = 10,
             CommissionerId = commissioner.Id
         };
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenDraftDateIsMissing_ThrowsBadRequestException()
+    {
+        var request = new CreateLeagueRequest(
+            "League", null, 2026, 10, Guid.NewGuid(), default);
+
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.CreateAsync(request));
+        _leagueRepository.Verify(
+            repository => repository.AddAsync(
+                It.IsAny<League>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     private static LeagueResponse CreateLeagueResponse(League league) => new(

@@ -13,6 +13,7 @@ namespace FantasyLeague.Application.Services.Leagues;
 public sealed class LeagueService(
     ILeagueRepository leagueRepository,
     IFantasyTeamRepository teamRepository,
+    ILeagueSetupRepository leagueSetupRepository,
     IUserRepository userRepository) : ILeagueService
 {
     public async Task<PagedResponse<LeagueResponse>> GetAsync(
@@ -45,6 +46,7 @@ public sealed class LeagueService(
         ValidateSeason(request.Season);
         ValidateMaxTeams(request.MaxTeams);
         ValidateRosterSize(request.RosterSize);
+        ValidateDraftDateProvided(request.DraftDate);
 
         var commissioner = await userRepository.GetResponseByIdAsync(
             request.CommissionerId,
@@ -53,6 +55,7 @@ public sealed class LeagueService(
 
         var draftDateUtc = DateTimeUtcConverter.ConvertToUtc(
             request.DraftDate, commissioner.TimeZoneId);
+        ValidateFutureDraftDate(draftDateUtc!.Value);
         var league = request.ToEntity(
             draftDateUtc, commissioner.TimeZoneId);
 
@@ -70,6 +73,7 @@ public sealed class LeagueService(
         ValidateName(request.Name);
         ValidateMaxTeams(request.MaxTeams);
         ValidateRosterSize(request.RosterSize);
+        ValidateDraftDateProvided(request.DraftDate);
 
         var currentTeamCount = await teamRepository.CountByLeagueIdAsync(id, cancellationToken);
 
@@ -86,6 +90,7 @@ public sealed class LeagueService(
 
         var draftDateUtc = DateTimeUtcConverter.ConvertToUtc(
             request.DraftDate, commissioner.TimeZoneId);
+        ValidateFutureDraftDate(draftDateUtc!.Value);
         request.MapTo(
             league, draftDateUtc, commissioner.TimeZoneId);
 
@@ -134,11 +139,45 @@ public sealed class LeagueService(
         }
     }
 
+    public async Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await leagueRepository.GetResponseByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException($"League '{id}' was not found.");
+        return await leagueSetupRepository.GetFixturesAsync(id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        _ = await leagueRepository.GetResponseByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException($"League '{id}' was not found.");
+        return await leagueSetupRepository.GetDraftOrderAsync(id, cancellationToken);
+    }
+
     private static void ValidateRosterSize(int rosterSize)
     {
         if (rosterSize < 1 || rosterSize > 30)
         {
             throw new BadRequestException("RosterSize must be between 1 and 30.");
+        }
+    }
+
+    private static void ValidateDraftDateProvided(DateTime draftDate)
+    {
+        if (draftDate == default)
+        {
+            throw new BadRequestException("DraftDate is required.");
+        }
+    }
+
+    private static void ValidateFutureDraftDate(DateTime draftDateUtc)
+    {
+        if (draftDateUtc <= DateTime.UtcNow)
+        {
+            throw new BadRequestException("DraftDate must be in the future.");
         }
     }
 

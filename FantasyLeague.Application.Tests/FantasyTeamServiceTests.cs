@@ -16,6 +16,7 @@ public sealed class FantasyTeamServiceTests
 {
     private readonly Mock<IFantasyTeamRepository> _teamRepository = new();
     private readonly Mock<ILeagueRepository> _leagueRepository = new();
+    private readonly Mock<ILeagueSetupRepository> _leagueSetupRepository = new();
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly FantasyTeamService _service;
 
@@ -24,6 +25,7 @@ public sealed class FantasyTeamServiceTests
         _service = new FantasyTeamService(
             _teamRepository.Object,
             _leagueRepository.Object,
+            _leagueSetupRepository.Object,
             _userRepository.Object);
     }
 
@@ -221,6 +223,58 @@ public sealed class FantasyTeamServiceTests
             LeagueId = league.Id,
             OwnerId = owner.Id
         };
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenLastTeamJoins_GeneratesFixturesAndSnakeDraftOrder()
+    {
+        var league = CreateLeague(maxTeams: 4);
+        var owner = CreateUser("last-owner");
+        var existingTeamIds = Enumerable.Range(0, 3).Select(_ => Guid.NewGuid()).ToArray();
+        SetupLeague(league);
+        _userRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                owner.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateUserResponse(owner));
+        _teamRepository
+            .Setup(repository => repository.CountByLeagueIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(3);
+        _teamRepository
+            .Setup(repository => repository.GetIdsByLeagueIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingTeamIds);
+        _teamRepository
+            .Setup(repository => repository.AddAsync(
+                It.IsAny<FantasyTeam>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        IReadOnlyCollection<LeagueFixture>? fixtures = null;
+        IReadOnlyCollection<DraftPickOrder>? draftOrder = null;
+        _leagueSetupRepository
+            .Setup(repository => repository.AddAsync(
+                It.IsAny<IReadOnlyCollection<LeagueFixture>>(),
+                It.IsAny<IReadOnlyCollection<DraftPickOrder>>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<IReadOnlyCollection<LeagueFixture>, IReadOnlyCollection<DraftPickOrder>, CancellationToken>(
+                (createdFixtures, createdDraftOrder, _) =>
+                {
+                    fixtures = createdFixtures;
+                    draftOrder = createdDraftOrder;
+                })
+            .Returns(Task.CompletedTask);
+
+        await _service.CreateAsync(
+            new CreateFantasyTeamRequest("Final Team", league.Id, owner.Id),
+            CancellationToken.None);
+
+        Assert.NotNull(fixtures);
+        Assert.Equal(12, fixtures.Count);
+        Assert.NotNull(draftOrder);
+        Assert.Equal(league.Settings.RosterSize * league.MaxTeams, draftOrder.Count);
+        var firstRound = draftOrder.Where(pick => pick.Round == 1).Select(pick => pick.TeamId);
+        var secondRound = draftOrder.Where(pick => pick.Round == 2).Select(pick => pick.TeamId);
+        Assert.Equal(firstRound.Reverse(), secondRound);
     }
 
     [Fact]

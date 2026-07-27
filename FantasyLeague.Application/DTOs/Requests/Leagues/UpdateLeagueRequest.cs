@@ -4,5 +4,6 @@ public sealed record UpdateLeagueRequest(
     string Name,
     string? Description,
     int MaxTeams,
-    DateTime? DraftDate = null,
-    int RosterSize = 13);
+    DateTime DraftDate,
+    int RosterSize = 13
+);

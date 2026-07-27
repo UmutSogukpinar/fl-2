@@ -24,6 +24,5 @@ public class NbaPlayer
 
     public DateTime? UpdatedAt { get; set; }
 
-    public ICollection<PlayerStats> SeasonStats { get; set; } =
-        new List<PlayerStats>();
+    public ICollection<PlayerStats> SeasonStats { get; set; } = [] ;
 }

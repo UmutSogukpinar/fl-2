@@ -4,6 +4,7 @@ using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
+using FantasyLeague.Domain.Enums;
 
 namespace FantasyLeague.Infrastructure.Repositories;
 
@@ -92,6 +93,20 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
         return dbContext.Set<League>()
             .Include(league => league.Settings)
             .SingleOrDefaultAsync(league => league.Id == id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<League>> GetDueForDraftAsync(
+        DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Set<League>()
+            .Include(league => league.Settings)
+            .Where(league =>
+                league.Settings.DraftDate <= utcNow
+                && league.Status != LeagueStatus.Drafting
+                && league.Status != LeagueStatus.Active
+                && league.Status != LeagueStatus.Completed)
+            .ToListAsync(cancellationToken);
     }
 
     public Task AddAsync(League league, CancellationToken cancellationToken)

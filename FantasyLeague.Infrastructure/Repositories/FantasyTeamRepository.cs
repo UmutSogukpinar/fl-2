@@ -71,6 +71,17 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
             .CountAsync(team => team.LeagueId == leagueId, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Guid>> GetIdsByLeagueIdAsync(
+        Guid leagueId,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Set<FantasyTeam>()
+            .AsNoTracking()
+            .Where(team => team.LeagueId == leagueId)
+            .Select(team => team.Id)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<bool> ExistsAsync(
         Guid leagueId,
         Guid ownerId,

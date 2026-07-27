@@ -3,6 +3,7 @@ using System;
 using FantasyLeague.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FantasyLeague.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260727212216_AddLeagueFixturesAndDraftOrder")]
+    partial class AddLeagueFixturesAndDraftOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,15 +34,8 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.Property<Guid>("LeagueId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("NbaPlayerId")
-                        .IsConcurrencyToken()
-                        .HasColumnType("uuid");
-
                     b.Property<int>("OverallPick")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime?>("PickedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("PositionInRound")
                         .HasColumnType("integer");
@@ -51,12 +47,6 @@ namespace FantasyLeague.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("NbaPlayerId");
-
-                    b.HasIndex("LeagueId", "NbaPlayerId")
-                        .IsUnique()
-                        .HasFilter("\"NbaPlayerId\" IS NOT NULL");
 
                     b.HasIndex("LeagueId", "OverallPick")
                         .IsUnique();
@@ -393,11 +383,6 @@ namespace FantasyLeague.Infrastructure.Migrations
                         .HasForeignKey("LeagueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("FantasyLeague.Domain.Entities.NbaPlayer", null)
-                        .WithMany()
-                        .HasForeignKey("NbaPlayerId")
-                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("FantasyLeague.Domain.Entities.FantasyTeam", null)
                         .WithMany()

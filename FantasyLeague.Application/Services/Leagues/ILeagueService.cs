@@ -12,4 +12,6 @@ public interface ILeagueService
     Task<LeagueResponse> CreateAsync(CreateLeagueRequest request, CancellationToken cancellationToken = default);
     Task<LeagueResponse> UpdateAsync(Guid id, UpdateLeagueRequest request, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(Guid id, CancellationToken cancellationToken = default);
 }

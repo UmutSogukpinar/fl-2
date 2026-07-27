@@ -10,12 +10,15 @@ using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
 using FantasyLeague.Domain.Entities;
+using FantasyLeague.Application.Services.Leagues;
+using FantasyLeague.Domain.Enums;
 
 namespace FantasyLeague.Application.Services.FantasyTeams;
 
 public sealed class FantasyTeamService(
     IFantasyTeamRepository teamRepository,
     ILeagueRepository leagueRepository,
+    ILeagueSetupRepository leagueSetupRepository,
     IUserRepository userRepository
 ) : IFantasyTeamService
 {
@@ -55,6 +58,10 @@ public sealed class FantasyTeamService(
             request.LeagueId,
             cancellation
         );
+        if (league.Status is LeagueStatus.Drafting or LeagueStatus.Active or LeagueStatus.Completed)
+        {
+            throw new ConflictException("The league is no longer accepting members.");
+        }
         _ = await userRepository.GetResponseByIdAsync(
                 request.OwnerId,
                 cancellation
@@ -83,6 +90,22 @@ public sealed class FantasyTeamService(
         var team = request.ToEntity();
 
         await teamRepository.AddAsync(team, cancellation);
+
+        if (teamCount + 1 == league.MaxTeams
+            && !await leagueSetupRepository.ExistsAsync(league.Id, cancellation))
+        {
+            var existingTeamIds = await teamRepository.GetIdsByLeagueIdAsync(
+                league.Id, cancellation);
+            var randomOrder = LeagueSetupGenerator.CreateRandomTeamOrder(
+                existingTeamIds.Append(team.Id));
+            var fixtures = LeagueSetupGenerator.CreateDoubleRoundRobinFixtures(
+                league.Id, randomOrder);
+            var draftOrder = LeagueSetupGenerator.CreateSnakeDraftOrder(
+                league.Id, randomOrder, league.RosterSize);
+
+            await leagueSetupRepository.AddAsync(fixtures, draftOrder, cancellation);
+        }
+
         await teamRepository.SaveChangesAsync(cancellation);
         return team.ToResponse();
     }
@@ -122,6 +145,7 @@ public sealed class FantasyTeamService(
         CancellationToken cancellationToken = default)
     {
         await GetLeagueOrThrowAsync(leagueId, cancellationToken);
+        await EnsureRegistrationIsOpenAsync(leagueId, cancellationToken);
         var team = await GetTrackedTeamOrThrowAsync(teamId, cancellationToken);
 
         if (team.LeagueId != leagueId)
@@ -164,8 +188,20 @@ public sealed class FantasyTeamService(
     )
     {
         var team = await GetTrackedTeamOrThrowAsync(id, cancellation);
+        await EnsureRegistrationIsOpenAsync(team.LeagueId, cancellation);
         teamRepository.Remove(team);
         await teamRepository.SaveChangesAsync(cancellation);
+    }
+
+    private async Task EnsureRegistrationIsOpenAsync(
+        Guid leagueId,
+        CancellationToken cancellationToken)
+    {
+        if (await leagueSetupRepository.ExistsAsync(leagueId, cancellationToken))
+        {
+            throw new ConflictException(
+                "League membership cannot change after fixtures and draft order are generated.");
+        }
     }
 
     private async Task EnsureUniqueAsync(

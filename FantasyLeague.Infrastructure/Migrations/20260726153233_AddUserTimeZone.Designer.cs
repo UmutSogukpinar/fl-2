@@ -75,11 +75,6 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.Property<Guid>("LeagueId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Slot")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
                     b.HasKey("FantasyTeamId", "NbaPlayerId");
 
                     b.HasIndex("NbaPlayerId");

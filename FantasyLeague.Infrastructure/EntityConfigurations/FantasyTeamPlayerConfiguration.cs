@@ -11,10 +11,6 @@ public sealed class FantasyTeamPlayerConfiguration : IEntityTypeConfiguration<Fa
         builder.ToTable("fantasy_team_players");
         builder.HasKey(player => new { player.FantasyTeamId, player.NbaPlayerId });
 
-        builder.Property(player => player.Slot)
-            .HasConversion<string>()
-            .HasMaxLength(32)
-            .IsRequired();
         builder.Property(player => player.AcquiredAt).IsRequired();
 
         builder.HasIndex(player => new { player.LeagueId, player.NbaPlayerId })

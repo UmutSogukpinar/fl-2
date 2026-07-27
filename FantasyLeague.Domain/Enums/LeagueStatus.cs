@@ -4,7 +4,7 @@ public enum LeagueStatus
 {
     Created,
     RegistrationOpen,
-    DraftScheduled,
+    DraftDelayed,
     Drafting,
     Active,
     Completed

@@ -11,8 +11,11 @@ using FantasyLeague.Application.Services.NbaPlayers;
 using FantasyLeague.Application.Services.FantasyTeams;
 using FantasyLeague.Application.Services.Leagues;
 using FantasyLeague.Application.Services.Users;
+using FantasyLeague.Application.Services.Drafts;
 using FantasyLeague.WebApi.Configuration;
 using FantasyLeague.WebApi.ExceptionHandlers;
+using FantasyLeague.WebApi.Hubs;
+using FantasyLeague.WebApi.BackgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +30,7 @@ builder.Configuration.AddEnvironmentVariables();
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -37,6 +41,10 @@ builder.Services.AddScoped<INbaPlayerSyncService, NbaPlayerSyncService>();
 builder.Services.AddScoped<INbaPlayerRepository, NbaPlayerRepository>();
 builder.Services.AddScoped<ILeagueService, LeagueService>();
 builder.Services.AddScoped<ILeagueRepository, LeagueRepository>();
+builder.Services.AddScoped<ILeagueSetupRepository, LeagueSetupRepository>();
+builder.Services.AddScoped<IDraftRepository, DraftRepository>();
+builder.Services.AddScoped<IDraftService, DraftService>();
+builder.Services.AddHostedService<DraftSchedulerService>();
 builder.Services.AddScoped<IFantasyTeamService, FantasyTeamService>();
 builder.Services.AddScoped<IFantasyTeamRepository, FantasyTeamRepository>();
 builder.Services.Configure<ApiSportsOptions>(
@@ -75,6 +83,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<FantasyLeagueHub>("/hubs/fantasy");
 
 app.UseRouting();
 app.MapGet("/health", () => "Fantasy League API is running!");

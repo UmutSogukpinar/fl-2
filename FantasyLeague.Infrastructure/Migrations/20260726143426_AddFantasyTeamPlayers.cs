@@ -25,7 +25,6 @@ public partial class AddFantasyTeamPlayers : Migration
                 FantasyTeamId = table.Column<Guid>(type: "uuid", nullable: false),
                 NbaPlayerId = table.Column<Guid>(type: "uuid", nullable: false),
                 LeagueId = table.Column<Guid>(type: "uuid", nullable: false),
-                Slot = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                 AcquiredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
             },
             constraints: table =>

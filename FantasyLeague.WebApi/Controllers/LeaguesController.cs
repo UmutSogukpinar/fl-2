@@ -16,12 +16,32 @@ public sealed class LeaguesController(
     ILeagueService leagueService,
     IFantasyTeamService fantasyTeamService) : ControllerBase
 {
+    [HttpGet("{id:guid}/fixtures")]
+    [ProducesResponseType<IReadOnlyList<LeagueFixtureResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<LeagueFixtureResponse>>> GetFixturesAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await leagueService.GetFixturesAsync(id, cancellationToken));
+    }
+
+    [HttpGet("{id:guid}/draft-order")]
+    [ProducesResponseType<IReadOnlyList<DraftPickOrderResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<IReadOnlyList<DraftPickOrderResponse>>> GetDraftOrderAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await leagueService.GetDraftOrderAsync(id, cancellationToken));
+    }
 
     /// <summary>
-    /// Returns all leagues.
+    /// Returns a paginated collection of leagues.
     /// </summary>
+    /// <param name="request">Pagination options.</param>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
-    /// <returns>A read-only collection of leagues.</returns>
+    /// <returns>A paginated collection of leagues.</returns>
     /// <response code="200">The leagues were retrieved successfully.</response>
     [HttpGet]
     [ProducesResponseType<PagedResponse<LeagueResponse>>(StatusCodes.Status200OK)]
@@ -54,6 +74,15 @@ public sealed class LeaguesController(
     }
 
 
+    /// <summary>
+    /// Returns the fantasy teams that represent members of a league.
+    /// </summary>
+    /// <param name="leagueId">The league's unique identifier.</param>
+    /// <param name="request">Pagination options.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>A paginated collection of league members.</returns>
+    /// <response code="200">The league members were retrieved successfully.</response>
+    /// <response code="404">The specified league was not found.</response>
     [HttpGet("{leagueId:guid}/members")]
     [ProducesResponseType<PagedResponse<FantasyTeamResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -69,6 +98,17 @@ public sealed class LeaguesController(
     }
 
 
+    /// <summary>
+    /// Adds a fantasy team as a member of a league.
+    /// </summary>
+    /// <param name="leagueId">The league's unique identifier.</param>
+    /// <param name="request">The team name and owner used to create the membership.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The fantasy team created for the league member.</returns>
+    /// <response code="201">The member was added successfully.</response>
+    /// <response code="400">The request data is invalid.</response>
+    /// <response code="404">The league or owner was not found.</response>
+    /// <response code="409">The league is full or the owner or team name is already in use.</response>
     [HttpPost("{leagueId:guid}/members")]
     [ProducesResponseType<FantasyTeamResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -92,6 +132,16 @@ public sealed class LeaguesController(
     }
 
 
+    /// <summary>
+    /// Joins a league by its join code and creates a fantasy team for the member.
+    /// </summary>
+    /// <param name="request">The join code, team name, and owner information.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The fantasy team created for the new league member.</returns>
+    /// <response code="201">The league was joined successfully.</response>
+    /// <response code="400">The request data or join code is invalid.</response>
+    /// <response code="404">The join code or owner was not found.</response>
+    /// <response code="409">The league is full or the owner or team name is already in use.</response>
     [HttpPost("join")]
     [ProducesResponseType<FantasyTeamResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -113,6 +163,15 @@ public sealed class LeaguesController(
         return result;
     }
 
+    /// <summary>
+    /// Removes a fantasy team and its membership from a league.
+    /// </summary>
+    /// <param name="leagueId">The league's unique identifier.</param>
+    /// <param name="teamId">The fantasy team's unique identifier.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>An empty response.</returns>
+    /// <response code="204">The member was removed successfully.</response>
+    /// <response code="404">The league or fantasy team membership was not found.</response>
     [HttpDelete("{leagueId:guid}/members/{teamId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

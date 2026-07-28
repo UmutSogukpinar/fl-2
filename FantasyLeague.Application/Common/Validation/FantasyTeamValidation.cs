@@ -3,16 +3,16 @@ using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 
 namespace FantasyLeague.Application.Common.Validation;
 
-public class FantasyTeamValidation
+internal static class FantasyTeamValidation
 {
-    public static void ValidateCreateUserRequest(
+    public static void ValidateCreateFantasyTeamRequest(
         CreateFantasyTeamRequest request
     )
     {
         ValidateName(request.Name);
     }
 
-    public static void ValidateUpdateUserRequest(
+    public static void ValidateUpdateFantasyTeamRequest(
         UpdateFantasyTeamRequest request
     )
     {

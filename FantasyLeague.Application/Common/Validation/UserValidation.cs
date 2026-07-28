@@ -6,7 +6,7 @@ using System.Text;
 
 namespace FantasyLeague.Application.Common.Validation;
 
-internal class UserValidation
+internal static class UserValidation
 {
     public static void ValidateCreateUserRequest(CreateUserRequest request){
         ValidateEmail(request.Email);

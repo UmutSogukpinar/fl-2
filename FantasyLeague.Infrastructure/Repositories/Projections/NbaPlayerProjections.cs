@@ -66,4 +66,23 @@ internal static class NbaPlayerProjections
                 .SingleOrDefault()
         );
     }
+
+    internal static IQueryable<NbaPlayerBasicResponse> ToBasic(
+        this IQueryable<NbaPlayer> query)
+    {
+        return query.Select(Basic);
+    }
+
+    internal static IQueryable<NbaPlayerDetailedResponse> ToDetailed(
+        this IQueryable<NbaPlayer> query)
+    {
+        return query.Select(Detailed);
+    }
+
+    internal static IQueryable<NbaPlayerExtendedResponse> ToExtended(
+        this IQueryable<NbaPlayer> query,
+        int season)
+    {
+        return query.Select(Extended(season));
+    }
 }

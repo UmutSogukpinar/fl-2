@@ -1,4 +1,6 @@
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
+using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Requests.NbaPlayers;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;
 
@@ -13,4 +15,5 @@ public interface INbaPlayerRepository
     Task AddStatsRangeAsync(IEnumerable<PlayerStats> playerStats, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);
     Task<IPlayerResponse?> GetByIdAndSeasonAsync(Guid id, int season, PlayerResponseSize size, CancellationToken cancellationToken);
+    Task<(IReadOnlyCollection<IPlayerResponse> Items, int TotalCount)> GetPagedNbaPlayersByNameAsync(PaginationRequest pagination, GetNbaPlayersRequest request, CancellationToken cancellationToken);
 }

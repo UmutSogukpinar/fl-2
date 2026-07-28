@@ -9,9 +9,14 @@ namespace FantasyLeague.Application.Common.Validation;
 internal static class NbaPlayerValidation
 {
     public static void ValidateNbaPlayerRequest(
-        GetNbaPlayersRequest req
+        this GetNbaPlayersRequest req
     )
     {
+        if (req is null)
+            throw new BadRequestException(
+                "GetNbaPlayerRequest Object is null!"
+            );
+
         ValidateExistenceOfKeyAttr(req);
     }
 
@@ -21,11 +26,6 @@ internal static class NbaPlayerValidation
         GetNbaPlayersRequest req
     )
     {
-        if (req is null)
-            throw new BadRequestException(
-                "GetNbaPlayerRequest Object is null!"
-            );
-
         if (req.Id == default
             && string.IsNullOrEmpty(req.Name)
             && string.IsNullOrEmpty(req.Surname)

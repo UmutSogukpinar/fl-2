@@ -8,17 +8,19 @@ namespace FantasyLeague.Application.Common.Validation;
 
 internal static class UserValidation
 {
-    public static void ValidateCreateUserRequest(CreateUserRequest request){
+    public static void ValidateCreateUserRequest(this CreateUserRequest request){
         ValidateEmail(request.Email);
         ValidatePassword(request.Password);
         ValidateUsername(request.Username);
     }
 
-    public static void ValidateUpdateUserRequest(UpdateUserRequest request)
+    public static void ValidateUpdateUserRequest(this UpdateUserRequest request)
     {
         ValidateEmail(request.Email);
         ValidateUsername(request.Username);
     }
+
+    // ========================= Utils =========================
 
     private static void ValidateEmail(string email){
         const char AtSymbol = '@';

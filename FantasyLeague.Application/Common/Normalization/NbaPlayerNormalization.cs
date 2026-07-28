@@ -1,14 +1,20 @@
-﻿using FantasyLeague.Application.DTOs.Requests.NbaPlayers;
+﻿using FantasyLeague.Application.Common.Exceptions;
+using FantasyLeague.Application.DTOs.Requests.NbaPlayers;
 
 namespace FantasyLeague.Application.Common.Normalization;
 
 internal static class NbaPlayerNormalization
 {
-    public static void NormalizePlayerRequest(
-        ref GetNbaPlayersRequest req
+    public static GetNbaPlayersRequest NormalizePlayerRequest(
+        this GetNbaPlayersRequest req
     )
     {
-        req = req with
+        if (req is null)
+            throw new BadRequestException(
+                "GetNbaPlayerRequest Object is null!"
+            );
+
+        return req with
         {
             Name = NormalizeName(req.Name),
             Surname = NormalizeName(req.Surname)

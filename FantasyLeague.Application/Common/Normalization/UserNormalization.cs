@@ -1,39 +1,42 @@
 ﻿using FantasyLeague.Application.DTOs.Requests.Users;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 
 namespace FantasyLeague.Application.Common.Normalization;
 
 internal static class UserNormalization
 {
-    public static void NormalizeCreateUserRequest(
-        ref CreateUserRequest request
+    public static CreateUserRequest NormalizeCreateUserRequest(
+         this CreateUserRequest req
     )
     {
-        request = request with
+        return req with
         {
-            Username = NormalizeUsername(request.Username),
-            Email = NormalizeEmail(request.Email)
+            Username = NormalizeUsername(req.Username),
+            Email = NormalizeEmail(req.Email)
         };
     }
 
-    public static void NormalizeUpdateUserRequest(
-        ref UpdateUserRequest request
+    public static UpdateUserRequest NormalizeUpdateUserRequest(
+        this UpdateUserRequest req
     )
     {
-        request = request with
+        return req with
         {
-            Username = NormalizeUsername(request.Username),
-            Email = NormalizeEmail(request.Email)
+            Username = NormalizeUsername(req.Username),
+            Email = NormalizeEmail(req.Email)
         };
     }
 
-    public static void NormalizeSignInRequest(ref SignInRequest request)
+    public static SignInRequest NormalizeSignInRequest(
+        this SignInRequest req
+    )
     {
-        request = request with
+        return req with
         {
-            Email = NormalizeEmail(request.Email)
+            Email = NormalizeEmail(req.Email)
         };
     }
 

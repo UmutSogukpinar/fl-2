@@ -1,4 +1,5 @@
-﻿using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
+﻿using FantasyLeague.Application.Common.Exceptions;
+using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 
 using FantasyLeague.Application.DTOs.Requests.Leagues;
 
@@ -6,33 +7,48 @@ namespace FantasyLeague.Application.Common.Normalization;
 
 internal static class FantasyTeamNormalization
 {
-    public static void NormalizeCreateFantasyTeamRequest(
-        ref CreateFantasyTeamRequest request
+    public static CreateFantasyTeamRequest NormalizeCreateFantasyTeamRequest(
+        this CreateFantasyTeamRequest req
     )
     {
-        request = request with
+        if (req is null)
+            throw new BadRequestException(
+                "CreateFantasyTeamRequest object is null!"
+            );
+
+        return req with
         {
-            Name = NormalizeName(request.Name),
+            Name = NormalizeName(req.Name),
         };
     }
 
-    public static void NormalizeUpdateFantasyTeamRequest(
-        ref UpdateFantasyTeamRequest request
+    public static UpdateFantasyTeamRequest NormalizeUpdateFantasyTeamRequest(
+        this UpdateFantasyTeamRequest req
     )
     {
-        request = request with
+        if (req is null)
+            throw new BadRequestException(
+                "UpdateFantasyTeamRequest object is null!"
+            );
+
+        return req with
         {
-            Name = NormalizeName(request.Name),
+            Name = NormalizeName(req.Name),
         };
     }
 
-    public static void NormalizeJoinLeagueRequest(
-        ref JoinLeagueRequest request)
+    public static JoinLeagueRequest NormalizeJoinLeagueRequest(
+        this JoinLeagueRequest req)
     {
-        request = request with
+        if (req is null)
+            throw new BadRequestException(
+                "JoinLeagueRequest object is null!"
+            );
+
+        return req with
         {
-            JoinCode = request.JoinCode.Trim().ToUpperInvariant(),
-            TeamName = NormalizeName(request.TeamName)
+            JoinCode = req.JoinCode.Trim().ToUpperInvariant(),
+            TeamName = NormalizeName(req.TeamName)
         };
     }
 

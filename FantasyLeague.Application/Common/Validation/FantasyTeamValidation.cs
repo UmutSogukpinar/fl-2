@@ -6,18 +6,20 @@ namespace FantasyLeague.Application.Common.Validation;
 internal static class FantasyTeamValidation
 {
     public static void ValidateCreateFantasyTeamRequest(
-        CreateFantasyTeamRequest request
+        this CreateFantasyTeamRequest request
     )
     {
         ValidateName(request.Name);
     }
 
     public static void ValidateUpdateFantasyTeamRequest(
-        UpdateFantasyTeamRequest request
+        this UpdateFantasyTeamRequest request
     )
     {
         ValidateName(request.Name);
     }
+
+    // ================== Utils ==================
 
     private static void ValidateName(string name)
     {

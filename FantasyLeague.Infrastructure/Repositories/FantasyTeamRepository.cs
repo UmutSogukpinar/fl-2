@@ -3,6 +3,7 @@ using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
+using FantasyLeague.Infrastructure.Repositories.Projections;
 
 namespace FantasyLeague.Infrastructure.Repositories;
 
@@ -23,13 +24,7 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
             .OrderBy(team => team.Name)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(team => new FantasyTeamResponse(
-                team.Id,
-                team.Name,
-                team.LeagueId,
-                team.OwnerId,
-                team.CreatedAt,
-                team.UpdatedAt))
+            .Select(FantasyTeamProjections.Response)
             .ToArrayAsync(cancellationToken);
 
         return (items, totalCount);
@@ -43,13 +38,7 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
         return dbContext.Set<FantasyTeam>()
             .AsNoTracking()
             .Where(team => team.Id == id)
-            .Select(team => new FantasyTeamResponse(
-                team.Id,
-                team.Name,
-                team.LeagueId,
-                team.OwnerId,
-                team.CreatedAt,
-                team.UpdatedAt))
+            .Select(FantasyTeamProjections.Response)
             .SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -82,6 +71,7 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
             .ToListAsync(cancellationToken);
     }
 
+    // TODO: update
     public Task<bool> ExistsAsync(
         Guid leagueId,
         Guid ownerId,

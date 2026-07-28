@@ -48,7 +48,7 @@ public class NbaPlayerTests
         var playerLastName = "James";
         var playerTeam = "Lakers";
         var playerPosition = "F";
-        var season = 2025;
+        var season = 2024;
 
         var playerId = Guid.NewGuid();
         IPlayerResponse player = new NbaPlayerBasicResponse(
@@ -86,7 +86,7 @@ public class NbaPlayerTests
         var player = new NbaPlayerDetailedResponse(
             playerId, 2544, "Lebron", "James", "Lakers", "F",
             23, null, null, DateTime.UtcNow, null);
-        var season = 2025;
+        var season = 2024;
 
         _playerRepository
             .Setup(repository => repository.GetByIdAndSeasonAsync(
@@ -126,7 +126,7 @@ public class NbaPlayerTests
     {
         // Assert
         var playerId = Guid.NewGuid();
-        var season = 2025;
+        var season = 2024;
         var player = new NbaPlayerExtendedResponse(
             playerId, 2544, "Lebron", "James", "Lakers", "F",
             23, null, null, DateTime.UtcNow, null,
@@ -165,7 +165,7 @@ public class NbaPlayerTests
     {
         // Arrange
         var playerId = Guid.NewGuid();
-        var season = 2025;
+        var season = 2024;
 
         _playerRepository
             .Setup(s => s.GetByIdAndSeasonAsync(

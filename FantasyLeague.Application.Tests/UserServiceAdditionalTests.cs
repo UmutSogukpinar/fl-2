@@ -75,7 +75,7 @@ public sealed class UserServiceAdditionalTests
             .Setup(hasher => hasher.Verify(request.Password, user.Password))
             .Returns(true);
 
-        var response = await _service.SignInAsync(request);
+        var response = await _service.SignInAsync(request, CancellationToken.None);
 
         Assert.Equal(user.Id, response.Id);
         Assert.Equal(user.Email, response.Email);
@@ -90,7 +90,7 @@ public sealed class UserServiceAdditionalTests
                 request.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
-        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request));
+        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request, CancellationToken.None));
 
         _passwordHasher.Verify(
             hasher => hasher.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -109,7 +109,7 @@ public sealed class UserServiceAdditionalTests
             .Setup(hasher => hasher.Verify(request.Password, user.Password))
             .Returns(false);
 
-        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request));
+        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request, CancellationToken.None));
     }
 
     private static User CreateUser() => new()

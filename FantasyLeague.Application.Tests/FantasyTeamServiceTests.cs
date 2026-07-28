@@ -41,7 +41,7 @@ public sealed class FantasyTeamServiceTests
             .ReturnsAsync(([CreateTeamResponse(team)], 1));
 
         var result = await _service.GetByLeagueIdAsync(
-            league.Id, new PaginationRequest());
+            league.Id, new PaginationRequest(), CancellationToken.None);
 
         var response = Assert.Single(result.Items);
         Assert.Equal(1, result.TotalCount);
@@ -306,7 +306,7 @@ public sealed class FantasyTeamServiceTests
             .Returns(Task.CompletedTask);
 
         var response = await _service.JoinLeagueAsync(
-            new JoinLeagueRequest("  abc12345  ", "New Team", owner.Id));
+            new JoinLeagueRequest("  abc12345  ", "New Team", owner.Id), CancellationToken.None);
 
         Assert.Equal(league.Id, response.LeagueId);
         Assert.Equal(owner.Id, response.OwnerId);
@@ -326,7 +326,7 @@ public sealed class FantasyTeamServiceTests
             .ReturnsAsync(team);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            _service.RemoveLeagueMemberAsync(league.Id, team.Id));
+            _service.RemoveLeagueMemberAsync(league.Id, team.Id, CancellationToken.None));
         _teamRepository.Verify(repository => repository.Remove(team), Times.Never);
     }
 

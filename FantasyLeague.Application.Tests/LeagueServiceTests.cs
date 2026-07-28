@@ -52,7 +52,13 @@ public sealed class LeagueServiceTests
         var commissioner = CreateUser();
         var draftDate = DateTime.UtcNow.AddDays(7);
         var request = new CreateLeagueRequest(
-            "  Champions  ", "  Main league  ", 2026, 12, commissioner.Id, draftDate);
+            "  Champions  ",
+            "  Main league  ",
+            2026,
+            12,
+            commissioner.Id,
+            draftDate,
+            TeamName: "  Istanbul Ballers  ");
 
         _userRepository
             .Setup(repository => repository.GetResponseByIdAsync(
@@ -64,6 +70,12 @@ public sealed class LeagueServiceTests
             .Setup(repository => repository.AddAsync(
                 It.IsAny<League>(), It.IsAny<CancellationToken>()))
             .Callback<League, CancellationToken>((league, _) => addedLeague = league)
+            .Returns(Task.CompletedTask);
+        FantasyTeam? addedTeam = null;
+        _teamRepository
+            .Setup(repository => repository.AddAsync(
+                It.IsAny<FantasyTeam>(), It.IsAny<CancellationToken>()))
+            .Callback<FantasyTeam, CancellationToken>((team, _) => addedTeam = team)
             .Returns(Task.CompletedTask);
 
         var response = await _service.CreateAsync(request);
@@ -77,6 +89,10 @@ public sealed class LeagueServiceTests
         Assert.Equal(13, addedLeague.Settings.RosterSize);
         Assert.Equal(8, addedLeague.JoinCode.Length);
         Assert.Equal(addedLeague.Id, response.Id);
+        Assert.NotNull(addedTeam);
+        Assert.Equal("Istanbul Ballers", addedTeam.Name);
+        Assert.Equal(addedLeague.Id, addedTeam.LeagueId);
+        Assert.Equal(commissioner.Id, addedTeam.OwnerId);
         _leagueRepository.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
@@ -131,12 +147,43 @@ public sealed class LeagueServiceTests
                 league.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(league);
 
-        await _service.DeleteAsync(league.Id);
+        await _service.DeleteAsync(league.Id, league.CommissionerId);
 
         _leagueRepository.Verify(repository => repository.Remove(league), Times.Once);
         _leagueRepository.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenRequesterIsNotCommissioner_ThrowsForbiddenException()
+    {
+        var league = CreateLeague();
+        _leagueRepository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(league);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            _service.DeleteAsync(league.Id, Guid.NewGuid()));
+
+        _leagueRepository.Verify(repository => repository.Remove(It.IsAny<League>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenDraftIsActive_ThrowsConflictException()
+    {
+        var league = CreateLeague();
+        league.Status = LeagueStatus.Drafting;
+        _leagueRepository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(league);
+
+        await Assert.ThrowsAsync<ConflictException>(() =>
+            _service.DeleteAsync(league.Id, league.CommissionerId));
+
+        _leagueRepository.Verify(repository => repository.Remove(It.IsAny<League>()), Times.Never);
     }
 
     private static User CreateUser() => new()

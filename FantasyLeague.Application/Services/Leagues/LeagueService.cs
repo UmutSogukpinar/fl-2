@@ -7,6 +7,7 @@ using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Application.Common.Time;
+using FantasyLeague.Domain.Enums;
 
 namespace FantasyLeague.Application.Services.Leagues;
 
@@ -58,8 +59,15 @@ public sealed class LeagueService(
         ValidateFutureDraftDate(draftDateUtc!.Value);
         var league = request.ToEntity(
             draftDateUtc, commissioner.TimeZoneId);
+        var commissionerTeam = new FantasyTeam
+        {
+            Name = GetCommissionerTeamName(request.TeamName, commissioner.Username),
+            LeagueId = league.Id,
+            OwnerId = request.CommissionerId
+        };
 
         await leagueRepository.AddAsync(league, cancellationToken);
+        await teamRepository.AddAsync(commissionerTeam, cancellationToken);
         await leagueRepository.SaveChangesAsync(cancellationToken);
         return league.ToResponse();
     }
@@ -98,9 +106,26 @@ public sealed class LeagueService(
         return league.ToResponse();
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(
+        Guid id,
+        Guid commissionerId,
+        CancellationToken cancellationToken = default)
     {
         var league = await GetTrackedLeagueOrThrowAsync(id, cancellationToken);
+        if (league.CommissionerId != commissionerId)
+        {
+            throw new ForbiddenException("Only the league commissioner can cancel the league.");
+        }
+
+        if (league.Status is not (
+            LeagueStatus.Created or
+            LeagueStatus.RegistrationOpen or
+            LeagueStatus.DraftDelayed))
+        {
+            throw new ConflictException(
+                "Only a created, registration-open, or delayed league can be cancelled.");
+        }
+
         leagueRepository.Remove(league);
         await leagueRepository.SaveChangesAsync(cancellationToken);
     }
@@ -121,6 +146,20 @@ public sealed class LeagueService(
         }
 
         return name.Trim();
+    }
+
+    private static string GetCommissionerTeamName(string? teamName, string username)
+    {
+        var resolvedName = string.IsNullOrWhiteSpace(teamName)
+            ? $"{username}'s Team"
+            : teamName.Trim();
+
+        if (resolvedName.Length > 100)
+        {
+            throw new BadRequestException("Team name cannot exceed 100 characters.");
+        }
+
+        return resolvedName;
     }
 
     private static void ValidateSeason(int season)

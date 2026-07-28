@@ -42,7 +42,9 @@ public sealed class ApiSportsClient : INbaPlayersApiClient
         foreach (var team in await GetNbaTeamsAsync(cancellationToken))
         {
             var apiStatistics = await _requestClient.GetResponseAsync<ApiPlayerStats>(
-                $"/players/statistics?team={team.Id}&season={season}", cancellationToken);
+                $"/players/statistics?team={team.Id}&season={season}", cancellationToken
+            );
+
             statistics.AddRange(apiStatistics.Select(ApiSportsMapper.ToExternalStats));
         }
 
@@ -55,7 +57,9 @@ public sealed class ApiSportsClient : INbaPlayersApiClient
         if (_teams is not null) return _teams;
 
         var teams = await _requestClient.GetResponseAsync<ApiTeam>("/teams", cancellationToken);
-        _teams = teams.Where(team => team.NbaFranchise && !team.AllStar).ToArray();
+
+        _teams = [.. teams.Where(team => team.NbaFranchise && !team.AllStar)];
+
         return _teams;
     }
 }

@@ -6,6 +6,7 @@ namespace FantasyLeague.Application.Common.Interfaces.Repositories;
 
 public interface INbaPlayerRepository
 {
+    Task<(IReadOnlyCollection<NbaPlayerBasicResponse> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize, CancellationToken cancellationToken);
     Task<IReadOnlyDictionary<int, NbaPlayer>> GetByNbaIdsAsync(IReadOnlyCollection<int> nbaIds, CancellationToken cancellationToken);
     Task AddRangeAsync(IEnumerable<NbaPlayer> players, CancellationToken cancellationToken);
     Task<IReadOnlyDictionary<Guid, PlayerStats>> GetPlayerStatsAsync(IReadOnlyCollection<Guid> nbaPlayerIds, int season, CancellationToken cancellationToken);

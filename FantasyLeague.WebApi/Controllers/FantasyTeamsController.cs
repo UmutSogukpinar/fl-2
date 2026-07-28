@@ -143,7 +143,7 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService) : Co
         );
 
         return CreatedAtAction(
-            nameof(GetByIdAsync),
+            "GetById",
             new { id = response.Id },
             response
         );

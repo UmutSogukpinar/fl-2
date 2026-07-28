@@ -66,6 +66,17 @@ public sealed class UserService(
         return user.ToResponse();
     }
 
+    public async Task<UserResponse> SignInAsync(
+        SignInRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
+        if (user is null || !_passwordHasher.Verify(request.Password, user.Password))
+            throw new UnauthorizedException("The email or password is incorrect.");
+
+        return user.ToResponse();
+    }
+
     public async Task<UserResponse> UpdateAsync(
         Guid id,
         UpdateUserRequest request,

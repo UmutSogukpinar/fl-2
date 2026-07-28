@@ -15,6 +15,7 @@ public sealed class DraftService(
     IDraftRepository draftRepository) : IDraftService
 {
     private const int MinimumTeamCount = 2;
+    private static readonly TimeSpan PickDuration = TimeSpan.FromSeconds(60);
     public async Task<DraftStateResponse> GetStateAsync(
         Guid leagueId,
         CancellationToken cancellationToken = default)
@@ -22,7 +23,7 @@ public sealed class DraftService(
         var league = await leagueRepository.GetResponseByIdAsync(leagueId, cancellationToken)
             ?? throw new NotFoundException($"League '{leagueId}' was not found.");
         var picks = await draftRepository.GetPicksAsync(leagueId, cancellationToken);
-        return CreateState(leagueId, league.Status, picks);
+        return CreateState(leagueId, league.Status, league.UpdatedAt, picks);
     }
 
     public async Task<IReadOnlyList<DraftStateResponse>> StartDueDraftsAsync(
@@ -67,9 +68,65 @@ public sealed class DraftService(
         foreach (var league in startedLeagues)
         {
             var picks = await draftRepository.GetPicksAsync(league.Id, cancellationToken);
-            states.Add(CreateState(league.Id, league.Status, picks));
+            states.Add(CreateState(league.Id, league.Status, league.UpdatedAt, picks));
         }
         return states;
+    }
+
+    public async Task<IReadOnlyList<DraftStateResponse>> AutoPickExpiredAsync(
+        DateTime utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        var leagues = await leagueRepository.GetDraftingAsync(cancellationToken);
+        var updatedStates = new List<DraftStateResponse>();
+
+        foreach (var league in leagues)
+        {
+            var picks = await draftRepository.GetPicksAsync(league.Id, cancellationToken);
+            var currentPick = picks.FirstOrDefault(pick => !pick.NbaPlayerId.HasValue);
+            var deadlineUtc = GetPickDeadlineUtc(currentPick, league.UpdatedAt, picks);
+            if (currentPick is null || deadlineUtc is null || deadlineUtc > utcNow)
+            {
+                continue;
+            }
+
+            var trackedPick = await draftRepository.GetCurrentTrackedPickAsync(
+                league.Id, cancellationToken);
+            var nbaPlayerId = await draftRepository.GetFirstAvailablePlayerIdAsync(
+                league.Id, cancellationToken);
+            if (trackedPick is null || trackedPick.Id != currentPick.Id || nbaPlayerId is null)
+            {
+                continue;
+            }
+
+            trackedPick.NbaPlayerId = nbaPlayerId.Value;
+            trackedPick.PickedAt = utcNow;
+            await draftRepository.AddRosterPlayerAsync(new FantasyTeamPlayer
+            {
+                LeagueId = league.Id,
+                FantasyTeamId = trackedPick.TeamId,
+                NbaPlayerId = nbaPlayerId.Value,
+                AcquiredAt = utcNow
+            }, cancellationToken);
+
+            if (trackedPick.OverallPick == picks.Count)
+            {
+                league.Status = LeagueStatus.Active;
+                league.UpdatedAt = utcNow;
+            }
+
+            if (!await draftRepository.TrySaveChangesAsync(cancellationToken))
+            {
+                continue;
+            }
+
+            var updatedPicks = await draftRepository.GetPicksAsync(
+                league.Id, cancellationToken);
+            updatedStates.Add(CreateState(
+                league.Id, league.Status, league.UpdatedAt, updatedPicks));
+        }
+
+        return updatedStates;
     }
 
     public async Task<DraftStateResponse> CloseDelayedLeagueAsync(
@@ -89,7 +146,7 @@ public sealed class DraftService(
         await leagueRepository.SaveChangesAsync(cancellationToken);
 
         var picks = await draftRepository.GetPicksAsync(leagueId, cancellationToken);
-        return CreateState(leagueId, league.Status, picks);
+        return CreateState(leagueId, league.Status, league.UpdatedAt, picks);
     }
 
     public async Task<DraftStateResponse> MakePickAsync(
@@ -141,21 +198,42 @@ public sealed class DraftService(
             throw new ConflictException("The draft changed while the pick was being submitted. Try again.");
 
         var picks = await draftRepository.GetPicksAsync(leagueId, cancellationToken);
-        return CreateState(leagueId, league.Status, picks);
+        return CreateState(leagueId, league.Status, league.UpdatedAt, picks);
     }
 
     private static DraftStateResponse CreateState(
         Guid leagueId,
         LeagueStatus status,
+        DateTime? draftStartedAtUtc,
         IReadOnlyList<DraftPickResponse> picks)
     {
         var completed = picks.Count(pick => pick.NbaPlayerId.HasValue);
+        var currentPick = picks.FirstOrDefault(pick => !pick.NbaPlayerId.HasValue);
+        var pickDeadlineUtc = GetPickDeadlineUtc(currentPick, draftStartedAtUtc, picks);
+
         return new DraftStateResponse(
             leagueId,
             status,
             completed,
             picks.Count,
-            picks.FirstOrDefault(pick => !pick.NbaPlayerId.HasValue),
+            currentPick,
+            pickDeadlineUtc,
             picks);
+    }
+
+    private static DateTime? GetPickDeadlineUtc(
+        DraftPickResponse? currentPick,
+        DateTime? draftStartedAtUtc,
+        IReadOnlyList<DraftPickResponse> picks)
+    {
+        if (currentPick is null) return null;
+
+        var currentPickStartedAtUtc = picks
+            .Where(pick => pick.OverallPick < currentPick.OverallPick && pick.PickedAt.HasValue)
+            .OrderByDescending(pick => pick.OverallPick)
+            .Select(pick => pick.PickedAt)
+            .FirstOrDefault() ?? draftStartedAtUtc;
+
+        return currentPickStartedAtUtc?.Add(PickDuration);
     }
 }

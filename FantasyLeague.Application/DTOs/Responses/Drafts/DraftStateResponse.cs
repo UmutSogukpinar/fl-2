@@ -8,4 +8,5 @@ public sealed record DraftStateResponse(
     int CompletedPicks,
     int TotalPicks,
     DraftPickResponse? CurrentPick,
+    DateTime? PickDeadlineUtc,
     IReadOnlyList<DraftPickResponse> Picks);

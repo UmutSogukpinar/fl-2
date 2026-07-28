@@ -2,12 +2,15 @@ using FantasyLeague.Application.Common.Interfaces.ExternalServices;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Domain.Entities;
+using FantasyLeague.Application.Common.Caching;
+using FantasyLeague.Application.Common.Interfaces.Caching;
 
 namespace FantasyLeague.Application.Services.NbaPlayers;
 
 public sealed class NbaPlayerSyncService(
     INbaPlayersApiClient apiClient,
-    INbaPlayerRepository playerRepository) : INbaPlayerSyncService
+    INbaPlayerRepository playerRepository,
+    ICacheService cacheService) : INbaPlayerSyncService
 {
     private const int Season = 2024;
 
@@ -25,6 +28,12 @@ public sealed class NbaPlayerSyncService(
             cancellationToken);
 
         await playerRepository.SaveChangesAsync(cancellationToken);
+        foreach (var player in playerResult.PlayersByNbaId.Values)
+        {
+            cacheService.Remove(CacheKeys.NbaPlayerBasic(player.Id));
+            cacheService.Remove(CacheKeys.NbaPlayerDetailed(player.Id));
+            cacheService.Remove(CacheKeys.NbaPlayerExtended(player.Id, Season));
+        }
 
         return new NbaPlayerSyncResponse(
             Season,

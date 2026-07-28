@@ -12,10 +12,12 @@ using FantasyLeague.Application.Services.FantasyTeams;
 using FantasyLeague.Application.Services.Leagues;
 using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Application.Services.Drafts;
-using FantasyLeague.WebApi.Configuration;
 using FantasyLeague.WebApi.ExceptionHandlers;
 using FantasyLeague.WebApi.Hubs;
 using FantasyLeague.WebApi.BackgroundServices;
+using FantasyLeague.Infrastructure.Caching;
+using FantasyLeague.Application.Common.Interfaces.Caching;
+using FantasyLeague.WebApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,13 +25,11 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-builder.Configuration.AddDotEnvFile(
-    Path.Combine(builder.Environment.ContentRootPath, ".env"));
-builder.Configuration.AddEnvironmentVariables();
-
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ICacheService, MemoryCacheService>();
 builder.Services.AddSignalR();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
@@ -38,6 +38,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<INbaPlayerSyncService, NbaPlayerSyncService>();
+builder.Services.AddScoped<INbaPlayerService, NbaPlayerService>();
 builder.Services.AddScoped<INbaPlayerRepository, NbaPlayerRepository>();
 builder.Services.AddScoped<ILeagueService, LeagueService>();
 builder.Services.AddScoped<ILeagueRepository, LeagueRepository>();
@@ -71,6 +72,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

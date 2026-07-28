@@ -7,18 +7,30 @@ using FantasyLeague.Application.Services.NbaPlayers;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Application.Common.Exceptions;
+using FantasyLeague.Application.Common.Interfaces.Caching;
 
 namespace FantasyLeague.Application.Tests;
 
 public class NbaPlayerTests
 {
     private readonly Mock<INbaPlayerRepository> _playerRepository;
+    private readonly Mock<ICacheService> _cacheService;
     private readonly NbaPlayerService _playerService;
 
     public NbaPlayerTests()
     {
         _playerRepository = new Mock<INbaPlayerRepository>();
-        _playerService = new NbaPlayerService(_playerRepository.Object);
+        _cacheService = new Mock<ICacheService>();
+        _cacheService
+            .Setup(cache => cache.GetOrCreateAsync(
+                It.IsAny<string>(),
+                It.IsAny<Func<CancellationToken, Task<IPlayerResponse>>>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<CancellationToken>()))
+            .Returns((string _, Func<CancellationToken, Task<IPlayerResponse>> factory,
+                TimeSpan _, CancellationToken token) => factory(token));
+        _playerService = new NbaPlayerService(
+            _playerRepository.Object, _cacheService.Object);
     }
 
     // ====================== Get Player Tests ======================

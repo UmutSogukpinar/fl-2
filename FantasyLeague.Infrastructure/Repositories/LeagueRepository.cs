@@ -109,6 +109,15 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<League>> GetDraftingAsync(
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Set<League>()
+            .Include(league => league.Settings)
+            .Where(league => league.Status == LeagueStatus.Drafting)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task AddAsync(League league, CancellationToken cancellationToken)
     {
         return dbContext.Set<League>().AddAsync(league, cancellationToken).AsTask();

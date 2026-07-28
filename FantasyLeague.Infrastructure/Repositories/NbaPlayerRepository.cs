@@ -10,6 +10,24 @@ namespace FantasyLeague.Infrastructure.Repositories;
 
 public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepository
 {
+    public async Task<(IReadOnlyCollection<NbaPlayerBasicResponse> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var query = dbContext.Set<NbaPlayer>().AsNoTracking();
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderBy(player => player.FirstName)
+            .ThenBy(player => player.LastName)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(NbaPlayerProjections.Basic)
+            .ToArrayAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
     public async Task<IReadOnlyDictionary<int, NbaPlayer>> GetByNbaIdsAsync(
         IReadOnlyCollection<int> nbaIds,
         CancellationToken cancellationToken

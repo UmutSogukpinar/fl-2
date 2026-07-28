@@ -10,6 +10,7 @@ public interface ILeagueRepository
     Task<LeagueResponse?> GetResponseByJoinCodeAsync(string joinCode, CancellationToken cancellationToken);
     Task<League?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<IReadOnlyList<League>> GetDueForDraftAsync(DateTime utcNow, CancellationToken cancellationToken);
+    Task<IReadOnlyList<League>> GetDraftingAsync(CancellationToken cancellationToken);
     Task AddAsync(League league, CancellationToken cancellationToken);
     void Remove(League league);
     Task SaveChangesAsync(CancellationToken cancellationToken);

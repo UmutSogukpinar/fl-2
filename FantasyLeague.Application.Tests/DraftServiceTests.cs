@@ -140,6 +140,61 @@ public sealed class DraftServiceTests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task AutoPickExpiredAsync_WhenDeadlinePassed_SelectsAvailablePlayer()
+    {
+        var utcNow = DateTime.UtcNow;
+        var league = CreateLeague(LeagueStatus.Drafting);
+        league.UpdatedAt = utcNow.AddSeconds(-61);
+        var currentPick = CreatePick(league.Id);
+        var nbaPlayerId = Guid.NewGuid();
+        var pendingResponse = new DraftPickResponse(
+            currentPick.Id,
+            currentPick.TeamId,
+            "Team",
+            1,
+            1,
+            1,
+            null,
+            null,
+            null);
+        var completedResponse = pendingResponse with
+        {
+            NbaPlayerId = nbaPlayerId,
+            NbaPlayerName = "Auto Player",
+            PickedAt = utcNow
+        };
+
+        _leagueRepository.Setup(repository => repository.GetDraftingAsync(
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([league]);
+        _draftRepository.SetupSequence(repository => repository.GetPicksAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([pendingResponse])
+            .ReturnsAsync([completedResponse]);
+        _draftRepository.Setup(repository => repository.GetCurrentTrackedPickAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentPick);
+        _draftRepository.Setup(repository => repository.GetFirstAvailablePlayerIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(nbaPlayerId);
+        _draftRepository.Setup(repository => repository.TrySaveChangesAsync(
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var states = await _service.AutoPickExpiredAsync(utcNow);
+
+        var state = Assert.Single(states);
+        Assert.Equal(LeagueStatus.Active, state.Status);
+        Assert.Equal(nbaPlayerId, currentPick.NbaPlayerId);
+        Assert.Equal(utcNow, currentPick.PickedAt);
+        _draftRepository.Verify(repository => repository.AddRosterPlayerAsync(
+            It.Is<FantasyTeamPlayer>(player =>
+                player.FantasyTeamId == currentPick.TeamId
+                && player.NbaPlayerId == nbaPlayerId),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     private void SetupTrackedLeague(League league) =>
         _leagueRepository.Setup(repository => repository.GetTrackedByIdAsync(
                 league.Id, It.IsAny<CancellationToken>()))

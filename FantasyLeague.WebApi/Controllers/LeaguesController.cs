@@ -14,8 +14,17 @@ namespace FantasyLeague.WebApi.Controllers;
 [Route("api/leagues")]
 public sealed class LeaguesController(
     ILeagueService leagueService,
-    IFantasyTeamService fantasyTeamService) : ControllerBase
+    IFantasyTeamService fantasyTeamService,
+    ILogger<LeaguesController> logger) : ControllerBase
 {
+    /// <summary>
+    /// Returns the generated fixtures for a league, ordered by week.
+    /// </summary>
+    /// <param name="id">The league's unique identifier.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>The league's home-and-away fixtures.</returns>
+    /// <response code="200">The fixtures were retrieved successfully.</response>
+    /// <response code="404">The specified league was not found.</response>
     [HttpGet("{id:guid}/fixtures")]
     [ProducesResponseType<IReadOnlyList<LeagueFixtureResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -26,6 +35,14 @@ public sealed class LeaguesController(
         return Ok(await leagueService.GetFixturesAsync(id, cancellationToken));
     }
 
+    /// <summary>
+    /// Returns the generated snake draft order for a league.
+    /// </summary>
+    /// <param name="id">The league's unique identifier.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>All draft positions ordered by overall pick.</returns>
+    /// <response code="200">The draft order was retrieved successfully.</response>
+    /// <response code="404">The specified league was not found.</response>
     [HttpGet("{id:guid}/draft-order")]
     [ProducesResponseType<IReadOnlyList<DraftPickOrderResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -121,9 +138,12 @@ public sealed class LeaguesController(
     {
         var response = await fantasyTeamService.AddLeagueMemberAsync(
             leagueId, request, cancellationToken);
+        logger.LogInformation(
+            "Team {TeamId} joined league {LeagueId} for owner {OwnerId}.",
+            response.Id, leagueId, response.OwnerId);
 
         var result = CreatedAtAction(
-            nameof(FantasyTeamsController.GetByIdAsync),
+            "GetById",
             "FantasyTeams",
             new { id = response.Id },
             response);
@@ -152,9 +172,12 @@ public sealed class LeaguesController(
         CancellationToken cancellationToken)
     {
         var response = await fantasyTeamService.JoinLeagueAsync(request, cancellationToken);
+        logger.LogInformation(
+            "Team {TeamId} joined league {LeagueId} by join code for owner {OwnerId}.",
+            response.Id, response.LeagueId, response.OwnerId);
 
         var result = CreatedAtAction(
-            nameof(FantasyTeamsController.GetByIdAsync),
+            "GetById",
             "FantasyTeams",
             new { id = response.Id },
             response
@@ -185,6 +208,7 @@ public sealed class LeaguesController(
             teamId,
             cancellationToken
         );
+        logger.LogInformation("Team {TeamId} was removed from league {LeagueId}.", teamId, leagueId);
 
         return NoContent();
     }
@@ -208,9 +232,12 @@ public sealed class LeaguesController(
         CancellationToken cancellationToken)
     {
         var response = await leagueService.CreateAsync(request, cancellationToken);
+        logger.LogInformation(
+            "League {LeagueId} was created by commissioner {CommissionerId} for season {Season}.",
+            response.Id, response.CommissionerId, response.Season);
 
         var result = CreatedAtAction(
-            nameof(GetByIdAsync),
+            "GetById",
             new { id = response.Id },
             response
         );
@@ -241,6 +268,7 @@ public sealed class LeaguesController(
         CancellationToken cancellationToken)
     {
         var response = await leagueService.UpdateAsync(id, request, cancellationToken);
+        logger.LogInformation("League {LeagueId} was updated.", id);
         return Ok(response);
     }
 
@@ -256,9 +284,15 @@ public sealed class LeaguesController(
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteAsync(
+        Guid id,
+        [FromQuery] Guid commissionerId,
+        CancellationToken cancellationToken)
     {
-        await leagueService.DeleteAsync(id, cancellationToken);
+        await leagueService.DeleteAsync(id, commissionerId, cancellationToken);
+        logger.LogInformation(
+            "League {LeagueId} was cancelled by commissioner {CommissionerId}.",
+            id, commissionerId);
         return NoContent();
     }
 }

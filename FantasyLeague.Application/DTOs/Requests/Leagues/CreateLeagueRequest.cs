@@ -7,4 +7,5 @@ public sealed record CreateLeagueRequest(
     int MaxTeams,
     Guid CommissionerId,
     DateTime DraftDate,
-    int RosterSize = 13);
+    int RosterSize = 13,
+    string? TeamName = null);

@@ -29,11 +29,17 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
             .Join(dbContext.Set<FantasyTeam>(), fixture => fixture.HomeTeamId, team => team.Id,
                 (fixture, home) => new { fixture, home })
             .Join(dbContext.Set<FantasyTeam>(), item => item.fixture.AwayTeamId, team => team.Id,
-                (item, away) => new LeagueFixtureResponse(
-                    item.fixture.Id, item.fixture.LeagueId, item.fixture.Week,
-                    item.home.Id, item.home.Name, away.Id, away.Name))
-            .OrderBy(fixture => fixture.Week)
-            .ThenBy(fixture => fixture.HomeTeamName)
+                (item, away) => new { item.fixture, item.home, away })
+            .OrderBy(item => item.fixture.Week)
+            .ThenBy(item => item.home.Name)
+            .Select(item => new LeagueFixtureResponse(
+                item.fixture.Id,
+                item.fixture.LeagueId,
+                item.fixture.Week,
+                item.home.Id,
+                item.home.Name,
+                item.away.Id,
+                item.away.Name))
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(
@@ -43,9 +49,15 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
             .AsNoTracking()
             .Where(pick => pick.LeagueId == leagueId)
             .Join(dbContext.Set<FantasyTeam>(), pick => pick.TeamId, team => team.Id,
-                (pick, team) => new DraftPickOrderResponse(
-                    pick.Id, pick.LeagueId, team.Id, team.Name,
-                    pick.Round, pick.PositionInRound, pick.OverallPick))
-            .OrderBy(pick => pick.OverallPick)
+                (pick, team) => new { pick, team })
+            .OrderBy(item => item.pick.OverallPick)
+            .Select(item => new DraftPickOrderResponse(
+                item.pick.Id,
+                item.pick.LeagueId,
+                item.team.Id,
+                item.team.Name,
+                item.pick.Round,
+                item.pick.PositionInRound,
+                item.pick.OverallPick))
             .ToListAsync(cancellationToken);
 }

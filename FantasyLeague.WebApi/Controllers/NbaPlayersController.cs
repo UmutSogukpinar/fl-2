@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Application.Services.NbaPlayers;
 using FantasyLeague.Application.Models;
+using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Responses.Common;
 
 namespace FantasyLeague.WebApi.Controllers;
 
@@ -10,9 +12,28 @@ namespace FantasyLeague.WebApi.Controllers;
 [Route("api/nba-players")]
 public sealed class NbaPlayersController(
     INbaPlayerSyncService _syncService,
-    INbaPlayerService _nbaPlayerService
+    INbaPlayerService _nbaPlayerService,
+    ILogger<NbaPlayersController> logger
 ) : ControllerBase
 {
+    /// <summary>
+    /// Returns a paginated collection of NBA players.
+    /// </summary>
+    /// <param name="request">Pagination options.</param>
+    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <returns>A page of NBA players ordered by first and last name.</returns>
+    /// <response code="200">The NBA players were retrieved successfully.</response>
+    /// <response code="400">The pagination options are invalid.</response>
+    [HttpGet]
+    [ProducesResponseType<PagedResponse<NbaPlayerBasicResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<NbaPlayerBasicResponse>>> GetAsync(
+        [FromQuery] PaginationRequest request,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await _nbaPlayerService.GetAsync(request, cancellationToken));
+    }
+
+
     /// <summary>
     /// Synchronizes active NBA players and their statistics from the external provider.
     /// </summary>
@@ -27,6 +48,12 @@ public sealed class NbaPlayersController(
         CancellationToken cancellationToken)
     {
         var response = await _syncService.SyncActivePlayersAsync(cancellationToken);
+        logger.LogInformation(
+            "NBA player sync completed for season {Season}: {CreatedCount} created, {UpdatedCount} updated, {StatisticsCount} statistics.",
+            response.Season,
+            response.CreatedCount,
+            response.UpdatedCount,
+            response.StatisticsProcessedCount);
         return Ok(response);
     }
 
@@ -59,14 +86,15 @@ public sealed class NbaPlayersController(
     /// <example>
     /// Example request:
     /// <code>
-    /// GET /api/nba-players?id=3fa85f64-5717-4562-b3fc-2c963f66afa6&amp;season=2025&amp;size=Extended
+    /// GET /api/nba-players/3fa85f64-5717-4562-b3fc-2c963f66afa6?season=2025&amp;size=Extended
     /// </code>
     /// </example>
+    [HttpGet("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IPlayerResponse>>GetNbaPlayerByIdAndYearAsync(
-        [FromQuery] Guid id,
+    public async Task<ActionResult<IPlayerResponse>> GetNbaPlayerByIdAndYearAsync(
+        Guid id,
         [FromQuery] int season = 2025,
         [FromQuery] PlayerResponseSize size = PlayerResponseSize.Basic,
         CancellationToken cancellation = default

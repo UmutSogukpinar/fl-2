@@ -55,6 +55,15 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
             .SingleOrDefaultAsync(user => user.Id == id, cancellationToken);
     }
 
+    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+        return dbContext.Set<User>()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(user => user.Email == normalizedEmail, cancellationToken);
+    }
+
+
     public Task<bool> ExistsAsync(
         string username,
         string email,

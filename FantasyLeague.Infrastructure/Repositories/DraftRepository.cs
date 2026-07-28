@@ -51,6 +51,17 @@ public sealed class DraftRepository(AppDbContext dbContext) : IDraftRepository
     public Task<bool> NbaPlayerExistsAsync(Guid nbaPlayerId, CancellationToken cancellationToken) =>
         dbContext.Set<NbaPlayer>().AnyAsync(player => player.Id == nbaPlayerId, cancellationToken);
 
+    public Task<Guid?> GetFirstAvailablePlayerIdAsync(
+        Guid leagueId,
+        CancellationToken cancellationToken) =>
+        dbContext.Set<NbaPlayer>()
+            .Where(player => !dbContext.Set<DraftPickOrder>().Any(
+                pick => pick.LeagueId == leagueId && pick.NbaPlayerId == player.Id))
+            .OrderBy(player => player.FirstName)
+            .ThenBy(player => player.LastName)
+            .Select(player => (Guid?)player.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
     public Task<FantasyTeam?> GetTeamAsync(
         Guid leagueId,
         Guid teamId,

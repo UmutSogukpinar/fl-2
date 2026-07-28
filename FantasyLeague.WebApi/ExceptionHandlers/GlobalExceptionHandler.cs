@@ -90,5 +90,8 @@ public sealed class GlobalExceptionHandler(
         };
     }
 
-    private sealed record ExceptionDetails(int StatusCode, string Title, string Detail);
+    private sealed record ExceptionDetails(
+        int StatusCode,
+        string Title,
+        string Detail);
 }

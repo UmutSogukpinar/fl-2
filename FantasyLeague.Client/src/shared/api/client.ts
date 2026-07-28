@@ -1,3 +1,5 @@
+import { texts } from '../constants/texts'
+
 const API_URL = import.meta.env.VITE_API_URL ?? '/api'
 
 export class ApiError extends Error {
@@ -21,6 +23,6 @@ export async function apiClient<T>(path: string, options?: RequestInit): Promise
       response.status,
     )
   }
-  return response.json() as Promise<T>
+  const responseBody = await response.text()
+  return responseBody ? JSON.parse(responseBody) as T : undefined as T
 }
-import { texts } from '../constants/texts'

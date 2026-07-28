@@ -18,6 +18,7 @@ export interface DraftState {
   completedPicks: number
   totalPicks: number
   currentPick?: DraftPick | null
+  pickDeadlineUtc?: string | null
   picks: DraftPick[]
 }
 

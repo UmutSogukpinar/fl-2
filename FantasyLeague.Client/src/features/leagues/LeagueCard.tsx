@@ -4,7 +4,7 @@ import { normalizeStatus, statusLabels } from './league.utils'
 import type { League } from './types'
 
 export function LeagueCard({ league, index }: { league: League; index: number }) {
-  const { texts } = useApp()
+  const { texts, navigate } = useApp()
   const status = normalizeStatus(league.status)
 
   return (
@@ -27,7 +27,7 @@ export function LeagueCard({ league, index }: { league: League; index: number })
       <h3>{league.name}</h3>
       <p>{league.description || texts.league.defaultDescription}</p>
       <div className="card-footer">
-        <button>
+        <button onClick={() => navigate(`leagues/${league.id}`)}>
           {texts.actions.details}
           <Icon name="arrow" size={16} />
         </button>

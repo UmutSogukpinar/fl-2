@@ -7,6 +7,7 @@ import type { League } from './types'
 export function LeagueSection({ leagues, loading }: { leagues: League[]; loading: boolean }) {
   const {
     texts: { actions, dashboard },
+    navigate,
   } = useApp()
   return (
     <section className="leagues-section">
@@ -15,7 +16,7 @@ export function LeagueSection({ leagues, loading }: { leagues: League[]; loading
           <span>{dashboard.sectionLabel}</span>
           <h2>{dashboard.sectionTitle}</h2>
         </div>
-        <button>
+        <button onClick={() => navigate('leagues')}>
           {actions.viewAll}
           <Icon name="arrow" size={17} />
         </button>

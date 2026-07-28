@@ -1,5 +1,4 @@
 import { useApp } from '../../app/AppContext'
-import { CreateLeagueButton } from '../../shared/ui/CreateLeagueButton'
 import { Icon } from '../../shared/ui/Icon'
 
 export function Header() {
@@ -23,7 +22,6 @@ export function Header() {
           <Icon name="bell" />
           <i />
         </button>
-        <CreateLeagueButton />
       </div>
     </header>
   )

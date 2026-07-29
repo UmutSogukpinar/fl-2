@@ -4,10 +4,10 @@ namespace FantasyLeague.Application.Common.Normalization;
 
 internal static class LeagueNormalization
 {
-    public static void NormalizeCreateLeagueRequest(
-        ref CreateLeagueRequest request)
+    public static CreateLeagueRequest NormalizeCreateLeagueRequest(
+        this CreateLeagueRequest request)
     {
-        request = request with
+        return request with
         {
             Name = NormalizeRequiredText(request.Name),
             Description = NormalizeOptionalText(request.Description),
@@ -15,17 +15,17 @@ internal static class LeagueNormalization
         };
     }
 
-    public static void NormalizeUpdateLeagueRequest(
-        ref UpdateLeagueRequest request)
+    public static UpdateLeagueRequest NormalizeUpdateLeagueRequest(
+        this UpdateLeagueRequest request)
     {
-        request = request with
+        return request with
         {
             Name = NormalizeRequiredText(request.Name),
             Description = NormalizeOptionalText(request.Description)
         };
     }
 
-    private static string NormalizeRequiredText(string value) => value.Trim();
+    private static string NormalizeRequiredText(string? value) => value?.Trim() ?? string.Empty;
 
     private static string? NormalizeOptionalText(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

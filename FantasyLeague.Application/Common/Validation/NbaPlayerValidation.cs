@@ -1,5 +1,6 @@
 ﻿using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.DTOs.Requests.NbaPlayers;
+using FantasyLeague.Application.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -18,6 +19,22 @@ internal static class NbaPlayerValidation
             );
 
         ValidateExistenceOfKeyAttr(req);
+        ValidateSeason(req.Season);
+        ValidateResponseSize(req.Size);
+    }
+
+    public static void ValidatePlayerDetailsRequest(
+        this Guid id,
+        int season,
+        PlayerResponseSize size)
+    {
+        if (id == Guid.Empty)
+        {
+            throw new BadRequestException("Id is required.");
+        }
+
+        ValidateSeason(season);
+        ValidateResponseSize(size);
     }
 
     // ================== Utils ==================
@@ -34,5 +51,21 @@ internal static class NbaPlayerValidation
                 "At least one of 'id', 'name'," +
                 "or 'surname' must be provided."
             );
+    }
+
+    private static void ValidateSeason(int season)
+    {
+        if (season < 1946)
+        {
+            throw new BadRequestException("Season must be 1946 or later.");
+        }
+    }
+
+    private static void ValidateResponseSize(PlayerResponseSize size)
+    {
+        if (!Enum.IsDefined(size))
+        {
+            throw new BadRequestException("Invalid player response size.");
+        }
     }
 }

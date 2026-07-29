@@ -28,6 +28,8 @@ public sealed partial class FantasyTeamService(
         CancellationToken cancellation
     )
     {
+        req.ValidatePaginationRequest();
+
         await GetLeagueOrThrowAsync(leagueId, cancellation);
 
         var (items, totalCount) = await teamRepository.GetPagedByLeagueIdAsync(
@@ -64,8 +66,8 @@ public sealed partial class FantasyTeamService(
         CancellationToken cancellation
     )
     {
-        req.ValidateCreateFantasyTeamRequest();
         req = req.NormalizeCreateFantasyTeamRequest();
+        req.ValidateCreateFantasyTeamRequest();
 
         var league = await GetLeagueOrThrowAsync(
             req.LeagueId,
@@ -145,12 +147,8 @@ public sealed partial class FantasyTeamService(
         JoinLeagueRequest req,
         CancellationToken cancellation)
     {
-        if (string.IsNullOrWhiteSpace(req.JoinCode))
-        {
-            throw new BadRequestException("JoinCode is required.");
-        }
-
         req = req.NormalizeJoinLeagueRequest();
+        req.ValidateJoinLeagueRequest();
         var league = await leagueRepository.GetResponseByJoinCodeAsync(
             req.JoinCode, cancellation)
             ?? throw new NotFoundException(
@@ -188,8 +186,8 @@ public sealed partial class FantasyTeamService(
     {
         var team = await GetTrackedTeamOrThrowAsync(id, cancellation);
 
-        req.ValidateUpdateFantasyTeamRequest();
         req = req.NormalizeUpdateFantasyTeamRequest();
+        req.ValidateUpdateFantasyTeamRequest();
 
         await EnsureUniqueAsync(
             team.LeagueId,

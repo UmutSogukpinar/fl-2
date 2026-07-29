@@ -5,7 +5,7 @@ namespace FantasyLeague.Application.Common.Validation;
 
 internal static class DraftValidation
 {
-    public static void ValidateMakeDraftPickRequest(MakeDraftPickRequest request)
+    public static void ValidateMakeDraftPickRequest(this MakeDraftPickRequest request)
     {
         if (request.TeamId == Guid.Empty)
         {

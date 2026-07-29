@@ -150,6 +150,13 @@ public sealed class FantasyTeamServiceTests
             () => _service.CreateAsync(request, CancellationToken.None));
 
         Assert.Equal(expectedMessage, exception.Message);
+        _teamRepository.Verify(
+            repository => repository.AddAsync(
+                It.IsAny<FantasyTeam>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _teamRepository.Verify(
+            repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -181,6 +188,40 @@ public sealed class FantasyTeamServiceTests
         _teamRepository.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenNameIsTaken_DoesNotModifyOrPersistTeam()
+    {
+        var league = CreateLeague();
+        var team = CreateTeam(league);
+        var originalName = team.Name;
+        var originalUpdatedAt = team.UpdatedAt;
+        _teamRepository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                team.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(team);
+        _teamRepository
+            .Setup(repository => repository.ExistsAsync(
+                team.LeagueId,
+                team.OwnerId,
+                "taken name",
+                team.Id,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FastasyTeamConflictResult.NameIsTaken);
+
+        var exception = await Assert.ThrowsAsync<ConflictException>(() =>
+            _service.UpdateAsync(
+                team.Id,
+                new UpdateFantasyTeamRequest("  Taken Name  "),
+                CancellationToken.None));
+
+        Assert.Equal("The team name is already used in this league.", exception.Message);
+        Assert.Equal(originalName, team.Name);
+        Assert.Equal(originalUpdatedAt, team.UpdatedAt);
+        _teamRepository.Verify(
+            repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -325,6 +366,18 @@ public sealed class FantasyTeamServiceTests
         Assert.Equal(league.Id, response.LeagueId);
         Assert.Equal(owner.Id, response.OwnerId);
         Assert.Equal("new team", response.Name);
+    }
+
+    [Fact]
+    public async Task JoinLeagueAsync_WithoutOwnerId_DoesNotQueryLeague()
+    {
+        var request = new JoinLeagueRequest("ABC12345", "Team", Guid.Empty);
+
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.JoinLeagueAsync(request, CancellationToken.None));
+
+        _leagueRepository.Verify(repository => repository.GetResponseByJoinCodeAsync(
+            It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

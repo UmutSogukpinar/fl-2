@@ -24,6 +24,8 @@ public sealed class LeagueService(
         PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
+        request.ValidatePaginationRequest();
+
         var (items, totalCount) = await 
             leagueRepository.GetPagedAsync(
                 request.PageNumber,
@@ -52,8 +54,8 @@ public sealed class LeagueService(
         CreateLeagueRequest request,
         CancellationToken cancellation)
     {
-        LeagueValidation.ValidateCreateLeagueRequest(request);
-        LeagueNormalization.NormalizeCreateLeagueRequest(ref request);
+        request = request.NormalizeCreateLeagueRequest();
+        request.ValidateCreateLeagueRequest();
 
         var commissioner = await userRepository.GetResponseByIdAsync(
             request.CommissionerId,
@@ -63,13 +65,13 @@ public sealed class LeagueService(
 
         var draftDateUtc = DateTimeUtcConverter.ConvertToUtc(
             request.DraftDate, commissioner.TimeZoneId);
-        LeagueValidation.ValidateFutureDraftDate(draftDateUtc!.Value);
+        draftDateUtc!.Value.ValidateFutureDraftDate();
         var league = request.ToEntity(
             draftDateUtc, commissioner.TimeZoneId);
         var commissionerTeam = new FantasyTeam
         {
-            Name = LeagueValidation.GetCommissionerTeamName(
-                request.TeamName, commissioner.Username),
+            Name = request.TeamName.GetCommissionerTeamName(
+                commissioner.Username),
             LeagueId = league.Id,
             OwnerId = request.CommissionerId
         };
@@ -86,8 +88,8 @@ public sealed class LeagueService(
         UpdateLeagueRequest request,
         CancellationToken cancellation)
     {
-        LeagueValidation.ValidateUpdateLeagueRequest(request);
-        LeagueNormalization.NormalizeUpdateLeagueRequest(ref request);
+        request = request.NormalizeUpdateLeagueRequest();
+        request.ValidateUpdateLeagueRequest();
 
         var currentTeamCount = await teamRepository.CountByLeagueIdAsync(
             id,
@@ -113,7 +115,7 @@ public sealed class LeagueService(
 
         var draftDateUtc = DateTimeUtcConverter.ConvertToUtc(
             request.DraftDate, commissioner.TimeZoneId);
-        LeagueValidation.ValidateFutureDraftDate(draftDateUtc!.Value);
+        draftDateUtc!.Value.ValidateFutureDraftDate();
         request.MapTo(
             league, draftDateUtc, commissioner.TimeZoneId);
 

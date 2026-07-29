@@ -20,6 +20,12 @@ internal static class UserValidation
         ValidateUsername(request.Username);
     }
 
+    public static void ValidateSignInRequest(this SignInRequest request)
+    {
+        ValidateEmail(request.Email);
+        ValidatePassword(request.Password);
+    }
+
     // ========================= Utils =========================
 
     private static void ValidateEmail(string email){

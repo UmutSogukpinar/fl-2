@@ -21,6 +21,8 @@ public sealed class UserService(
         PaginationRequest req,
         CancellationToken cancellationToken = default)
     {
+        req.ValidatePaginationRequest();
+
         var (items, totalCount) = await _userRepository.GetPagedAsync(
             req.PageNumber,
             req.PageSize,
@@ -46,8 +48,8 @@ public sealed class UserService(
         CreateUserRequest req,
         CancellationToken cancellationToken = default)
     {
-        req.ValidateCreateUserRequest();
         req = req.NormalizeCreateUserRequest();
+        req.ValidateCreateUserRequest();
 
         await EnsureUniqueAsync(
             req.Username,
@@ -69,6 +71,7 @@ public sealed class UserService(
         CancellationToken cancellation)
     {
         req = req.NormalizeSignInRequest();
+        req.ValidateSignInRequest();
         var user = await _userRepository.GetByEmailAsync(req.Email, cancellation);
 
         if (user is null || !_passwordHasher.Verify(req.Password, user.Password))
@@ -86,8 +89,8 @@ public sealed class UserService(
     {
         var user = await GetTrackedUserOrThrowAsync(id, cancellation);
 
-        req.ValidateUpdateUserRequest();
         req = req.NormalizeUpdateUserRequest();
+        req.ValidateUpdateUserRequest();
 
         await EnsureUniqueAsync(req.Username, req.Email, id, cancellation);
 

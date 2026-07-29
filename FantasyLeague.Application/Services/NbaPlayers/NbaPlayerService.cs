@@ -25,6 +25,8 @@ public sealed class NbaPlayerService(
         PaginationRequest req,
         CancellationToken cancellation = default)
     {
+        req.ValidatePaginationRequest();
+
         var (items, totalCount) = await 
             _nbaPlayerRepository.GetPagedAsync(
                 req.PageNumber,
@@ -47,6 +49,8 @@ public sealed class NbaPlayerService(
         CancellationToken cancellation
     )
     {
+        id.ValidatePlayerDetailsRequest(season, size);
+
         async Task<IPlayerResponse> GetPlayerAsync(CancellationToken token) =>
             await _nbaPlayerRepository.GetByIdAndSeasonAsync(
                 id,
@@ -72,6 +76,7 @@ public sealed class NbaPlayerService(
         CancellationToken cancellation
     )
     {
+        pagReq.ValidatePaginationRequest();
         playerReq = playerReq.NormalizePlayerRequest();
         playerReq.ValidateNbaPlayerRequest();
 

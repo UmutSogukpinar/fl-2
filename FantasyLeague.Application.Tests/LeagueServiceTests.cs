@@ -99,6 +99,24 @@ public sealed class LeagueServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_WithoutCommissionerId_DoesNotQueryUser()
+    {
+        var request = new CreateLeagueRequest(
+            "League",
+            null,
+            2026,
+            10,
+            Guid.Empty,
+            DateTime.UtcNow.AddDays(1));
+
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.CreateAsync(request, CancellationToken.None));
+
+        _userRepository.Verify(repository => repository.GetResponseByIdAsync(
+            It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task CreateAsync_WhenCommissionerDoesNotExist_ThrowsNotFoundException()
     {
         var request = new CreateLeagueRequest(

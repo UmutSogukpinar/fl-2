@@ -5,16 +5,17 @@ namespace FantasyLeague.Application.Common.Validation;
 
 internal static class LeagueValidation
 {
-    public static void ValidateCreateLeagueRequest(CreateLeagueRequest request)
+    public static void ValidateCreateLeagueRequest(this CreateLeagueRequest request)
     {
         ValidateName(request.Name);
         ValidateSeason(request.Season);
         ValidateMaxTeams(request.MaxTeams);
         ValidateRosterSize(request.RosterSize);
         ValidateDraftDateProvided(request.DraftDate);
+        ValidateCommissionerId(request.CommissionerId);
     }
 
-    public static void ValidateUpdateLeagueRequest(UpdateLeagueRequest request)
+    public static void ValidateUpdateLeagueRequest(this UpdateLeagueRequest request)
     {
         ValidateName(request.Name);
         ValidateMaxTeams(request.MaxTeams);
@@ -22,7 +23,7 @@ internal static class LeagueValidation
         ValidateDraftDateProvided(request.DraftDate);
     }
 
-    public static void ValidateFutureDraftDate(DateTime draftDateUtc)
+    public static void ValidateFutureDraftDate(this DateTime draftDateUtc)
     {
         if (draftDateUtc <= DateTime.UtcNow)
         {
@@ -30,7 +31,7 @@ internal static class LeagueValidation
         }
     }
 
-    public static string GetCommissionerTeamName(string? teamName, string username)
+    public static string GetCommissionerTeamName(this string? teamName, string username)
     {
         var resolvedName = string.IsNullOrWhiteSpace(teamName)
             ? $"{username}'s Team"
@@ -81,6 +82,14 @@ internal static class LeagueValidation
         if (draftDate == default)
         {
             throw new BadRequestException("DraftDate is required.");
+        }
+    }
+
+    private static void ValidateCommissionerId(Guid commissionerId)
+    {
+        if (commissionerId == Guid.Empty)
+        {
+            throw new BadRequestException("CommissionerId is required.");
         }
     }
 }

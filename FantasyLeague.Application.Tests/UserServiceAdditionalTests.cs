@@ -44,6 +44,18 @@ public sealed class UserServiceAdditionalTests
     }
 
     [Fact]
+    public async Task GetAsync_WithInvalidPagination_DoesNotQueryRepository()
+    {
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.GetAsync(new PaginationRequest { PageSize = 0 }));
+
+        _repository.Verify(repository => repository.GetPagedAsync(
+            It.IsAny<int>(),
+            It.IsAny<int>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task CreateAsync_WhenUsernameOrEmailExists_ThrowsConflictException()
     {
         var request = new CreateUserRequest(
@@ -79,6 +91,18 @@ public sealed class UserServiceAdditionalTests
 
         Assert.Equal(user.Id, response.Id);
         Assert.Equal(user.Email, response.Email);
+    }
+
+    [Fact]
+    public async Task SignInAsync_WithInvalidEmail_DoesNotQueryRepository()
+    {
+        var request = new SignInRequest("invalid-email", "password123");
+
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.SignInAsync(request, CancellationToken.None));
+
+        _repository.Verify(repository => repository.GetByEmailAsync(
+            It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

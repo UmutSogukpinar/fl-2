@@ -155,7 +155,7 @@ public sealed class DraftService(
         MakeDraftPickRequest request,
         CancellationToken cancellationToken = default)
     {
-        DraftValidation.ValidateMakeDraftPickRequest(request);
+        request.ValidateMakeDraftPickRequest();
 
         var league = await leagueRepository.GetTrackedByIdAsync(leagueId, cancellationToken)
             ?? throw new NotFoundException($"League '{leagueId}' was not found.");

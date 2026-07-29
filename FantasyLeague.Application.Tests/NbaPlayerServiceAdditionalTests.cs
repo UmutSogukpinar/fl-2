@@ -1,3 +1,4 @@
+using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Caching;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Requests.Common;
@@ -43,11 +44,11 @@ public sealed class NbaPlayerServiceAdditionalTests
     }
 
     [Fact]
-    public async Task GetNbaPlayerByIdAndYearAsync_WithInvalidSize_ThrowsArgumentOutOfRange()
+    public async Task GetNbaPlayerByIdAndYearAsync_WithInvalidSize_ThrowsBadRequest()
     {
         var invalidSize = (PlayerResponseSize)999;
 
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+        await Assert.ThrowsAsync<BadRequestException>(() =>
             _service.GetNbaPlayerByIdAndYearAsync(
                 Guid.NewGuid(), 2024, invalidSize, CancellationToken.None));
 

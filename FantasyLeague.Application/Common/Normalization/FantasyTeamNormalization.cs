@@ -47,7 +47,7 @@ internal static class FantasyTeamNormalization
 
         return req with
         {
-            JoinCode = req.JoinCode.Trim().ToUpperInvariant(),
+            JoinCode = req.JoinCode?.Trim().ToUpperInvariant() ?? string.Empty,
             TeamName = NormalizeName(req.TeamName)
         };
     }

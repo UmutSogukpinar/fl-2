@@ -16,4 +16,12 @@ public interface INbaPlayerRepository
     Task SaveChangesAsync(CancellationToken cancellationToken);
     Task<IPlayerResponse?> GetByIdAndSeasonAsync(Guid id, int season, PlayerResponseSize size, CancellationToken cancellationToken);
     Task<(IReadOnlyCollection<IPlayerResponse> Items, int TotalCount)> GetPagedNbaPlayersByNameAsync(PaginationRequest pagination, GetNbaPlayersRequest request, CancellationToken cancellationToken);
+
+    Task<MatchStats> GetMatchStatsByTeamIdsAsync(
+        Guid leagueId,
+        Guid homeTeamId,
+        Guid awayTeamId,
+        int season,
+        CancellationToken cancellationToken);
+
 }

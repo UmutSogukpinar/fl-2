@@ -4,6 +4,14 @@ namespace FantasyLeague.Application.Services.Leagues;
 
 public sealed partial class LeagueService
 {
+    public async Task<IReadOnlyList<LeagueStandingResponse>> GetStandingsAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        await GetLeagueOrThrowAsync(id, cancellationToken);
+        return await _leagueSetupRepository.GetStandingsAsync(id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(
         Guid id,
         CancellationToken cancellationToken = default)

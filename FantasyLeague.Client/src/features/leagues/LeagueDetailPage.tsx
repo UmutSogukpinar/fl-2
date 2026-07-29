@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../app/AppContext'
 import { useCurrentUser } from '../../app/UserContext'
 import { draftApi } from '../draft/draft.api'
-import { normalizeStatus, statusLabels } from './league.utils'
+import { formatDraftDate, normalizeStatus, statusLabels } from './league.utils'
 import { leaguesApi, type FantasyTeam } from './leagues.api'
-import type { DraftPickOrder, League, LeagueFixture } from './types'
+import type { DraftPickOrder, League, LeagueFixture, LeagueStanding } from './types'
 
 export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   const { navigate } = useApp()
@@ -13,6 +13,7 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   const [members, setMembers] = useState<FantasyTeam[]>([])
   const [fixtures, setFixtures] = useState<LeagueFixture[]>([])
   const [draftOrder, setDraftOrder] = useState<DraftPickOrder[]>([])
+  const [standings, setStandings] = useState<LeagueStanding[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [closing, setClosing] = useState(false)
@@ -38,6 +39,9 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
     leaguesApi.draftOrder(leagueId, controller.signal)
       .then(setDraftOrder)
       .catch(() => setDraftOrder([]))
+    leaguesApi.standings(leagueId, controller.signal)
+      .then(setStandings)
+      .catch(() => setStandings([]))
     return () => controller.abort()
   }, [leagueId])
 
@@ -48,6 +52,15 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
     return result
   }, new Map()), [fixtures])
   const myTeam = members.find((member) => member.ownerId === userId)
+  const formatGameTime = (gameTime?: string | null) =>
+    gameTime
+      ? new Date(gameTime).toLocaleString('tr-TR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : 'Saat bekleniyor'
 
   async function closeDelayedLeague() {
     if (!userId) return
@@ -85,11 +98,11 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
       <button className="text-button" onClick={() => navigate('leagues')}>← Liglere dön</button>
       <div className="league-detail-hero">
         <div><span className={`status status-${status}`}>{statusLabels[status]}</span><h1>{league.name}</h1><p>{league.description}</p></div>
-        <div className="league-meta"><span>Katılım kodu<strong>{league.joinCode}</strong></span><span>Takımlar<strong>{members.length}/{league.maxTeams}</strong></span><span>Sezon<strong>{league.season}</strong></span></div>
+        <div className="league-meta"><span>Katılım kodu<strong>{league.joinCode}</strong></span><span>Takımlar<strong>{members.length}/{league.maxTeams}</strong></span><span>Sezon<strong>{league.season}</strong></span><span>Draft zamanı<strong>{formatDraftDate(league.draftDate)}</strong></span></div>
       </div>
       {error && <div className="api-error" role="alert"><span />{error}</div>}
       <div className="detail-actions">
-        {(status === 'Drafting' || status === 'Active') && <button className="create" onClick={() => navigate(`draft/${leagueId}`)}>Draft odasına git</button>}
+        {status === 'Drafting' && <button className="create" onClick={() => navigate(`draft/${leagueId}`)}>Draft odasına git</button>}
         {status === 'DraftDelayed' && league.commissionerId === userId && <button className="create" disabled={closing} onClick={closeDelayedLeague}>{closing ? 'Kapatılıyor...' : 'Geciken ligi sonlandır'}</button>}
         {league.commissionerId === userId && ['Created', 'RegistrationOpen', 'DraftDelayed'].includes(status) && <button className="danger-button" disabled={cancelling} onClick={cancelLeague}>{cancelling ? 'İptal ediliyor...' : 'Ligi iptal et'}</button>}
       </div>
@@ -97,7 +110,13 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
         <article className="detail-panel"><h2>Lig üyeleri</h2>{members.map((member) => <div className="member-row" key={member.id}><strong>{member.name}</strong><span>{member.ownerId === userId ? 'Senin takımın' : 'Üye'}</span></div>)}{!members.length && <p>Henüz takım yok.</p>}</article>
         <article className="detail-panel"><h2>Draft sırası</h2>{draftOrder.slice(0, 20).map((pick) => <div className="member-row" key={pick.id}><strong>#{pick.overallPick} {pick.teamName}</strong><span>Tur {pick.round}</span></div>)}{!draftOrder.length && <p>Lig kapanınca snake draft sırası oluşturulur.</p>}</article>
       </div>
-      <article className="detail-panel fixtures-panel"><h2>Fikstür</h2>{Array.from(weeks).map(([week, games]) => <div className="fixture-week" key={week}><h3>{week}. Hafta</h3>{games.map((game) => <div className="fixture-row" key={game.id}><span>{game.homeTeamName}</span><strong>vs</strong><span>{game.awayTeamName}</span></div>)}</div>)}{!fixtures.length && <p>Lig kapanınca fikstür oluşturulur.</p>}</article>
+      <article className="detail-panel standings-panel">
+        <h2>Puan durumu</h2>
+        <div className="standings-row standings-head"><span>#</span><strong>Takım</strong><span>O</span><span>G</span><span>B</span><span>M</span><span>AV</span><b>P</b></div>
+        {standings.map((row) => <div className="standings-row" key={row.teamId}><span>{row.position}</span><strong>{row.teamName}</strong><span>{row.played}</span><span>{row.won}</span><span>{row.drawn}</span><span>{row.lost}</span><span>{row.pointDifference > 0 ? `+${row.pointDifference}` : row.pointDifference}</span><b>{row.points}</b></div>)}
+        {!standings.length && <p>Henüz puan durumu oluşturulmadı.</p>}
+      </article>
+      <article className="detail-panel fixtures-panel"><h2>Fikstür</h2>{Array.from(weeks).map(([week, games]) => <div className="fixture-week" key={week}><h3>{week}. Hafta</h3>{games.map((game) => <button className="fixture-row fixture-link" key={game.id} onClick={() => navigate(`matches/${leagueId}/${game.id}`)}><span>{game.homeTeamName}</span><strong className="fixture-time"><b>{game.homeScore != null && game.awayScore != null ? `${game.homeScore} - ${game.awayScore}` : 'vs'}</b><small>{formatGameTime(game.gameTime)}</small></strong><span>{game.awayTeamName}</span></button>)}</div>)}{!fixtures.length && <p>Lig kapanınca fikstür oluşturulur.</p>}</article>
       {myTeam && <p className="my-team-note">Bu ligdeki takımın: <strong>{myTeam.name}</strong></p>}
     </section>
   )

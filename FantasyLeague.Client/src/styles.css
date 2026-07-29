@@ -563,6 +563,18 @@ header {
   margin: 0;
   height: 32px;
 }
+.league-draft-date {
+  display: grid;
+  gap: 3px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  color: #8795aa;
+  background: #0a111c;
+  border: 1px solid #1d2838;
+  border-radius: 8px;
+}
+.league-draft-date span { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.league-draft-date strong { color: #d9e2ee; font-size: 12px; }
 .member-row {
   display: flex;
   justify-content: space-between;
@@ -1138,7 +1150,7 @@ header {
 
 .league-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(90px, 1fr));
+  grid-template-columns: repeat(4, minmax(90px, 1fr));
   gap: 10px;
 }
 
@@ -1182,7 +1194,73 @@ header {
 .fixture-week h3 { color: #ff765d; font-size: 14px; }
 .fixture-row span { width: 42%; }
 .fixture-row span:last-child { text-align: right; }
+.fixture-link {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border-width: 0 0 1px;
+  cursor: pointer;
+}
+.fixture-link:hover { color: #ff8a73; background: #ff654808; }
+.fixture-time {
+  display: grid;
+  min-width: 108px;
+  gap: 4px;
+  text-align: center;
+}
+.fixture-time b { font-size: 15px; }
+.fixture-time small { color: #7f94ad; font-size: 10px; font-weight: 600; white-space: nowrap; }
 .my-team-note { color: #9aafc7; }
+.standings-panel { overflow-x: auto; }
+.standings-row {
+  display: grid;
+  grid-template-columns: 34px minmax(150px, 1fr) repeat(6, 48px);
+  align-items: center;
+  min-width: 560px;
+  padding: 12px 8px;
+  border-bottom: 1px solid #223147;
+  color: #9bacc1;
+  text-align: center;
+}
+.standings-row strong { color: #edf2f8; text-align: left; }
+.standings-row b { color: #ff8068; font-size: 17px; }
+.standings-head { color: #70849c; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+.standings-head b { color: #70849c; font-size: 10px; }
+
+.match-scoreboard {
+  display: grid;
+  gap: 22px;
+  padding: 32px;
+  text-align: center;
+  background: radial-gradient(circle at 50% 0, #ff65481c, transparent 52%), #111c2b;
+  border: 1px solid #33445a;
+  border-radius: 18px;
+}
+.match-kicker { color: #ff765d; font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.match-teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 28px; }
+.match-teams > div:last-child { text-align: right; }
+.match-teams > div:first-child { text-align: left; }
+.match-teams span { color: #7f94ad; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+.match-teams h1 { margin: 8px 0 0; font-size: clamp(24px, 4vw, 40px); }
+.match-score { min-width: 150px; color: white; font-size: clamp(34px, 6vw, 64px); font-variant-numeric: tabular-nums; }
+.match-state { width: max-content; margin: auto; padding: 7px 13px; color: #9db1c8; background: #0b1522; border-radius: 999px; font-size: 12px; }
+.match-state.finished { color: #7ee2a8; background: #173126; }
+.match-stats-panel { padding-block: 12px; }
+.match-stat-heading, .match-stat-row { display: grid; grid-template-columns: 1fr 180px 1fr; align-items: center; gap: 20px; padding: 13px 8px; text-align: center; border-bottom: 1px solid #223147; }
+.match-stat-heading span, .match-stat-row span { color: #8398b1; font-size: 12px; }
+.match-stat-heading strong:first-child, .match-stat-row strong:first-child { text-align: left; }
+.match-stat-heading strong:last-child, .match-stat-row strong:last-child { text-align: right; }
+.match-stat-row strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.match-note { margin: 0; color: #71869f; font-size: 12px; text-align: center; }
+@media (max-width: 700px) {
+  .match-scoreboard { padding: 22px 16px; }
+  .match-teams { grid-template-columns: 1fr; gap: 16px; }
+  .match-teams > div, .match-teams > div:first-child, .match-teams > div:last-child { text-align: center; }
+  .match-score { grid-row: 2; }
+  .match-stat-heading, .match-stat-row { grid-template-columns: 1fr 110px 1fr; gap: 8px; }
+}
 
 .turn-card { min-width: 250px; display: grid; gap: 7px; }
 .turn-card small { color: #8196af; }

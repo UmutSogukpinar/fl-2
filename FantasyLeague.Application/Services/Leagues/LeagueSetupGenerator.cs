@@ -42,7 +42,9 @@ public static class LeagueSetupGenerator
 
     public static IReadOnlyList<LeagueFixture> CreateRoundRobinFixtures(
         Guid leagueId,
-        IReadOnlyList<Guid> teamIds)
+        IReadOnlyList<Guid> teamIds,
+        DateTime? draftCompletedAt = null,
+        TimeSpan? roundInterval = null)
     {
         var rotation = teamIds.Cast<Guid?>().ToList();
         if (rotation.Count % 2 != 0) rotation.Add(null);
@@ -65,7 +67,9 @@ public static class LeagueSetupGenerator
                     LeagueId = leagueId,
                     Week = round + 1,
                     HomeTeamId = swapHome ? second.Value : first.Value,
-                    AwayTeamId = swapHome ? first.Value : second.Value
+                    AwayTeamId = swapHome ? first.Value : second.Value,
+                    GameTime = draftCompletedAt?.Add(
+                        (roundInterval ?? TimeSpan.FromDays(7)) * (round + 1))
                 });
             }
 

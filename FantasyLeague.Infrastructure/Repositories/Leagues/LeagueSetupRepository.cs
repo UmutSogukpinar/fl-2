@@ -27,6 +27,26 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
             .AddRangeAsync(fixtures, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<LeagueFixture>> GetDueFixturesAsync(
+        DateTime utcNow, CancellationToken cancellationToken) =>
+        await dbContext.Set<LeagueFixture>()
+            .Where(fixture => fixture.GameTime <= utcNow
+                && fixture.HomeScore == null && fixture.AwayScore == null)
+            .OrderBy(fixture => fixture.GameTime)
+            .ThenBy(fixture => fixture.Id)
+            .ToListAsync(cancellationToken);
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken) =>
+        dbContext.SaveChangesAsync(cancellationToken);
+
+    public Task<bool> HasUnfinishedFixturesAsync(
+        Guid leagueId,
+        CancellationToken cancellationToken) =>
+        dbContext.Set<LeagueFixture>().AnyAsync(
+            fixture => fixture.LeagueId == leagueId
+                && (fixture.HomeScore == null || fixture.AwayScore == null),
+            cancellationToken);
+
     public async Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(
         Guid leagueId,
         CancellationToken cancellationToken) =>
@@ -46,7 +66,10 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
                 item.home.Id,
                 item.home.Name,
                 item.away.Id,
-                item.away.Name))
+                item.away.Name,
+                item.fixture.HomeScore,
+                item.fixture.AwayScore,
+                item.fixture.GameTime))
             .ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(
@@ -67,4 +90,55 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
                 item.pick.PositionInRound,
                 item.pick.OverallPick))
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<LeagueStandingResponse>> GetStandingsAsync(
+        Guid leagueId,
+        CancellationToken cancellationToken)
+    {
+        var teams = await dbContext.Set<FantasyTeam>().AsNoTracking()
+            .Where(team => team.LeagueId == leagueId)
+            .Select(team => new { team.Id, team.Name })
+            .ToArrayAsync(cancellationToken);
+        var fixtures = await dbContext.Set<LeagueFixture>().AsNoTracking()
+            .Where(fixture => fixture.LeagueId == leagueId
+                && fixture.HomeScore != null && fixture.AwayScore != null)
+            .Select(fixture => new
+            {
+                fixture.HomeTeamId, fixture.AwayTeamId,
+                HomeScore = fixture.HomeScore!.Value,
+                AwayScore = fixture.AwayScore!.Value
+            })
+            .ToArrayAsync(cancellationToken);
+
+        var rows = teams.Select(team =>
+        {
+            var home = fixtures.Where(game => game.HomeTeamId == team.Id).ToArray();
+            var away = fixtures.Where(game => game.AwayTeamId == team.Id).ToArray();
+            var won = home.Count(game => game.HomeScore > game.AwayScore)
+                + away.Count(game => game.AwayScore > game.HomeScore);
+            var drawn = home.Count(game => game.HomeScore == game.AwayScore)
+                + away.Count(game => game.AwayScore == game.HomeScore);
+            var played = home.Length + away.Length;
+            var pointsFor = home.Sum(game => game.HomeScore) + away.Sum(game => game.AwayScore);
+            var pointsAgainst = home.Sum(game => game.AwayScore) + away.Sum(game => game.HomeScore);
+            return new
+            {
+                team.Id, team.Name, Played = played, Won = won, Drawn = drawn,
+                Lost = played - won - drawn, PointsFor = pointsFor,
+                PointsAgainst = pointsAgainst,
+                Difference = pointsFor - pointsAgainst,
+                Points = won * 3 + drawn
+            };
+        })
+        .OrderByDescending(row => row.Points)
+        .ThenByDescending(row => row.Difference)
+        .ThenByDescending(row => row.PointsFor)
+        .ThenBy(row => row.Name)
+        .ToArray();
+
+        return rows.Select((row, index) => new LeagueStandingResponse(
+            index + 1, row.Id, row.Name, row.Played, row.Won, row.Drawn,
+            row.Lost, row.PointsFor, row.PointsAgainst, row.Difference,
+            row.Points)).ToArray();
+    }
 }

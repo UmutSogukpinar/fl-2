@@ -7,4 +7,7 @@ public sealed record LeagueFixtureResponse(
     Guid HomeTeamId,
     string HomeTeamName,
     Guid AwayTeamId,
-    string AwayTeamName);
+    string AwayTeamName,
+    int? HomeScore,
+    int? AwayScore,
+    DateTime? GameTime);

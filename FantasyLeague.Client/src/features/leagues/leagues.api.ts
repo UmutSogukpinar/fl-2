@@ -1,6 +1,6 @@
 import { apiClient } from '../../shared/api/client'
 import type { PagedResponse } from '../../shared/types/api'
-import type { DraftPickOrder, League, LeagueFixture } from './types'
+import type { DraftPickOrder, League, LeagueFixture, LeagueStanding, MatchStats } from './types'
 
 export interface CreateLeagueRequest {
   name: string
@@ -18,6 +18,18 @@ export const leaguesApi = {
     apiClient<PagedResponse<League>>('/leagues?pageNumber=1&pageSize=20', { signal }),
   fixtures: (leagueId: string, signal?: AbortSignal) =>
     apiClient<LeagueFixture[]>(`/leagues/${leagueId}/fixtures`, { signal }),
+  standings: (leagueId: string, signal?: AbortSignal) =>
+    apiClient<LeagueStanding[]>(`/leagues/${leagueId}/standings`, { signal }),
+  matchStats: (
+    leagueId: string,
+    homeTeamId: string,
+    awayTeamId: string,
+    signal?: AbortSignal,
+  ) =>
+    apiClient<MatchStats>(
+      `/leagues/${leagueId}/match-stats?homeTeamId=${homeTeamId}&awayTeamId=${awayTeamId}`,
+      { signal },
+    ),
   draftOrder: (leagueId: string, signal?: AbortSignal) =>
     apiClient<DraftPickOrder[]>(`/leagues/${leagueId}/draft-order`, { signal }),
   create: (request: CreateLeagueRequest) =>

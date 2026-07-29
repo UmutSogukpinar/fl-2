@@ -19,7 +19,7 @@ public sealed partial class DraftService
             return;
         }
 
-        await CreateFixturesAsync(league.Id, picks, cancellationToken);
+        await CreateFixturesAsync(league.Id, picks, pickedAt, cancellationToken);
         league.Status = LeagueStatus.Active;
         league.UpdatedAt = pickedAt;
     }
@@ -27,6 +27,7 @@ public sealed partial class DraftService
     private Task CreateFixturesAsync(
         Guid leagueId,
         IReadOnlyList<DraftPickResponse> picks,
+        DateTime draftCompletedAt,
         CancellationToken cancellationToken)
     {
         var teamOrder = picks
@@ -35,7 +36,7 @@ public sealed partial class DraftService
             .Select(pick => pick.TeamId)
             .ToArray();
         var fixtures = LeagueSetupGenerator.CreateRoundRobinFixtures(
-            leagueId, teamOrder);
+            leagueId, teamOrder, draftCompletedAt, TimeSpan.FromMinutes(5));
 
         return leagueSetupRepository.AddFixturesAsync(
             fixtures, cancellationToken

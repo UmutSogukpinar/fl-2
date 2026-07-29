@@ -14,16 +14,22 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
     public async Task<(IReadOnlyCollection<LeagueResponse> Items, int TotalCount)> GetPagedAsync(
         int pageNumber,
         int pageSize,
+        LeagueStatus? status,
         CancellationToken cancellationToken)
     {
         var query = dbContext.Set<League>().AsNoTracking();
-        var totalCount = await query.CountAsync();
+        if (status.HasValue)
+        {
+            query = query.Where(league => league.Status == status.Value);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
         var items = await query
             .OrderByDescending(league => league.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(LeagueProjections.Response)
-            .ToArrayAsync();
+            .ToArrayAsync(cancellationToken);
 
         return (items, totalCount);
     }

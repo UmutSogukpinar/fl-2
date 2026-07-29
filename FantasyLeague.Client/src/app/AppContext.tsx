@@ -35,7 +35,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
   const activeNav = navigation.find((item) =>
     route === item.route ||
-    (item.route === 'leagues' && (route.startsWith('leagues/') || route.startsWith('draft/')))
+    (item.route === 'leagues' && (
+      route.startsWith('leagues/') ||
+      route.startsWith('draft/') ||
+      route.startsWith('matches/')
+    ))
   )?.label ?? navigation[0].label
   const setActiveNav = (label: string) => {
     const item = navigation.find((entry) => entry.label === label)

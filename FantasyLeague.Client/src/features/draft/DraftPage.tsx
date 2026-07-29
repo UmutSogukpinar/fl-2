@@ -4,6 +4,7 @@ import { useCurrentUser } from '../../app/UserContext'
 import { leaguesApi, type FantasyTeam } from '../leagues/leagues.api'
 import { usePlayers } from '../players/usePlayers'
 import { useDraft } from './useDraft'
+import { normalizeStatus } from '../leagues/league.utils'
 
 export function DraftPage({ leagueId }: { leagueId: string }) {
   const { navigate } = useApp()
@@ -35,6 +36,11 @@ export function DraftPage({ leagueId }: { leagueId: string }) {
     return () => window.clearInterval(timer)
   }, [state?.pickDeadlineUtc])
 
+  const draftIsOpen = state ? normalizeStatus(state.status) === 'Drafting' : false
+  useEffect(() => {
+    if (state && !draftIsOpen) navigate(`leagues/${leagueId}`)
+  }, [draftIsOpen, leagueId, navigate, state])
+
   const myTeam = members.find((team) => team.ownerId === userId)
   const selectedPlayerIds = useMemo(() => new Set(state?.picks.map((pick) => pick.nbaPlayerId).filter(Boolean)), [state])
   const isMyTurn = Boolean(myTeam && state?.currentPick?.teamId === myTeam.id)
@@ -54,6 +60,7 @@ export function DraftPage({ leagueId }: { leagueId: string }) {
 
   if (loading) return <section className="workspace-page"><div className="empty">Draft yükleniyor...</div></section>
   if (!state) return <section className="workspace-page"><div className="api-error">{error ?? 'Draft bulunamadı.'}</div></section>
+  if (!draftIsOpen) return <section className="workspace-page"><div className="empty">Draft tamamlandı. Lig detayına yönlendiriliyorsun...</div></section>
 
   return (
     <section className="workspace-page draft-page">

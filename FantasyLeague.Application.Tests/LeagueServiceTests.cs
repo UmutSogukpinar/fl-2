@@ -38,7 +38,7 @@ public sealed class LeagueServiceTests
         var league = CreateLeague();
         _leagueRepository
             .Setup(repository => repository.GetPagedAsync(
-                1, 10, It.IsAny<CancellationToken>()))
+                1, 10, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(([CreateLeagueResponse(league)], 1));
 
         var result = await _service.GetAsync(new PaginationRequest());
@@ -48,6 +48,23 @@ public sealed class LeagueServiceTests
         Assert.Equal(league.Id, response.Id);
         Assert.Equal(league.Name, response.Name);
         Assert.Equal(league.CommissionerId, response.CommissionerId);
+    }
+
+    [Fact]
+    public async Task GetAsync_ForwardsStatusFilter()
+    {
+        _leagueRepository
+            .Setup(repository => repository.GetPagedAsync(
+                1, 10, LeagueStatus.Completed, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Array.Empty<LeagueResponse>(), 0));
+
+        var result = await _service.GetAsync(
+            new PaginationRequest(), LeagueStatus.Completed);
+
+        Assert.Empty(result.Items);
+        _leagueRepository.Verify(repository => repository.GetPagedAsync(
+            1, 10, LeagueStatus.Completed, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -150,6 +167,58 @@ public sealed class LeagueServiceTests
             awayTeamId);
 
         Assert.Same(expected, result);
+    }
+
+    [Fact]
+    public async Task ProcessDueFixturesAsync_WhenFinalFixtureCompletes_MarksLeagueCompleted()
+    {
+        var league = CreateLeague();
+        league.Status = LeagueStatus.Active;
+        var fixture = new LeagueFixture
+        {
+            LeagueId = league.Id,
+            HomeTeamId = Guid.NewGuid(),
+            AwayTeamId = Guid.NewGuid(),
+            Week = 1,
+            GameTime = DateTime.UtcNow.AddMinutes(-1)
+        };
+        var utcNow = DateTime.UtcNow;
+
+        _leagueSetupRepository
+            .Setup(repository => repository.GetDueFixturesAsync(
+                utcNow, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([fixture]);
+        _leagueRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateLeagueResponse(league));
+        _nbaPlayerRepository
+            .Setup(repository => repository.GetMatchStatsByTeamIdsAsync(
+                league.Id, fixture.HomeTeamId, fixture.AwayTeamId,
+                league.Season, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MatchStats(
+                TeamMatchStats.Empty(fixture.HomeTeamId, league.Season),
+                TeamMatchStats.Empty(fixture.AwayTeamId, league.Season)));
+        _leagueSetupRepository
+            .Setup(repository => repository.HasUnfinishedFixturesAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _leagueRepository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(league);
+
+        var processed = await _service.ProcessDueFixturesAsync(utcNow);
+
+        Assert.Equal(1, processed);
+        Assert.Equal(LeagueStatus.Completed, league.Status);
+        Assert.Equal(utcNow, league.UpdatedAt);
+        Assert.NotNull(fixture.HomeScore);
+        Assert.NotNull(fixture.AwayScore);
+        _leagueSetupRepository.Verify(repository =>
+            repository.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _leagueRepository.Verify(repository =>
+            repository.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

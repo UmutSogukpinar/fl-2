@@ -6,6 +6,8 @@ using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Services.FantasyTeams;
 using FantasyLeague.Application.Services.Leagues;
 using Microsoft.AspNetCore.Mvc;
+using FantasyLeague.Application.Models;
+using FantasyLeague.Domain.Enums;
 
 namespace FantasyLeague.WebApi.Controllers;
 
@@ -16,6 +18,20 @@ public sealed partial class LeaguesController(
     IFantasyTeamService fantasyTeamService,
     ILogger<LeaguesController> logger) : ControllerBase
 {
+    [HttpGet("{id:guid}/standings")]
+    [ProducesResponseType<IReadOnlyList<LeagueStandingResponse>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<LeagueStandingResponse>>> GetStandingsAsync(
+        Guid id,
+        CancellationToken cancellationToken) =>
+        Ok(await leagueService.GetStandingsAsync(id, cancellationToken));
+
+    [HttpGet("{id:guid}/match-stats")]
+    [ProducesResponseType<MatchStats>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<MatchStats>> GetMatchStatsAsync(
+        Guid id, [FromQuery] Guid homeTeamId, [FromQuery] Guid awayTeamId,
+        CancellationToken cancellationToken) =>
+        Ok(await leagueService.GetMatchStatsAsync(id, homeTeamId, awayTeamId, cancellationToken));
+
 
     /// <summary>
     /// Returns the generated fixtures for a league, ordered by week.
@@ -70,9 +86,10 @@ public sealed partial class LeaguesController(
     [ProducesResponseType<PagedResponse<LeagueResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<LeagueResponse>>> GetAsync(
         [FromQuery] PaginationRequest request,
+        [FromQuery] LeagueStatus? status,
         CancellationToken cancellation)
     {
-        var response = await leagueService.GetAsync(request, cancellation);
+        var response = await leagueService.GetAsync(request, status, cancellation);
         return Ok(response);
     }
 

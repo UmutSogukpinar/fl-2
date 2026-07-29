@@ -1,6 +1,6 @@
 import { useApp } from '../../app/AppContext'
 import { Icon } from '../../shared/ui/Icon'
-import { normalizeStatus, statusLabels } from './league.utils'
+import { formatDraftDate, normalizeStatus, statusLabels } from './league.utils'
 import type { League } from './types'
 
 export function LeagueCard({ league, index }: { league: League; index: number }) {
@@ -26,6 +26,10 @@ export function LeagueCard({ league, index }: { league: League; index: number })
       </div>
       <h3>{league.name}</h3>
       <p>{league.description || texts.league.defaultDescription}</p>
+      <div className="league-draft-date">
+        <span>Draft zamanı</span>
+        <strong>{formatDraftDate(league.draftDate)}</strong>
+      </div>
       <div className="card-footer">
         <button onClick={() => navigate(`leagues/${league.id}`)}>
           {texts.actions.details}

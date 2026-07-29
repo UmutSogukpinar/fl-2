@@ -40,4 +40,21 @@ public sealed class LeagueSetupGeneratorTests
                 || fixture.HomeTeamId == teams[second] && fixture.AwayTeamId == teams[first]);
         }
     }
+
+    [Fact]
+    public void CreateRoundRobinFixtures_SchedulesDemoRoundsEveryFiveMinutes()
+    {
+        var completedAt = new DateTime(2026, 7, 30, 12, 0, 0, DateTimeKind.Utc);
+        var teams = Enumerable.Range(0, 4).Select(_ => Guid.NewGuid()).ToArray();
+
+        var fixtures = LeagueSetupGenerator.CreateRoundRobinFixtures(
+            Guid.NewGuid(), teams, completedAt, TimeSpan.FromMinutes(5));
+
+        Assert.All(fixtures.Where(fixture => fixture.Week == 1),
+            fixture => Assert.Equal(completedAt.AddMinutes(5), fixture.GameTime));
+        Assert.All(fixtures.Where(fixture => fixture.Week == 2),
+            fixture => Assert.Equal(completedAt.AddMinutes(10), fixture.GameTime));
+        Assert.All(fixtures.Where(fixture => fixture.Week == 3),
+            fixture => Assert.Equal(completedAt.AddMinutes(15), fixture.GameTime));
+    }
 }

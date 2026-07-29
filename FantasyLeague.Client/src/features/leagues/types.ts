@@ -25,6 +25,9 @@ export interface LeagueFixture {
   homeTeamName: string
   awayTeamId: string
   awayTeamName: string
+  homeScore?: number | null
+  awayScore?: number | null
+  gameTime?: string | null
 }
 
 export interface DraftPickOrder {
@@ -35,4 +38,41 @@ export interface DraftPickOrder {
   round: number
   positionInRound: number
   overallPick: number
+}
+
+export interface TeamMatchStats {
+  fantasyTeamId: string
+  season: number
+  playerCount: number
+  gamesPlayed: number
+  gamesStarted: number
+  minutesPerGame: number
+  pointsPerGame: number
+  reboundsPerGame: number
+  assistsPerGame: number
+  stealsPerGame: number
+  blocksPerGame: number
+  turnoversPerGame: number
+  fieldGoalPercentage: number
+  threePointPercentage: number
+  freeThrowPercentage: number
+}
+
+export interface MatchStats {
+  homeTeamStats: TeamMatchStats
+  awayTeamStats: TeamMatchStats
+}
+
+export interface LeagueStanding {
+  position: number
+  teamId: string
+  teamName: string
+  played: number
+  won: number
+  drawn: number
+  lost: number
+  pointsFor: number
+  pointsAgainst: number
+  pointDifference: number
+  points: number
 }

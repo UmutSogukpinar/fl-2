@@ -47,6 +47,7 @@ builder.Services.AddScoped<ILeagueSetupRepository, LeagueSetupRepository>();
 builder.Services.AddScoped<IDraftRepository, DraftRepository>();
 builder.Services.AddScoped<IDraftService, DraftService>();
 builder.Services.AddHostedService<DraftSchedulerService>();
+builder.Services.AddHostedService<MatchSchedulerService>();
 builder.Services.AddScoped<IFantasyTeamService, FantasyTeamService>();
 builder.Services.AddScoped<IFantasyTeamRepository, FantasyTeamRepository>();
 builder.Services.Configure<ApiSportsOptions>(

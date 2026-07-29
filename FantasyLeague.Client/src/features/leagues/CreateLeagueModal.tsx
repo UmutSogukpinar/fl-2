@@ -4,6 +4,8 @@ import { Icon } from '../../shared/ui/Icon'
 import { useCurrentUser } from '../../app/UserContext'
 import { leaguesApi } from './leagues.api'
 
+const DEMO_SEASON = 2024
+
 type Props = {
   onClose: () => void
 }
@@ -31,7 +33,7 @@ export function CreateLeagueModal({ onClose }: Props) {
       await leaguesApi.create({
         name: String(form.get('name')),
         description: String(form.get('description')) || null,
-        season: Number(form.get('season')),
+        season: DEMO_SEASON,
         maxTeams: Number(form.get('maxTeams')),
         commissionerId: userId!,
         draftDate: String(form.get('draftDate')),
@@ -69,7 +71,7 @@ export function CreateLeagueModal({ onClose }: Props) {
           <label>Takımın<input name="teamName" required maxLength={100} /></label>
           <label>Açıklama<textarea name="description" maxLength={500} rows={3} /></label>
           <div className="form-grid">
-            <label>Sezon<input name="season" type="number" min="1946" defaultValue={2026} required /></label>
+            <label>Demo sezonu<input name="season" type="number" value={DEMO_SEASON} readOnly /></label>
             <label>Maksimum takım<input name="maxTeams" type="number" min="2" max="30" defaultValue={10} required /></label>
             <label>Kadro büyüklüğü<input name="rosterSize" type="number" min="1" max="30" defaultValue={13} required /></label>
             <label>Draft zamanı<input name="draftDate" type="datetime-local" defaultValue={tomorrowAtEight()} required /></label>

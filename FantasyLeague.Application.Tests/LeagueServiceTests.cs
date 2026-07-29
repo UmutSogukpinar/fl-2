@@ -78,7 +78,7 @@ public sealed class LeagueServiceTests
             .Callback<FantasyTeam, CancellationToken>((team, _) => addedTeam = team)
             .Returns(Task.CompletedTask);
 
-        var response = await _service.CreateAsync(request, CancellationToken.None);
+        var response = await _service.CreateAsync(request);
 
         Assert.NotNull(addedLeague);
         Assert.Equal("Champions", addedLeague.Name);
@@ -110,7 +110,7 @@ public sealed class LeagueServiceTests
             DateTime.UtcNow.AddDays(1));
 
         await Assert.ThrowsAsync<BadRequestException>(() =>
-            _service.CreateAsync(request, CancellationToken.None));
+            _service.CreateAsync(request));
 
         _userRepository.Verify(repository => repository.GetResponseByIdAsync(
             It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -127,7 +127,7 @@ public sealed class LeagueServiceTests
                 request.CommissionerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((UserResponse?)null);
 
-        await Assert.ThrowsAsync<NotFoundException>(() => _service.CreateAsync(request, CancellationToken.None));
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.CreateAsync(request));
         _leagueRepository.Verify(
             repository => repository.AddAsync(It.IsAny<League>(), It.IsAny<CancellationToken>()),
             Times.Never);
@@ -150,7 +150,7 @@ public sealed class LeagueServiceTests
             "Updated", null, 7, DateTime.UtcNow.AddDays(1));
 
         await Assert.ThrowsAsync<ConflictException>(
-            () => _service.UpdateAsync(league.Id, request, CancellationToken.None));
+            () => _service.UpdateAsync(league.Id, request));
         _leagueRepository.Verify(
             repository => repository.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never);
@@ -165,7 +165,7 @@ public sealed class LeagueServiceTests
                 league.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(league);
 
-        await _service.DeleteAsync(league.Id, league.CommissionerId, CancellationToken.None);
+        await _service.DeleteAsync(league.Id, league.CommissionerId);
 
         _leagueRepository.Verify(repository => repository.Remove(league), Times.Once);
         _leagueRepository.Verify(
@@ -183,7 +183,7 @@ public sealed class LeagueServiceTests
             .ReturnsAsync(league);
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
-            _service.DeleteAsync(league.Id, Guid.NewGuid(), CancellationToken.None));
+            _service.DeleteAsync(league.Id, Guid.NewGuid()));
 
         _leagueRepository.Verify(repository => repository.Remove(It.IsAny<League>()), Times.Never);
     }
@@ -199,7 +199,7 @@ public sealed class LeagueServiceTests
             .ReturnsAsync(league);
 
         await Assert.ThrowsAsync<ConflictException>(() =>
-            _service.DeleteAsync(league.Id, league.CommissionerId, CancellationToken.None));
+            _service.DeleteAsync(league.Id, league.CommissionerId));
 
         _leagueRepository.Verify(repository => repository.Remove(It.IsAny<League>()), Times.Never);
     }
@@ -232,7 +232,7 @@ public sealed class LeagueServiceTests
             "League", null, 2026, 10, Guid.NewGuid(), default);
 
         await Assert.ThrowsAsync<BadRequestException>(() =>
-            _service.CreateAsync(request, CancellationToken.None));
+            _service.CreateAsync(request));
         _leagueRepository.Verify(
             repository => repository.AddAsync(
                 It.IsAny<League>(), It.IsAny<CancellationToken>()),

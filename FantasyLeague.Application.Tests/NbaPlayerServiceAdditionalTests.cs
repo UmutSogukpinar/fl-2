@@ -50,7 +50,7 @@ public sealed class NbaPlayerServiceAdditionalTests
 
         await Assert.ThrowsAsync<BadRequestException>(() =>
             _service.GetNbaPlayerByIdAndYearAsync(
-                Guid.NewGuid(), 2024, invalidSize, CancellationToken.None));
+                Guid.NewGuid(), 2024, invalidSize));
 
         _cache.Verify(cache => cache.GetOrCreateAsync(
             It.IsAny<string>(),

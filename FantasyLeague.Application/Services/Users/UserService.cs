@@ -68,7 +68,7 @@ public sealed class UserService(
 
     public async Task<UserResponse> SignInAsync(
         SignInRequest req,
-        CancellationToken cancellation)
+        CancellationToken cancellation = default)
     {
         req = req.NormalizeSignInRequest();
         req.ValidateSignInRequest();
@@ -85,7 +85,7 @@ public sealed class UserService(
     public async Task<UserResponse> UpdateAsync(
         Guid id,
         UpdateUserRequest req,
-        CancellationToken cancellation)
+        CancellationToken cancellation = default)
     {
         var user = await GetTrackedUserOrThrowAsync(id, cancellation);
 
@@ -100,7 +100,9 @@ public sealed class UserService(
         return user.ToResponse();
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellation)
+    public async Task DeleteAsync(
+        Guid id,
+        CancellationToken cancellation = default)
     {
         var user = await GetTrackedUserOrThrowAsync(id, cancellation);
         _userRepository.Remove(user);

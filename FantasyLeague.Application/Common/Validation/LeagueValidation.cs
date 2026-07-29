@@ -7,6 +7,7 @@ internal static class LeagueValidation
 {
     public static void ValidateCreateLeagueRequest(this CreateLeagueRequest request)
     {
+
         ValidateName(request.Name);
         ValidateSeason(request.Season);
         ValidateMaxTeams(request.MaxTeams);

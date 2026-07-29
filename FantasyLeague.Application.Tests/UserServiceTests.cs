@@ -1,4 +1,4 @@
-﻿namespace FantasyLeague.Application.Tests;
+namespace FantasyLeague.Application.Tests;
 
 using Moq;
 using Xunit;
@@ -42,7 +42,7 @@ public class UserServiceTests
             .ReturnsAsync(expectedUser);
 
         // Act
-        var actualUser = await _service.GetByIdAsync(userId, CancellationToken.None);
+        var actualUser = await _service.GetByIdAsync(userId);
 
         // Assert
         Assert.NotNull(actualUser);
@@ -68,7 +68,7 @@ public class UserServiceTests
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(async () =>
         {
-            await _service.GetByIdAsync(userId, CancellationToken.None);
+            await _service.GetByIdAsync(userId);
         });
     }
 
@@ -93,7 +93,7 @@ public class UserServiceTests
 
         // Act
         var createdUser = await _service.CreateAsync(
-            request, CancellationToken.None
+            request
         );
 
         // Assert
@@ -116,7 +116,7 @@ public class UserServiceTests
         // Act & Assert
         Assert.Throws<BadRequestException>(() =>
         {
-            _service.CreateAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+            _service.CreateAsync(request).GetAwaiter().GetResult();
         });
     }
 
@@ -135,7 +135,7 @@ public class UserServiceTests
         // Act & Assert
         Assert.Throws<BadRequestException>(() =>
         {
-            _service.CreateAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+            _service.CreateAsync(request).GetAwaiter().GetResult();
         });
     }
 
@@ -153,7 +153,7 @@ public class UserServiceTests
         // Act & Assert
         Assert.Throws<BadRequestException>(() =>
         {
-            _service.CreateAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+            _service.CreateAsync(request).GetAwaiter().GetResult();
         });
     }
 
@@ -171,7 +171,7 @@ public class UserServiceTests
         // Act & Assert
         Assert.Throws<BadRequestException>(() =>
         {
-            _service.CreateAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+            _service.CreateAsync(request).GetAwaiter().GetResult();
         });
     }
 
@@ -191,7 +191,7 @@ public class UserServiceTests
         // Act & Assert
         Assert.Throws<BadRequestException>(() =>
         {
-            _service.CreateAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+            _service.CreateAsync(request).GetAwaiter().GetResult();
         });
     }
 
@@ -209,7 +209,7 @@ public class UserServiceTests
         // Act & Assert
         Assert.Throws<BadRequestException>(() =>
         {
-            _service.CreateAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+            _service.CreateAsync(request).GetAwaiter().GetResult();
         });
     }
 
@@ -228,7 +228,7 @@ public class UserServiceTests
         // Act & Assert
         Assert.Throws<BadRequestException>(() =>
         {
-            _service.CreateAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+            _service.CreateAsync(request).GetAwaiter().GetResult();
         });
     }
 
@@ -249,7 +249,7 @@ public class UserServiceTests
             .ReturnsAsync(expectedUser);
 
         // Act
-        await _service.DeleteAsync(userId, CancellationToken.None);
+        await _service.DeleteAsync(userId);
 
         // Assert
         _repositoryMock.Verify(s => s.Remove(expectedUser), Times.Once);
@@ -273,7 +273,7 @@ public class UserServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<NotFoundException>(async () => {
-            await _service.DeleteAsync(userId, CancellationToken.None);
+            await _service.DeleteAsync(userId);
         });
     }
 
@@ -303,7 +303,7 @@ public class UserServiceTests
 
         // Act
         var result = await _service.UpdateAsync(
-            userId, updateRequest, CancellationToken.None
+            userId, updateRequest
         );
 
         // Assert
@@ -331,7 +331,7 @@ public class UserServiceTests
         await Assert.ThrowsAsync<NotFoundException>(async () =>
         {
             await _service.UpdateAsync(
-                userId, updateRequest, CancellationToken.None
+                userId, updateRequest
             );
         });
     }
@@ -361,7 +361,7 @@ public class UserServiceTests
         // Act & Assert
         await Assert.ThrowsAsync<BadRequestException>(async () =>
         {
-            await _service.UpdateAsync(userId, updateRequest, CancellationToken.None);
+            await _service.UpdateAsync(userId, updateRequest);
         });
     }
 
@@ -391,7 +391,7 @@ public class UserServiceTests
         // Act & Assert
         await Assert.ThrowsAsync<BadRequestException>(async () =>
         {
-            await _service.UpdateAsync(userId, updateRequest, CancellationToken.None);
+            await _service.UpdateAsync(userId, updateRequest);
         });
     }
 
@@ -422,7 +422,7 @@ public class UserServiceTests
         // Act & Assert
         await Assert.ThrowsAsync<BadRequestException>(async () =>
         {
-            await _service.UpdateAsync(userId, updateRequest, CancellationToken.None);
+            await _service.UpdateAsync(userId, updateRequest);
         });
     }
 

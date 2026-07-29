@@ -6,12 +6,12 @@ namespace FantasyLeague.Application.Common.Normalization;
 internal static class NbaPlayerNormalization
 {
     public static GetNbaPlayersRequest NormalizePlayerRequest(
-        this GetNbaPlayersRequest req
+        this GetNbaPlayersRequest? req
     )
     {
         if (req is null)
             throw new BadRequestException(
-                "GetNbaPlayerRequest Object is null!"
+                "Request body is required."
             );
 
         return req with

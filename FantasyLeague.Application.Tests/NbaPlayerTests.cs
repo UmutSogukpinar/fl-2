@@ -1,4 +1,4 @@
-﻿using Moq;
+using Moq;
 using Xunit;
 
 using FantasyLeague.Application.Common.Interfaces.Repositories;
@@ -61,7 +61,7 @@ public class NbaPlayerTests
 
         // Act
         var result = await _playerService.GetNbaPlayerByIdAndYearAsync(
-            playerId, season, PlayerResponseSize.Basic, CancellationToken.None
+            playerId, season, PlayerResponseSize.Basic
         );
 
         // Assert
@@ -100,8 +100,8 @@ public class NbaPlayerTests
         var result = await _playerService.GetNbaPlayerByIdAndYearAsync(
             playerId,
             season,
-            PlayerResponseSize.Detailed,
-            CancellationToken.None
+            PlayerResponseSize.Detailed
+
         );
 
         // Assert
@@ -145,8 +145,8 @@ public class NbaPlayerTests
         var result = await _playerService.GetNbaPlayerByIdAndYearAsync(
             playerId,
             season,
-            PlayerResponseSize.Extended,
-            CancellationToken.None
+            PlayerResponseSize.Extended
+
         );
 
         // Assert
@@ -182,8 +182,8 @@ public class NbaPlayerTests
              async () => await _playerService.GetNbaPlayerByIdAndYearAsync(
                     playerId,
                     season,
-                    PlayerResponseSize.Basic,
-                    CancellationToken.None
+                    PlayerResponseSize.Basic
+
                 )
         );
 

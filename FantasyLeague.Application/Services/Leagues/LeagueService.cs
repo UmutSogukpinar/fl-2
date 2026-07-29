@@ -44,7 +44,7 @@ public sealed class LeagueService(
 
     public async Task<LeagueResponse> GetByIdAsync(
         Guid id,
-        CancellationToken cancellation)
+        CancellationToken cancellation = default)
     {
         return await leagueRepository.GetResponseByIdAsync(id, cancellation)
             ?? throw new NotFoundException($"League '{id}' was not found.");
@@ -52,7 +52,7 @@ public sealed class LeagueService(
 
     public async Task<LeagueResponse> CreateAsync(
         CreateLeagueRequest request,
-        CancellationToken cancellation)
+        CancellationToken cancellation = default)
     {
         request = request.NormalizeCreateLeagueRequest();
         request.ValidateCreateLeagueRequest();
@@ -86,7 +86,7 @@ public sealed class LeagueService(
     public async Task<LeagueResponse> UpdateAsync(
         Guid id,
         UpdateLeagueRequest request,
-        CancellationToken cancellation)
+        CancellationToken cancellation = default)
     {
         request = request.NormalizeUpdateLeagueRequest();
         request.ValidateUpdateLeagueRequest();
@@ -126,7 +126,7 @@ public sealed class LeagueService(
     public async Task DeleteAsync(
         Guid id,
         Guid commissionerId,
-        CancellationToken cancellation)
+        CancellationToken cancellation = default)
     {
         var league = await GetTrackedLeagueOrThrowAsync(
             id,
@@ -167,7 +167,7 @@ public sealed class LeagueService(
     public async Task<IReadOnlyList<LeagueFixtureResponse>>
     GetFixturesAsync(
         Guid id,
-        CancellationToken cancellation
+        CancellationToken cancellation = default
     )
     {
         _ = await leagueRepository.GetResponseByIdAsync(

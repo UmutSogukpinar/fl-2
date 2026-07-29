@@ -56,6 +56,18 @@ public sealed class UserServiceAdditionalTests
     }
 
     [Fact]
+    public async Task GetAsync_WithNullRequest_DoesNotQueryRepository()
+    {
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.GetAsync(null!));
+
+        _repository.Verify(repository => repository.GetPagedAsync(
+            It.IsAny<int>(),
+            It.IsAny<int>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task CreateAsync_WhenUsernameOrEmailExists_ThrowsConflictException()
     {
         var request = new CreateUserRequest(
@@ -87,10 +99,22 @@ public sealed class UserServiceAdditionalTests
             .Setup(hasher => hasher.Verify(request.Password, user.Password))
             .Returns(true);
 
-        var response = await _service.SignInAsync(request, CancellationToken.None);
+        var response = await _service.SignInAsync(request);
 
         Assert.Equal(user.Id, response.Id);
         Assert.Equal(user.Email, response.Email);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithNullRequest_DoesNotHashOrPersist()
+    {
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.CreateAsync(null!));
+
+        _passwordHasher.Verify(
+            hasher => hasher.Hash(It.IsAny<string>()), Times.Never);
+        _repository.Verify(
+            repository => repository.Add(It.IsAny<User>()), Times.Never);
     }
 
     [Fact]
@@ -99,7 +123,7 @@ public sealed class UserServiceAdditionalTests
         var request = new SignInRequest("invalid-email", "password123");
 
         await Assert.ThrowsAsync<BadRequestException>(() =>
-            _service.SignInAsync(request, CancellationToken.None));
+            _service.SignInAsync(request));
 
         _repository.Verify(repository => repository.GetByEmailAsync(
             It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -114,7 +138,7 @@ public sealed class UserServiceAdditionalTests
                 request.Email, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
-        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request, CancellationToken.None));
+        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request));
 
         _passwordHasher.Verify(
             hasher => hasher.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -133,7 +157,7 @@ public sealed class UserServiceAdditionalTests
             .Setup(hasher => hasher.Verify(request.Password, user.Password))
             .Returns(false);
 
-        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request, CancellationToken.None));
+        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request));
     }
 
     private static User CreateUser() => new()

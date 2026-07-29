@@ -1,12 +1,18 @@
 using FantasyLeague.Application.DTOs.Requests.Leagues;
+using FantasyLeague.Application.Common.Exceptions;
 
 namespace FantasyLeague.Application.Common.Normalization;
 
 internal static class LeagueNormalization
 {
     public static CreateLeagueRequest NormalizeCreateLeagueRequest(
-        this CreateLeagueRequest request)
+        this CreateLeagueRequest? request)
     {
+        if (request is null)
+        {
+            throw new BadRequestException("Request body is required.");
+        }
+
         return request with
         {
             Name = NormalizeRequiredText(request.Name),
@@ -16,8 +22,13 @@ internal static class LeagueNormalization
     }
 
     public static UpdateLeagueRequest NormalizeUpdateLeagueRequest(
-        this UpdateLeagueRequest request)
+        this UpdateLeagueRequest? request)
     {
+        if (request is null)
+        {
+            throw new BadRequestException("Request body is required.");
+        }
+
         return request with
         {
             Name = NormalizeRequiredText(request.Name),

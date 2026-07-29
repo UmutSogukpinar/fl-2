@@ -5,8 +5,13 @@ namespace FantasyLeague.Application.Common.Validation;
 
 internal static class PaginationValidation
 {
-    public static void ValidatePaginationRequest(this PaginationRequest request)
+    public static void ValidatePaginationRequest(this PaginationRequest? request)
     {
+        if (request is null)
+        {
+            throw new BadRequestException("Request body is required.");
+        }
+
         if (request.PageNumber < 1)
         {
             throw new BadRequestException("PageNumber must be at least 1.");

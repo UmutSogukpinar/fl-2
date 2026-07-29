@@ -46,7 +46,7 @@ public sealed class NbaPlayerService(
         Guid id,
         int season,
         PlayerResponseSize size,
-        CancellationToken cancellation
+        CancellationToken cancellation = default
     )
     {
         id.ValidatePlayerDetailsRequest(season, size);
@@ -73,7 +73,7 @@ public sealed class NbaPlayerService(
     GetNbaPlayersByNameAndYearAsync(
         PaginationRequest pagReq,
         GetNbaPlayersRequest playerReq,
-        CancellationToken cancellation
+        CancellationToken cancellation = default
     )
     {
         pagReq.ValidatePaginationRequest();

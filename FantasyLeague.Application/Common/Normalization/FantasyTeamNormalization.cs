@@ -8,12 +8,12 @@ namespace FantasyLeague.Application.Common.Normalization;
 internal static class FantasyTeamNormalization
 {
     public static CreateFantasyTeamRequest NormalizeCreateFantasyTeamRequest(
-        this CreateFantasyTeamRequest req
+        this CreateFantasyTeamRequest? req
     )
     {
         if (req is null)
             throw new BadRequestException(
-                "CreateFantasyTeamRequest object is null!"
+                "Request body is required."
             );
 
         return req with
@@ -23,12 +23,12 @@ internal static class FantasyTeamNormalization
     }
 
     public static UpdateFantasyTeamRequest NormalizeUpdateFantasyTeamRequest(
-        this UpdateFantasyTeamRequest req
+        this UpdateFantasyTeamRequest? req
     )
     {
         if (req is null)
             throw new BadRequestException(
-                "UpdateFantasyTeamRequest object is null!"
+                "Request body is required."
             );
 
         return req with
@@ -38,11 +38,11 @@ internal static class FantasyTeamNormalization
     }
 
     public static JoinLeagueRequest NormalizeJoinLeagueRequest(
-        this JoinLeagueRequest req)
+        this JoinLeagueRequest? req)
     {
         if (req is null)
             throw new BadRequestException(
-                "JoinLeagueRequest object is null!"
+                "Request body is required."
             );
 
         return req with

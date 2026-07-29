@@ -11,12 +11,11 @@ using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
 using FantasyLeague.Application.Services.Leagues;
-using FantasyLeague.Domain.Entities;
 using FantasyLeague.Domain.Enums;
 
 namespace FantasyLeague.Application.Services.FantasyTeams;
 
-public sealed class FantasyTeamService(
+public sealed partial class FantasyTeamService(
     IFantasyTeamRepository teamRepository,
     ILeagueRepository leagueRepository,
     ILeagueSetupRepository leagueSetupRepository,
@@ -217,58 +216,4 @@ public sealed class FantasyTeamService(
         await teamRepository.SaveChangesAsync(cancellation);
     }
 
-    private async Task EnsureRegistrationIsOpenAsync(
-        Guid leagueId,
-        CancellationToken cancellationToken)
-    {
-        if (await leagueSetupRepository.ExistsAsync(leagueId, cancellationToken))
-        {
-            throw new ConflictException(
-                "League membership cannot change after" +
-                "fixtures and draft order are generated.");
-        }
-    }
-
-    // TODO update
-    private async Task EnsureUniqueAsync(
-        Guid leagueId,
-        Guid ownerId,
-        string name,
-        Guid? excludedTeamId,
-        CancellationToken cancellation)
-    {
-        if (await teamRepository.ExistsAsync(
-                leagueId,
-                ownerId,
-                name,
-                excludedTeamId,
-                cancellation))
-        {
-            throw new ConflictException(
-                "The owner already has a team " +
-                "or the team name is already used in this league.");
-        }
-    }
-
-    private async Task<LeagueResponse> GetLeagueOrThrowAsync(
-        Guid id,
-        CancellationToken cancellation
-    )
-    {
-        return await leagueRepository.GetResponseByIdAsync(id, cancellation)
-            ?? throw new NotFoundException(
-                    $"League '{id}' was not found."
-                );
-    }
-
-    private async Task<FantasyTeam> GetTrackedTeamOrThrowAsync(
-        Guid id,
-        CancellationToken cancellation
-    )
-    {
-        return await teamRepository.GetTrackedByIdAsync(id, cancellation)
-            ?? throw new NotFoundException(
-                    $"Fantasy team '{id}' was not found."
-                );
-    }
 }

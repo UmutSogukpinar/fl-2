@@ -73,17 +73,43 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
             .ToListAsync(cancellationToken);
     }
 
-    // TODO: update
-    public Task<FastasyTeamConflictResult> ExistsAsync(
+    public async Task<FastasyTeamConflictResult> ExistsAsync(
         Guid leagueId,
         Guid ownerId,
         string name,
         Guid? excludedTeamId,
         CancellationToken cancellation)
     {
-        var conflict = dbContext.Set<FantasyTeam>()
-            .Where(team => team.LeagueId == leagueId)
-            .GroupBy(team => team.OwnerId)
+        var conflict = await dbContext.Set<FantasyTeam>()
+            .Where(team =>
+                team.LeagueId == leagueId
+                && (!excludedTeamId.HasValue || team.Id != excludedTeamId.Value))
+            .GroupBy(_ => 1)
+            .Select(teams => new
+            {
+                OwnerHasMultipleTeam = teams.Any(team => team.OwnerId == ownerId),
+                NameIsTaken = teams.Any(team => team.Name == name)
+            })
+            .SingleOrDefaultAsync(cancellation);
+
+        if (conflict is null)
+        {
+            return FastasyTeamConflictResult.None;
+        }
+
+        var result = FastasyTeamConflictResult.None;
+
+        if (conflict.OwnerHasMultipleTeam)
+        {
+            result |= FastasyTeamConflictResult.OwnerHasMultipleTeam;
+        }
+
+        if (conflict.NameIsTaken)
+        {
+            result |= FastasyTeamConflictResult.NameIsTaken;
+        }
+
+        return result;
     }
 
     public Task AddAsync(FantasyTeam team, CancellationToken cancellationToken)

@@ -10,6 +10,8 @@ public sealed class LeagueFixtureConfiguration : IEntityTypeConfiguration<League
     {
         builder.ToTable("league_fixtures");
         builder.HasKey(fixture => fixture.Id);
+        builder.Property(fixture => fixture.Id)
+            .ValueGeneratedOnAdd();
         builder.HasIndex(fixture => new { fixture.LeagueId, fixture.Week });
         builder.HasIndex(fixture => new { fixture.LeagueId, fixture.HomeTeamId, fixture.AwayTeamId })
             .IsUnique();

@@ -1,7 +1,7 @@
 namespace FantasyLeague.Application.DTOs.Responses.Leagues;
 
 public sealed record LeagueFixtureResponse(
-    Guid Id,
+    long Id,
     Guid LeagueId,
     int Week,
     Guid HomeTeamId,

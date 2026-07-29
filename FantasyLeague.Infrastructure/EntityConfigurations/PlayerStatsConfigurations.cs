@@ -12,10 +12,11 @@ public sealed class PlayerStatsConfiguration
     {
         builder.ToTable("player_stats");
 
-        builder.HasKey(playerStats => playerStats.Id);
-
-        builder.HasIndex(playerStats => new { playerStats.NbaPlayerId, playerStats.Season })
-            .IsUnique();
+        builder.HasKey(playerStats => new
+        {
+            playerStats.NbaPlayerId,
+            playerStats.Season
+        });
 
         builder.HasOne<NbaPlayer>()
             .WithMany(player => player.SeasonStats)

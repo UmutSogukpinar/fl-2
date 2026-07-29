@@ -2,8 +2,6 @@ namespace FantasyLeague.Domain.Entities;
 
 public class PlayerStats
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-
     public Guid NbaPlayerId { get; set; }
 
     public int Season { get; set; } = 2024;

@@ -3,6 +3,7 @@ using System;
 using FantasyLeague.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FantasyLeague.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260729095252_UseLongLeagueFixtureId")]
+    partial class UseLongLeagueFixtureId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -291,11 +294,9 @@ namespace FantasyLeague.Infrastructure.Migrations
 
             modelBuilder.Entity("FantasyLeague.Domain.Entities.PlayerStats", b =>
                 {
-                    b.Property<Guid>("NbaPlayerId")
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<int>("Season")
-                        .HasColumnType("integer");
 
                     b.Property<double>("AssistsPerGame")
                         .HasColumnType("double precision");
@@ -321,11 +322,17 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.Property<double>("MinutesPerGame")
                         .HasColumnType("double precision");
 
+                    b.Property<Guid>("NbaPlayerId")
+                        .HasColumnType("uuid");
+
                     b.Property<double>("PointsPerGame")
                         .HasColumnType("double precision");
 
                     b.Property<double>("ReboundsPerGame")
                         .HasColumnType("double precision");
+
+                    b.Property<int>("Season")
+                        .HasColumnType("integer");
 
                     b.Property<double>("StealsPerGame")
                         .HasColumnType("double precision");
@@ -339,7 +346,10 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("NbaPlayerId", "Season");
+                    b.HasKey("Id");
+
+                    b.HasIndex("NbaPlayerId", "Season")
+                        .IsUnique();
 
                     b.ToTable("player_stats", (string)null);
                 });

@@ -3,18 +3,20 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace FantasyLeague.Infrastructure.Caching;
 
-public sealed class MemoryCacheService(IMemoryCache memoryCache) : ICacheService
+public sealed class MemoryCacheService(
+    IMemoryCache memoryCache
+) : ICacheService
 {
     public async Task<T> GetOrCreateAsync<T>(
         string key,
-        Func<CancellationToken, Task<T>> factory,
+        Func<CancellationToken, Task<T>> getFromRepo,
         TimeSpan expiration,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation)
     {
         if (memoryCache.TryGetValue<T>(key, out var cachedValue))
             return cachedValue!;
 
-        var value = await factory(cancellationToken);
+        var value = await getFromRepo(cancellation);
         memoryCache.Set(key, value, expiration);
 
         return value;

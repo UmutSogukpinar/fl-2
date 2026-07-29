@@ -1,22 +1,22 @@
-using Microsoft.AspNetCore.Mvc;
-
-using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Common;
-using FantasyLeague.Application.DTOs.Responses.Leagues;
-using FantasyLeague.Application.Services.Leagues;
-using FantasyLeague.Application.Services.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
+using FantasyLeague.Application.DTOs.Responses.Leagues;
+using FantasyLeague.Application.Services.FantasyTeams;
+using FantasyLeague.Application.Services.Leagues;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FantasyLeague.WebApi.Controllers;
 
 [ApiController]
 [Route("api/leagues")]
-public sealed class LeaguesController(
+public sealed partial class LeaguesController(
     ILeagueService leagueService,
     IFantasyTeamService fantasyTeamService,
     ILogger<LeaguesController> logger) : ControllerBase
 {
+
     /// <summary>
     /// Returns the generated fixtures for a league, ordered by week.
     /// </summary>
@@ -28,12 +28,15 @@ public sealed class LeaguesController(
     [HttpGet("{id:guid}/fixtures")]
     [ProducesResponseType<IReadOnlyList<LeagueFixtureResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<LeagueFixtureResponse>>> GetFixturesAsync(
+    public async Task<ActionResult<IReadOnlyList<LeagueFixtureResponse>>>
+        GetFixturesAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation
+    )
     {
-        return Ok(await leagueService.GetFixturesAsync(id, cancellationToken));
+        return Ok(await leagueService.GetFixturesAsync(id, cancellation));
     }
+
 
     /// <summary>
     /// Returns the generated snake draft order for a league.
@@ -46,12 +49,15 @@ public sealed class LeaguesController(
     [HttpGet("{id:guid}/draft-order")]
     [ProducesResponseType<IReadOnlyList<DraftPickOrderResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<IReadOnlyList<DraftPickOrderResponse>>> GetDraftOrderAsync(
+    public async Task<ActionResult<IReadOnlyList<DraftPickOrderResponse>>>
+        GetDraftOrderAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation
+    )
     {
-        return Ok(await leagueService.GetDraftOrderAsync(id, cancellationToken));
+        return Ok(await leagueService.GetDraftOrderAsync(id, cancellation));
     }
+
 
     /// <summary>
     /// Returns a paginated collection of leagues.
@@ -64,9 +70,9 @@ public sealed class LeaguesController(
     [ProducesResponseType<PagedResponse<LeagueResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<LeagueResponse>>> GetAsync(
         [FromQuery] PaginationRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        var response = await leagueService.GetAsync(request, cancellationToken);
+        var response = await leagueService.GetAsync(request, cancellation);
         return Ok(response);
     }
 
@@ -84,9 +90,9 @@ public sealed class LeaguesController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<LeagueResponse>> GetByIdAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        var response = await leagueService.GetByIdAsync(id, cancellationToken);
+        var response = await leagueService.GetByIdAsync(id, cancellation);
         return Ok(response);
     }
 
@@ -106,10 +112,10 @@ public sealed class LeaguesController(
     public async Task<ActionResult<PagedResponse<FantasyTeamResponse>>> GetMembersAsync(
         Guid leagueId,
         [FromQuery] PaginationRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var response = await fantasyTeamService.GetByLeagueIdAsync(
-            leagueId, request, cancellationToken);
+            leagueId, request, cancellation);
 
         return Ok(response);
     }
@@ -119,13 +125,15 @@ public sealed class LeaguesController(
     /// Adds a fantasy team as a member of a league.
     /// </summary>
     /// <param name="leagueId">The league's unique identifier.</param>
-    /// <param name="request">The team name and owner used to create the membership.</param>
+    /// <param name="request">The team name and owner used 
+    /// to create the membership.</param>
     /// <param name="cancellationToken">Token used to cancel the operation.</param>
     /// <returns>The fantasy team created for the league member.</returns>
     /// <response code="201">The member was added successfully.</response>
     /// <response code="400">The request data is invalid.</response>
     /// <response code="404">The league or owner was not found.</response>
-    /// <response code="409">The league is full or the owner or team name is already in use.</response>
+    /// <response code="409">The league is full
+    /// or the owner or team name is already in use.</response>
     [HttpPost("{leagueId:guid}/members")]
     [ProducesResponseType<FantasyTeamResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -134,13 +142,12 @@ public sealed class LeaguesController(
     public async Task<ActionResult<FantasyTeamResponse>> AddMemberAsync(
         Guid leagueId,
         [FromBody] AddLeagueMemberRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var response = await fantasyTeamService.AddLeagueMemberAsync(
-            leagueId, request, cancellationToken);
-        logger.LogInformation(
-            "Team {TeamId} joined league {LeagueId} for owner {OwnerId}.",
-            response.Id, leagueId, response.OwnerId);
+            leagueId, request, cancellation);
+
+        LogTeamJoin(response.Id, leagueId, response.OwnerId);
 
         var result = CreatedAtAction(
             "GetById",
@@ -161,7 +168,8 @@ public sealed class LeaguesController(
     /// <response code="201">The league was joined successfully.</response>
     /// <response code="400">The request data or join code is invalid.</response>
     /// <response code="404">The join code or owner was not found.</response>
-    /// <response code="409">The league is full or the owner or team name is already in use.</response>
+    /// <response code="409">The league is full
+    /// or the owner or team name is already in use.</response>
     [HttpPost("join")]
     [ProducesResponseType<FantasyTeamResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -169,12 +177,14 @@ public sealed class LeaguesController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<FantasyTeamResponse>> JoinAsync(
         [FromBody] JoinLeagueRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        var response = await fantasyTeamService.JoinLeagueAsync(request, cancellationToken);
-        logger.LogInformation(
-            "Team {TeamId} joined league {LeagueId} by join code for owner {OwnerId}.",
-            response.Id, response.LeagueId, response.OwnerId);
+        var response = await fantasyTeamService.JoinLeagueAsync(
+            request,
+            cancellation
+        );
+
+        LogTeamJoinByCode(response.Id, response.LeagueId, response.OwnerId);
 
         var result = CreatedAtAction(
             "GetById",
@@ -185,6 +195,7 @@ public sealed class LeaguesController(
 
         return result;
     }
+
 
     /// <summary>
     /// Removes a fantasy team and its membership from a league.
@@ -208,7 +219,8 @@ public sealed class LeaguesController(
             teamId,
             cancellationToken
         );
-        logger.LogInformation("Team {TeamId} was removed from league {LeagueId}.", teamId, leagueId);
+
+        LogRemoveTeam(teamId, leagueId);
 
         return NoContent();
     }
@@ -229,12 +241,11 @@ public sealed class LeaguesController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<LeagueResponse>> CreateAsync(
         [FromBody] CreateLeagueRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        var response = await leagueService.CreateAsync(request, cancellationToken);
-        logger.LogInformation(
-            "League {LeagueId} was created by commissioner {CommissionerId} for season {Season}.",
-            response.Id, response.CommissionerId, response.Season);
+        var response = await leagueService.CreateAsync(request, cancellation);
+
+        LogPostLeague(response.Id, response.CommissionerId, response.Season);
 
         var result = CreatedAtAction(
             "GetById",
@@ -268,7 +279,9 @@ public sealed class LeaguesController(
         CancellationToken cancellationToken)
     {
         var response = await leagueService.UpdateAsync(id, request, cancellationToken);
-        logger.LogInformation("League {LeagueId} was updated.", id);
+
+        LogUpdateLeague(response.Id);
+
         return Ok(response);
     }
 
@@ -290,9 +303,48 @@ public sealed class LeaguesController(
         CancellationToken cancellationToken)
     {
         await leagueService.DeleteAsync(id, commissionerId, cancellationToken);
-        logger.LogInformation(
-            "League {LeagueId} was cancelled by commissioner {CommissionerId}.",
-            id, commissionerId);
+        LogDeleteLeague(id, commissionerId);
         return NoContent();
     }
+
+    // ============================ Logging helper methods ============================
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Team {TeamId} joined league {LeagueId} for owner {OwnerId}."
+    )]
+    private partial void LogTeamJoin(Guid teamId, Guid leagueId, Guid ownerId);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Team {TeamId} joined league" +
+        "{LeagueId} by join code for owner {OwnerId}."
+    )]
+    private partial void LogTeamJoinByCode(Guid teamId, Guid leagueId, Guid ownerId);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Team {TeamId} was removed from league {LeagueId}."
+    )]
+    private partial void LogRemoveTeam(Guid teamId, Guid leagueId);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "League {LeagueId} was created" +
+        "by commissioner {CommissionerId} for season {Season}."
+    )]
+    private partial void LogPostLeague(Guid leagueId, Guid commissionerId, int season);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "League {LeagueId} was updated."
+    )]
+    private partial void LogUpdateLeague(Guid leagueId);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "League {LeagueId} was cancelled by commissioner {CommissionerId}."
+    )]
+    private partial void LogDeleteLeague(Guid leagueId, Guid commissionerId);
+
 }

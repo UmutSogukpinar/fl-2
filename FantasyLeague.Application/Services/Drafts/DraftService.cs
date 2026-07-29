@@ -5,6 +5,7 @@ using FantasyLeague.Application.DTOs.Responses.Drafts;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Domain.Enums;
 using FantasyLeague.Application.Services.Leagues;
+using FantasyLeague.Application.Common.Validation;
 
 namespace FantasyLeague.Application.Services.Drafts;
 
@@ -154,6 +155,8 @@ public sealed class DraftService(
         MakeDraftPickRequest request,
         CancellationToken cancellationToken = default)
     {
+        DraftValidation.ValidateMakeDraftPickRequest(request);
+
         var league = await leagueRepository.GetTrackedByIdAsync(leagueId, cancellationToken)
             ?? throw new NotFoundException($"League '{leagueId}' was not found.");
         if (league.Status != LeagueStatus.Drafting)

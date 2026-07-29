@@ -13,8 +13,8 @@ public static class LeagueMappings
         DateTime? draftDateUtc,
         string draftTimeZoneId) => new()
     {
-        Name = request.Name.Trim(),
-        Description = NormalizeDescription(request.Description),
+        Name = request.Name,
+        Description = request.Description,
         Season = request.Season,
         MaxTeams = request.MaxTeams,
         CommissionerId = request.CommissionerId,
@@ -34,8 +34,8 @@ public static class LeagueMappings
         DateTime? draftDateUtc,
         string draftTimeZoneId)
     {
-        league.Name = request.Name.Trim();
-        league.Description = NormalizeDescription(request.Description);
+        league.Name = request.Name;
+        league.Description = request.Description;
         league.MaxTeams = request.MaxTeams;
         league.Settings.DraftDate = draftDateUtc;
         league.Settings.DraftTimeZoneId = draftTimeZoneId;
@@ -59,6 +59,4 @@ public static class LeagueMappings
         league.Settings.RosterSize,
         league.Settings.DraftTimeZoneId);
 
-    private static string? NormalizeDescription(string? description) =>
-        string.IsNullOrWhiteSpace(description) ? null : description.Trim();
 }

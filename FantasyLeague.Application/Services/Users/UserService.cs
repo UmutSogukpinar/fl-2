@@ -1,3 +1,4 @@
+using FantasyLeague.Application.Mappings;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
@@ -7,7 +8,8 @@ using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Common.Validation;
-using FantasyLeague.Application.Mappings;
+using FantasyLeague.Application.Common.Normalization;
+using FantasyLeague.Application.Common.Pagination;
 
 namespace FantasyLeague.Application.Services.Users;
 
@@ -16,22 +18,20 @@ public sealed class UserService(
     IPasswordHasher _passwordHasher) : IUserService
 {
     public async Task<PagedResponse<UserResponse>> GetAsync(
-        PaginationRequest request,
+        PaginationRequest req,
         CancellationToken cancellationToken = default)
     {
         var (items, totalCount) = await _userRepository.GetPagedAsync(
-            request.PageNumber,
-            request.PageSize,
+            req.PageNumber,
+            req.PageSize,
             cancellationToken);
-
-        var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
 
         return new PagedResponse<UserResponse>(
             items,
-            request.PageNumber,
-            request.PageSize,
+            req.PageNumber,
+            req.PageSize,
             totalCount,
-            totalPages);
+            totalCount.CalculateTotalPage(req.PageSize));
     }
 
     public async Task<UserResponse> GetByIdAsync(
@@ -43,22 +43,20 @@ public sealed class UserService(
     }
 
     public async Task<UserResponse> CreateAsync(
-        CreateUserRequest request,
+        CreateUserRequest req,
         CancellationToken cancellationToken = default)
     {
-        UserValidation.ValidateCreateUserRequest(request);
-
-        var username = request.Username.Trim();
-        var email = request.Email.Trim().ToLowerInvariant();
+        req.ValidateCreateUserRequest();
+        req = req.NormalizeCreateUserRequest();
 
         await EnsureUniqueAsync(
-            username,
-            email,
+            req.Username,
+            req.Email,
             null,
             cancellationToken
         );
 
-        var user = request.ToEntity(_passwordHasher.Hash(request.Password));
+        var user = req.ToEntity(_passwordHasher.Hash(req.Password));
 
         _userRepository.Add(user);
         await _userRepository.SaveChangesAsync(cancellationToken);
@@ -67,48 +65,50 @@ public sealed class UserService(
     }
 
     public async Task<UserResponse> SignInAsync(
-        SignInRequest request,
-        CancellationToken cancellationToken = default)
+        SignInRequest req,
+        CancellationToken cancellation)
     {
-        var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
-        if (user is null || !_passwordHasher.Verify(request.Password, user.Password))
-            throw new UnauthorizedException("The email or password is incorrect.");
+        req = req.NormalizeSignInRequest();
+        var user = await _userRepository.GetByEmailAsync(req.Email, cancellation);
+
+        if (user is null || !_passwordHasher.Verify(req.Password, user.Password))
+            throw new UnauthorizedException(
+                "The email or password is incorrect."
+            );
 
         return user.ToResponse();
     }
 
     public async Task<UserResponse> UpdateAsync(
         Guid id,
-        UpdateUserRequest request,
-        CancellationToken cancellationToken = default)
+        UpdateUserRequest req,
+        CancellationToken cancellation)
     {
-        var user = await GetTrackedUserOrThrowAsync(id, cancellationToken);
+        var user = await GetTrackedUserOrThrowAsync(id, cancellation);
 
-        UserValidation.ValidateUpdateUserRequest(request);
+        req.ValidateUpdateUserRequest();
+        req = req.NormalizeUpdateUserRequest();
 
-        var username = request.Username.Trim();
-        var email = request.Email.Trim().ToLowerInvariant();
+        await EnsureUniqueAsync(req.Username, req.Email, id, cancellation);
 
-        await EnsureUniqueAsync(username, email, id, cancellationToken);
+        req.MapTo(user);
 
-        request.MapTo(user);
-
-        await _userRepository.SaveChangesAsync(cancellationToken);
+        await _userRepository.SaveChangesAsync(cancellation);
         return user.ToResponse();
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellation)
     {
-        var user = await GetTrackedUserOrThrowAsync(id, cancellationToken);
+        var user = await GetTrackedUserOrThrowAsync(id, cancellation);
         _userRepository.Remove(user);
-        await _userRepository.SaveChangesAsync(cancellationToken);
+        await _userRepository.SaveChangesAsync(cancellation);
     }
 
     private async Task<User> GetTrackedUserOrThrowAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        return await _userRepository.GetTrackedByIdAsync(id, cancellationToken)
+        return await _userRepository.GetTrackedByIdAsync(id, cancellation)
             ?? throw new NotFoundException($"User '{id}' was not found.");
     }
 
@@ -124,7 +124,9 @@ public sealed class UserService(
                 excludedUserId,
                 cancellationToken))
         {
-            throw new ConflictException("The username or email is already in use.");
+            throw new ConflictException(
+                "The username or email is already in use."
+            );
         }
     }
 

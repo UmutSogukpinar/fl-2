@@ -1,16 +1,17 @@
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Normalization;
+using FantasyLeague.Application.Common.Pagination;
 using FantasyLeague.Application.Common.Validation;
-using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
-using FantasyLeague.Domain.Entities;
 using FantasyLeague.Application.Services.Leagues;
+using FantasyLeague.Domain.Entities;
 using FantasyLeague.Domain.Enums;
 
 namespace FantasyLeague.Application.Services.FantasyTeams;
@@ -24,53 +25,74 @@ public sealed class FantasyTeamService(
 {
     public async Task<PagedResponse<FantasyTeamResponse>> GetByLeagueIdAsync(
         Guid leagueId,
-        PaginationRequest request,
-        CancellationToken cancellationToken = default)
+        PaginationRequest req,
+        CancellationToken cancellation
+    )
     {
-        await GetLeagueOrThrowAsync(leagueId, cancellationToken);
+        await GetLeagueOrThrowAsync(leagueId, cancellation);
+
         var (items, totalCount) = await teamRepository.GetPagedByLeagueIdAsync(
-            leagueId, request.PageNumber, request.PageSize, cancellationToken);
+            leagueId,
+            req.PageNumber,
+            req.PageSize,
+            cancellation
+        );
+
         return new PagedResponse<FantasyTeamResponse>(
             items,
-            request.PageNumber,
-            request.PageSize,
+            req.PageNumber,
+            req.PageSize,
             totalCount,
-            (int)Math.Ceiling(totalCount / (double)request.PageSize));
+            totalCount.CalculateTotalPage(req.PageSize));
     }
 
     public async Task<FantasyTeamResponse> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        return await teamRepository.GetResponseByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException($"Fantasy team '{id}' was not found.");
+        var result = await teamRepository.GetResponseByIdAsync(
+            id,
+            cancellationToken
+        ) ?? throw new NotFoundException(
+                $"Fantasy team '{id}' was not found."
+            );
+
+        return result; 
     }
 
     public async Task<FantasyTeamResponse> CreateAsync(
-        CreateFantasyTeamRequest request,
+        CreateFantasyTeamRequest req,
         CancellationToken cancellation
     )
     {
-        FantasyTeamValidation.ValidateCreateUserRequest(request);
+        req.ValidateCreateFantasyTeamRequest();
+        req = req.NormalizeCreateFantasyTeamRequest();
 
-        FantasyTeamNormalization.NormalizeCreateUserRequest(ref request);
         var league = await GetLeagueOrThrowAsync(
-            request.LeagueId,
+            req.LeagueId,
             cancellation
         );
-        if (league.Status is LeagueStatus.Drafting or LeagueStatus.Active or LeagueStatus.Completed)
+
+        if (league.Status is 
+            LeagueStatus.Drafting or 
+            LeagueStatus.Active or 
+            LeagueStatus.Completed
+        )
         {
-            throw new ConflictException("The league is no longer accepting members.");
+            throw new ConflictException(
+                "The league is no longer accepting members."
+            );
         }
+
         _ = await userRepository.GetResponseByIdAsync(
-                request.OwnerId,
+                req.OwnerId,
                 cancellation
         ) ?? throw new NotFoundException(
-                $"User '{request.OwnerId}' was not found."
+                $"User '{req.OwnerId}' was not found."
             );
 
         var teamCount = await teamRepository.CountByLeagueIdAsync(
-            request.LeagueId, cancellation
+            req.LeagueId, cancellation
         );
 
         if (teamCount >= league.MaxTeams)
@@ -81,13 +103,13 @@ public sealed class FantasyTeamService(
         }
 
         await EnsureUniqueAsync(
-            request.LeagueId,
-            request.OwnerId,
-            request.Name,
+            req.LeagueId,
+            req.OwnerId,
+            req.Name,
             null,
             cancellation);
 
-        var team = request.ToEntity();
+        var team = req.ToEntity();
 
         await teamRepository.AddAsync(team, cancellation);
 
@@ -112,41 +134,43 @@ public sealed class FantasyTeamService(
 
     public Task<FantasyTeamResponse> AddLeagueMemberAsync(
         Guid leagueId,
-        AddLeagueMemberRequest request,
-        CancellationToken cancellationToken = default)
+        AddLeagueMemberRequest req,
+        CancellationToken cancellation)
     {
         return CreateAsync(
-            new CreateFantasyTeamRequest(request.TeamName, leagueId, request.OwnerId),
-            cancellationToken);
+            new CreateFantasyTeamRequest(req.TeamName, leagueId, req.OwnerId),
+            cancellation);
     }
 
     public async Task<FantasyTeamResponse> JoinLeagueAsync(
-        JoinLeagueRequest request,
-        CancellationToken cancellationToken = default)
+        JoinLeagueRequest req,
+        CancellationToken cancellation)
     {
-        if (string.IsNullOrWhiteSpace(request.JoinCode))
+        if (string.IsNullOrWhiteSpace(req.JoinCode))
         {
             throw new BadRequestException("JoinCode is required.");
         }
 
-        var joinCode = request.JoinCode.Trim().ToUpperInvariant();
+        req = req.NormalizeJoinLeagueRequest();
         var league = await leagueRepository.GetResponseByJoinCodeAsync(
-            joinCode, cancellationToken)
-            ?? throw new NotFoundException("A league with the supplied join code was not found.");
+            req.JoinCode, cancellation)
+            ?? throw new NotFoundException(
+                "A league with the supplied join code was not found."
+            );
 
         return await CreateAsync(
-            new CreateFantasyTeamRequest(request.TeamName, league.Id, request.OwnerId),
-            cancellationToken);
+            new CreateFantasyTeamRequest(req.TeamName, league.Id, req.OwnerId),
+            cancellation);
     }
 
     public async Task RemoveLeagueMemberAsync(
         Guid leagueId,
         Guid teamId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation)
     {
-        await GetLeagueOrThrowAsync(leagueId, cancellationToken);
-        await EnsureRegistrationIsOpenAsync(leagueId, cancellationToken);
-        var team = await GetTrackedTeamOrThrowAsync(teamId, cancellationToken);
+        await GetLeagueOrThrowAsync(leagueId, cancellation);
+        await EnsureRegistrationIsOpenAsync(leagueId, cancellation);
+        var team = await GetTrackedTeamOrThrowAsync(teamId, cancellation);
 
         if (team.LeagueId != leagueId)
         {
@@ -155,28 +179,28 @@ public sealed class FantasyTeamService(
         }
 
         teamRepository.Remove(team);
-        await teamRepository.SaveChangesAsync(cancellationToken);
+        await teamRepository.SaveChangesAsync(cancellation);
     }
 
     public async Task<FantasyTeamResponse> UpdateAsync(
         Guid id,
-        UpdateFantasyTeamRequest request,
+        UpdateFantasyTeamRequest req,
         CancellationToken cancellation)
     {
         var team = await GetTrackedTeamOrThrowAsync(id, cancellation);
 
-        FantasyTeamValidation.ValidateUpdateUserRequest(request);
-        FantasyTeamNormalization.NormalizeUpdateUserRequest(ref request);
+        req.ValidateUpdateFantasyTeamRequest();
+        req = req.NormalizeUpdateFantasyTeamRequest();
 
         await EnsureUniqueAsync(
             team.LeagueId,
             team.OwnerId,
-            request.Name,
+            req.Name,
             team.Id,
             cancellation
         );
 
-        request.MapTo(team);
+        req.MapTo(team);
 
         await teamRepository.SaveChangesAsync(cancellation);
         return team.ToResponse();
@@ -200,10 +224,12 @@ public sealed class FantasyTeamService(
         if (await leagueSetupRepository.ExistsAsync(leagueId, cancellationToken))
         {
             throw new ConflictException(
-                "League membership cannot change after fixtures and draft order are generated.");
+                "League membership cannot change after" +
+                "fixtures and draft order are generated.");
         }
     }
 
+    // TODO update
     private async Task EnsureUniqueAsync(
         Guid leagueId,
         Guid ownerId,

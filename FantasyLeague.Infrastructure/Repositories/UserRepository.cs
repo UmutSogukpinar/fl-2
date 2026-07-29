@@ -4,6 +4,7 @@ using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
+using FantasyLeague.Infrastructure.Repositories.Projections;
 
 namespace FantasyLeague.Infrastructure.Repositories;
 
@@ -20,13 +21,7 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
             .OrderBy(user => user.Username)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(user => new UserResponse(
-                user.Id,
-                user.Username,
-                user.Email,
-                user.CreatedAt,
-                user.UpdatedAt,
-                user.TimeZoneId))
+            .Select(UserProjections.Response)
             .ToArrayAsync(cancellationToken);
 
         return (users, totalCount);
@@ -39,13 +34,7 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
         return dbContext.Set<User>()
             .AsNoTracking()
             .Where(user => user.Id == id)
-            .Select(user => new UserResponse(
-                user.Id,
-                user.Username,
-                user.Email,
-                user.CreatedAt,
-                user.UpdatedAt,
-                user.TimeZoneId))
+            .Select(UserProjections.Response)
             .SingleOrDefaultAsync(cancellationToken);
     }
 

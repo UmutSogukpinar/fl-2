@@ -1,9 +1,11 @@
+using Microsoft.EntityFrameworkCore;
+
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
-using Microsoft.EntityFrameworkCore;
 using FantasyLeague.Infrastructure.Repositories.Projections;
+using FantasyLeague.Application.Models;
 
 namespace FantasyLeague.Infrastructure.Repositories;
 
@@ -72,19 +74,16 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
     }
 
     // TODO: update
-    public Task<bool> ExistsAsync(
+    public Task<FastasyTeamConflictResult> ExistsAsync(
         Guid leagueId,
         Guid ownerId,
         string name,
         Guid? excludedTeamId,
         CancellationToken cancellation)
     {
-        var normalizedName = name.ToLower();
-        return dbContext.Set<FantasyTeam>().AnyAsync(
-            team => team.LeagueId == leagueId
-                && (!excludedTeamId.HasValue || team.Id != excludedTeamId.Value)
-                && (team.OwnerId == ownerId || team.Name.ToLower() == normalizedName),
-            cancellation);
+        var conflict = dbContext.Set<FantasyTeam>()
+            .Where(team => team.LeagueId == leagueId)
+            .GroupBy(team => team.OwnerId)
     }
 
     public Task AddAsync(FantasyTeam team, CancellationToken cancellationToken)

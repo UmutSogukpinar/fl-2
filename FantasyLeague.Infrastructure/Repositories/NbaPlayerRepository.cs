@@ -1,4 +1,6 @@
 using FantasyLeague.Application.Common.Interfaces.Repositories;
+using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Requests.NbaPlayers;
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;
@@ -8,22 +10,67 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FantasyLeague.Infrastructure.Repositories;
 
-public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepository
+public sealed class NbaPlayerRepository(AppDbContext _dbContext) : INbaPlayerRepository
 {
-    public async Task<(IReadOnlyCollection<NbaPlayerBasicResponse> Items, int TotalCount)> GetPagedAsync(
+    public async Task<(IReadOnlyCollection<NbaPlayerBasicResponse> Items,
+        int TotalCount)>
+    GetPagedAsync(
         int pageNumber,
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var query = dbContext.Set<NbaPlayer>().AsNoTracking();
+        var query = _dbContext.Set<NbaPlayer>().AsNoTracking();
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query
             .OrderBy(player => player.FirstName)
             .ThenBy(player => player.LastName)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(NbaPlayerProjections.Basic)
+            .ToBasic()
             .ToArrayAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
+    public async Task<(IReadOnlyCollection<IPlayerResponse> Items,
+        int TotalCount)>
+    GetPagedNbaPlayersByNameAsync(
+        PaginationRequest pageReq,
+        GetNbaPlayersRequest playerReq,
+        CancellationToken cancellation
+    )
+    {
+        var query = _dbContext.Set<NbaPlayer>()
+            .AsNoTracking()
+            .Where(player =>
+                (playerReq.Id == Guid.Empty || player.Id == playerReq.Id) &&
+                (playerReq.Name == string.Empty ||
+                    player.FirstName.ToLower().Contains(playerReq.Name)) &&
+                (playerReq.Surname == string.Empty ||
+                    player.LastName.ToLower().Contains(playerReq.Surname)));
+
+        var totalCount = await query.CountAsync(cancellation);
+        query = query
+            .OrderBy(player => player.FirstName)
+            .ThenBy(player => player.LastName)
+            .ThenBy(player => player.Id)
+            .Skip((pageReq.PageNumber - 1) * pageReq.PageSize)
+            .Take(pageReq.PageSize);
+
+        IReadOnlyCollection<IPlayerResponse> items = playerReq.Size switch
+        {
+            PlayerResponseSize.Basic => await query.ToBasic()
+                .ToArrayAsync(cancellation),
+            PlayerResponseSize.Detailed => await query.ToDetailed()
+                .ToArrayAsync(cancellation),
+            PlayerResponseSize.Extended => await query
+                .ToExtended(playerReq.Season)
+                .ToArrayAsync(cancellation),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(playerReq.Size),
+                playerReq.Size,
+                "Invalid player response size.")
+        };
 
         return (items, totalCount);
     }
@@ -31,8 +78,9 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
     public async Task<IReadOnlyDictionary<int, NbaPlayer>> GetByNbaIdsAsync(
         IReadOnlyCollection<int> nbaIds,
         CancellationToken cancellationToken
-    ){
-        return await dbContext.Set<NbaPlayer>()
+    )
+    {
+        return await _dbContext.Set<NbaPlayer>()
             .Where(player => nbaIds.Contains(player.NbaId))
             .ToDictionaryAsync(player => player.NbaId, cancellationToken);
     }
@@ -40,9 +88,11 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
     public Task AddRangeAsync(
         IEnumerable<NbaPlayer> players,
         CancellationToken cancellationToken
-    ){
-        return dbContext.Set<NbaPlayer>().AddRangeAsync(
-            players, cancellationToken
+    )
+    {
+        return _dbContext.Set<NbaPlayer>().AddRangeAsync(
+            players,
+            cancellationToken
         );
     }
 
@@ -51,7 +101,7 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
         int season,
         CancellationToken cancellationToken
     ){
-        return await dbContext.Set<PlayerStats>()
+        return await _dbContext.Set<PlayerStats>()
             .Where(
                 stats => stats.Season == season && 
                 nbaPlayerIds.Contains(stats.NbaPlayerId)
@@ -63,14 +113,14 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
         IEnumerable<PlayerStats> playerStats,
         CancellationToken cancellationToken)
     {
-        return dbContext.Set<PlayerStats>().AddRangeAsync(
+        return _dbContext.Set<PlayerStats>().AddRangeAsync(
             playerStats, cancellationToken
         );
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<IPlayerResponse?> GetByIdAndSeasonAsync(
@@ -101,15 +151,16 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
         };
     }
 
+    // ====================== Utils of GetByIdAndSeasonAsync() ======================
 
     private Task<NbaPlayerBasicResponse?> GetBasicAsync(
        Guid id,
        CancellationToken cancelllation
     ){
-        return dbContext.Set<NbaPlayer>()
+        return _dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(NbaPlayerProjections.Basic)
+            .ToBasic()
             .SingleOrDefaultAsync(cancelllation);
     }
 
@@ -117,10 +168,10 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
         Guid id,
         CancellationToken cancellation
     ){
-        return dbContext.Set<NbaPlayer>()
+        return _dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(NbaPlayerProjections.Detailed)
+            .ToDetailed()
             .SingleOrDefaultAsync(cancellation);
     }
 
@@ -129,10 +180,10 @@ public sealed class NbaPlayerRepository(AppDbContext dbContext) : INbaPlayerRepo
         int season,
         CancellationToken cancellation
     ){
-        return dbContext.Set<NbaPlayer>()
+        return _dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(player => player.Id == id)
-            .Select(NbaPlayerProjections.Extended(season))
+            .ToExtended(season)
             .SingleOrDefaultAsync(cancellation);
     }
 }

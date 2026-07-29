@@ -6,7 +6,7 @@ public class PlayerStats
 
     public Guid NbaPlayerId { get; set; }
 
-    public int Season { get; set; } = 2025;
+    public int Season { get; set; } = 2024;
 
     public int GamesPlayed { get; set; }
 

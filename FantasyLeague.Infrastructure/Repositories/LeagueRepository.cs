@@ -5,6 +5,7 @@ using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
 using FantasyLeague.Domain.Enums;
+using FantasyLeague.Infrastructure.Repositories.Projections;
 
 namespace FantasyLeague.Infrastructure.Repositories;
 
@@ -16,26 +17,13 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
         CancellationToken cancellationToken)
     {
         var query = dbContext.Set<League>().AsNoTracking();
-        var totalCount = await query.CountAsync(cancellationToken);
+        var totalCount = await query.CountAsync();
         var items = await query
             .OrderByDescending(league => league.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(league => new LeagueResponse(
-                league.Id,
-                league.Name,
-                league.Description,
-                league.Season,
-                league.MaxTeams,
-                league.CommissionerId,
-                league.Status,
-                league.Settings.DraftDate,
-                league.JoinCode,
-                league.CreatedAt,
-                league.UpdatedAt,
-                league.Settings.RosterSize,
-                league.Settings.DraftTimeZoneId))
-            .ToArrayAsync(cancellationToken);
+            .Select(LeagueProjections.Response)
+            .ToArrayAsync();
 
         return (items, totalCount);
     }
@@ -47,20 +35,7 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
         return dbContext.Set<League>()
             .AsNoTracking()
             .Where(league => league.Id == id)
-            .Select(league => new LeagueResponse(
-                league.Id,
-                league.Name,
-                league.Description,
-                league.Season,
-                league.MaxTeams,
-                league.CommissionerId,
-                league.Status,
-                league.Settings.DraftDate,
-                league.JoinCode,
-                league.CreatedAt,
-                league.UpdatedAt,
-                league.Settings.RosterSize,
-                league.Settings.DraftTimeZoneId))
+            .Select(LeagueProjections.Response)
             .SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -71,20 +46,7 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
         return dbContext.Set<League>()
             .AsNoTracking()
             .Where(league => league.JoinCode == joinCode)
-            .Select(league => new LeagueResponse(
-                league.Id,
-                league.Name,
-                league.Description,
-                league.Season,
-                league.MaxTeams,
-                league.CommissionerId,
-                league.Status,
-                league.Settings.DraftDate,
-                league.JoinCode,
-                league.CreatedAt,
-                league.UpdatedAt,
-                league.Settings.RosterSize,
-                league.Settings.DraftTimeZoneId))
+            .Select(LeagueProjections.Response)
             .SingleOrDefaultAsync(cancellationToken);
     }
 

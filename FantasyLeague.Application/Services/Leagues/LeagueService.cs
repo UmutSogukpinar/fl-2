@@ -7,7 +7,10 @@ using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Mappings;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Application.Common.Time;
+using FantasyLeague.Application.Common.Pagination;
 using FantasyLeague.Domain.Enums;
+using FantasyLeague.Application.Common.Validation;
+using FantasyLeague.Application.Common.Normalization;
 
 namespace FantasyLeague.Application.Services.Leagues;
 
@@ -21,100 +24,118 @@ public sealed class LeagueService(
         PaginationRequest request,
         CancellationToken cancellationToken = default)
     {
-        var (items, totalCount) = await leagueRepository.GetPagedAsync(
-            request.PageNumber, request.PageSize, cancellationToken);
+        var (items, totalCount) = await 
+            leagueRepository.GetPagedAsync(
+                request.PageNumber,
+                request.PageSize,
+                cancellationToken
+            );
+
         return new PagedResponse<LeagueResponse>(
             items,
             request.PageNumber,
             request.PageSize,
             totalCount,
-            (int)Math.Ceiling(totalCount / (double)request.PageSize));
+            totalCount.CalculateTotalPage(request.PageSize)
+        );
     }
 
     public async Task<LeagueResponse> GetByIdAsync(
         Guid id,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation)
     {
-        return await leagueRepository.GetResponseByIdAsync(id, cancellationToken)
+        return await leagueRepository.GetResponseByIdAsync(id, cancellation)
             ?? throw new NotFoundException($"League '{id}' was not found.");
     }
 
     public async Task<LeagueResponse> CreateAsync(
         CreateLeagueRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation)
     {
-        ValidateName(request.Name);
-        ValidateSeason(request.Season);
-        ValidateMaxTeams(request.MaxTeams);
-        ValidateRosterSize(request.RosterSize);
-        ValidateDraftDateProvided(request.DraftDate);
+        LeagueValidation.ValidateCreateLeagueRequest(request);
+        LeagueNormalization.NormalizeCreateLeagueRequest(ref request);
 
         var commissioner = await userRepository.GetResponseByIdAsync(
             request.CommissionerId,
-            cancellationToken)
-            ?? throw new NotFoundException($"User '{request.CommissionerId}' was not found.");
+            cancellation
+            ) ?? throw new NotFoundException(
+                $"User '{request.CommissionerId}' was not found.");
 
         var draftDateUtc = DateTimeUtcConverter.ConvertToUtc(
             request.DraftDate, commissioner.TimeZoneId);
-        ValidateFutureDraftDate(draftDateUtc!.Value);
+        LeagueValidation.ValidateFutureDraftDate(draftDateUtc!.Value);
         var league = request.ToEntity(
             draftDateUtc, commissioner.TimeZoneId);
         var commissionerTeam = new FantasyTeam
         {
-            Name = GetCommissionerTeamName(request.TeamName, commissioner.Username),
+            Name = LeagueValidation.GetCommissionerTeamName(
+                request.TeamName, commissioner.Username),
             LeagueId = league.Id,
             OwnerId = request.CommissionerId
         };
 
-        await leagueRepository.AddAsync(league, cancellationToken);
-        await teamRepository.AddAsync(commissionerTeam, cancellationToken);
-        await leagueRepository.SaveChangesAsync(cancellationToken);
+        await leagueRepository.AddAsync(league, cancellation);
+        await teamRepository.AddAsync(commissionerTeam, cancellation);
+        await leagueRepository.SaveChangesAsync(cancellation);
+
         return league.ToResponse();
     }
 
     public async Task<LeagueResponse> UpdateAsync(
         Guid id,
         UpdateLeagueRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation)
     {
-        var league = await GetTrackedLeagueOrThrowAsync(id, cancellationToken);
-        ValidateName(request.Name);
-        ValidateMaxTeams(request.MaxTeams);
-        ValidateRosterSize(request.RosterSize);
-        ValidateDraftDateProvided(request.DraftDate);
+        LeagueValidation.ValidateUpdateLeagueRequest(request);
+        LeagueNormalization.NormalizeUpdateLeagueRequest(ref request);
 
-        var currentTeamCount = await teamRepository.CountByLeagueIdAsync(id, cancellationToken);
+        var currentTeamCount = await teamRepository.CountByLeagueIdAsync(
+            id,
+            cancellation
+        );
 
         if (request.MaxTeams < currentTeamCount)
         {
             throw new ConflictException(
-                $"MaxTeams cannot be lower than the current team count ({currentTeamCount}).");
+                $"MaxTeams cannot be lower than" +
+                $"the current team count ({currentTeamCount}).");
         }
 
+        var league = await GetTrackedLeagueOrThrowAsync(
+            id,
+            cancellation
+        );
+
         var commissioner = await userRepository.GetResponseByIdAsync(
-            league.CommissionerId, cancellationToken)
+            league.CommissionerId, cancellation)
             ?? throw new NotFoundException(
                 $"User '{league.CommissionerId}' was not found.");
 
         var draftDateUtc = DateTimeUtcConverter.ConvertToUtc(
             request.DraftDate, commissioner.TimeZoneId);
-        ValidateFutureDraftDate(draftDateUtc!.Value);
+        LeagueValidation.ValidateFutureDraftDate(draftDateUtc!.Value);
         request.MapTo(
             league, draftDateUtc, commissioner.TimeZoneId);
 
-        await leagueRepository.SaveChangesAsync(cancellationToken);
+        await leagueRepository.SaveChangesAsync(cancellation);
         return league.ToResponse();
     }
 
     public async Task DeleteAsync(
         Guid id,
         Guid commissionerId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation)
     {
-        var league = await GetTrackedLeagueOrThrowAsync(id, cancellationToken);
+        var league = await GetTrackedLeagueOrThrowAsync(
+            id,
+            cancellation
+        );
+
         if (league.CommissionerId != commissionerId)
         {
-            throw new ForbiddenException("Only the league commissioner can cancel the league.");
+            throw new ForbiddenException(
+                "Only the league commissioner can cancel the league."
+            );
         }
 
         if (league.Status is not (
@@ -123,101 +144,58 @@ public sealed class LeagueService(
             LeagueStatus.DraftDelayed))
         {
             throw new ConflictException(
-                "Only a created, registration-open, or delayed league can be cancelled.");
+                "Only a created, registration-open," +
+                "or delayed league can be cancelled.");
         }
 
         leagueRepository.Remove(league);
-        await leagueRepository.SaveChangesAsync(cancellationToken);
+        await leagueRepository.SaveChangesAsync(cancellation);
     }
 
     private async Task<League> GetTrackedLeagueOrThrowAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        return await leagueRepository.GetTrackedByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException($"League '{id}' was not found.");
+        return await leagueRepository.GetTrackedByIdAsync(
+            id,
+            cancellation
+        ) ?? throw new NotFoundException($"League '{id}' was not found.");
     }
 
-    private static string ValidateName(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new BadRequestException("League name is required.");
-        }
-
-        return name.Trim();
-    }
-
-    private static string GetCommissionerTeamName(string? teamName, string username)
-    {
-        var resolvedName = string.IsNullOrWhiteSpace(teamName)
-            ? $"{username}'s Team"
-            : teamName.Trim();
-
-        if (resolvedName.Length > 100)
-        {
-            throw new BadRequestException("Team name cannot exceed 100 characters.");
-        }
-
-        return resolvedName;
-    }
-
-    private static void ValidateSeason(int season)
-    {
-        if (season < 1946)
-        {
-            throw new BadRequestException("Season must be 1946 or later.");
-        }
-    }
-
-    private static void ValidateMaxTeams(int maxTeams)
-    {
-        if (maxTeams < 2 || maxTeams > 30)
-        {
-            throw new BadRequestException("MaxTeams must be between 2 and 30.");
-        }
-    }
-
-    public async Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(
+    public async Task<IReadOnlyList<LeagueFixtureResponse>>
+    GetFixturesAsync(
         Guid id,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation
+    )
     {
-        _ = await leagueRepository.GetResponseByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException($"League '{id}' was not found.");
-        return await leagueSetupRepository.GetFixturesAsync(id, cancellationToken);
+        _ = await leagueRepository.GetResponseByIdAsync(
+            id,
+            cancellation
+        ) ?? throw new NotFoundException(
+                $"League '{id}' was not found."
+            );
+
+        return await leagueSetupRepository.GetFixturesAsync(
+            id,
+            cancellation
+        );
     }
 
-    public async Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(
+    public async Task<IReadOnlyList<DraftPickOrderResponse>> 
+    GetDraftOrderAsync(
         Guid id,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        _ = await leagueRepository.GetResponseByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException($"League '{id}' was not found.");
-        return await leagueSetupRepository.GetDraftOrderAsync(id, cancellationToken);
-    }
+        _ = await leagueRepository.GetResponseByIdAsync(
+            id,
+            cancellationToken
+        ) ?? throw new NotFoundException($"League '{id}' was not found.");
 
-    private static void ValidateRosterSize(int rosterSize)
-    {
-        if (rosterSize < 1 || rosterSize > 30)
-        {
-            throw new BadRequestException("RosterSize must be between 1 and 30.");
-        }
-    }
-
-    private static void ValidateDraftDateProvided(DateTime draftDate)
-    {
-        if (draftDate == default)
-        {
-            throw new BadRequestException("DraftDate is required.");
-        }
-    }
-
-    private static void ValidateFutureDraftDate(DateTime draftDateUtc)
-    {
-        if (draftDateUtc <= DateTime.UtcNow)
-        {
-            throw new BadRequestException("DraftDate must be in the future.");
-        }
+        return await leagueSetupRepository.GetDraftOrderAsync(
+            id,
+            cancellationToken
+        );
     }
 
 }

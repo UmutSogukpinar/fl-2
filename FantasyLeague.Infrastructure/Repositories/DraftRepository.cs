@@ -48,32 +48,53 @@ public sealed class DraftRepository(AppDbContext dbContext) : IDraftRepository
             pick => pick.LeagueId == leagueId && pick.NbaPlayerId == nbaPlayerId,
             cancellationToken);
 
-    public Task<bool> NbaPlayerExistsAsync(Guid nbaPlayerId, CancellationToken cancellationToken) =>
-        dbContext.Set<NbaPlayer>().AnyAsync(player => player.Id == nbaPlayerId, cancellationToken);
+    public Task<bool> NbaPlayerExistsAsync(
+        Guid nbaPlayerId,
+        CancellationToken cancellation
+    )
+    {
+        return dbContext.Set<NbaPlayer>().AnyAsync(
+                player => player.Id == nbaPlayerId,
+                cancellation
+            );
+    }
 
     public Task<Guid?> GetFirstAvailablePlayerIdAsync(
         Guid leagueId,
-        CancellationToken cancellationToken) =>
-        dbContext.Set<NbaPlayer>()
+        CancellationToken cancellation)
+    {
+        return dbContext.Set<NbaPlayer>()
             .Where(player => !dbContext.Set<DraftPickOrder>().Any(
-                pick => pick.LeagueId == leagueId && pick.NbaPlayerId == player.Id))
+                pick => pick.LeagueId == leagueId &&
+                pick.NbaPlayerId == player.Id)
+            )
             .OrderBy(player => player.FirstName)
             .ThenBy(player => player.LastName)
             .Select(player => (Guid?)player.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellation);
+    }
 
     public Task<FantasyTeam?> GetTeamAsync(
         Guid leagueId,
         Guid teamId,
-        CancellationToken cancellationToken) =>
-        dbContext.Set<FantasyTeam>().SingleOrDefaultAsync(
-            team => team.LeagueId == leagueId && team.Id == teamId,
-            cancellationToken);
+        CancellationToken cancellationToken)
+    {
+        return dbContext.Set<FantasyTeam>().SingleOrDefaultAsync(
+                team => team.LeagueId == leagueId &&
+                team.Id == teamId,
+                cancellationToken
+            );
+    }
 
     public Task AddRosterPlayerAsync(
         FantasyTeamPlayer player,
-        CancellationToken cancellationToken) =>
-        dbContext.Set<FantasyTeamPlayer>().AddAsync(player, cancellationToken).AsTask();
+        CancellationToken cancellationToken)
+    {
+        return dbContext.Set<FantasyTeamPlayer>().AddAsync(
+            player,
+            cancellationToken
+        ).AsTask();
+    }
 
     public async Task<bool> TrySaveChangesAsync(CancellationToken cancellationToken)
     {

@@ -19,22 +19,25 @@ public sealed class LeagueSetupGeneratorTests
     }
 
     [Theory]
-    [InlineData(4, 12)]
-    [InlineData(5, 20)]
-    public void CreateDoubleRoundRobinFixtures_CreatesEachHomeAwayPairOnce(
+    [InlineData(4, 6)]
+    [InlineData(5, 10)]
+    public void CreateRoundRobinFixtures_CreatesEachTeamPairOnce(
         int teamCount,
         int expectedFixtureCount)
     {
         var teams = Enumerable.Range(0, teamCount).Select(_ => Guid.NewGuid()).ToArray();
 
-        var fixtures = LeagueSetupGenerator.CreateDoubleRoundRobinFixtures(
+        var fixtures = LeagueSetupGenerator.CreateRoundRobinFixtures(
             Guid.NewGuid(), teams);
 
         Assert.Equal(expectedFixtureCount, fixtures.Count);
         Assert.DoesNotContain(fixtures, fixture => fixture.HomeTeamId == fixture.AwayTeamId);
-        foreach (var home in teams)
-        foreach (var away in teams.Where(team => team != home))
+        for (var first = 0; first < teams.Length; first++)
+        for (var second = first + 1; second < teams.Length; second++)
+        {
             Assert.Single(fixtures, fixture =>
-                fixture.HomeTeamId == home && fixture.AwayTeamId == away);
+                fixture.HomeTeamId == teams[first] && fixture.AwayTeamId == teams[second]
+                || fixture.HomeTeamId == teams[second] && fixture.AwayTeamId == teams[first]);
+        }
     }
 }

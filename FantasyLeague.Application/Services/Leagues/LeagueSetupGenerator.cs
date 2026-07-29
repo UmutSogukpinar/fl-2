@@ -40,14 +40,14 @@ public static class LeagueSetupGenerator
         return picks;
     }
 
-    public static IReadOnlyList<LeagueFixture> CreateDoubleRoundRobinFixtures(
+    public static IReadOnlyList<LeagueFixture> CreateRoundRobinFixtures(
         Guid leagueId,
         IReadOnlyList<Guid> teamIds)
     {
         var rotation = teamIds.Cast<Guid?>().ToList();
         if (rotation.Count % 2 != 0) rotation.Add(null);
 
-        var firstLeg = new List<LeagueFixture>();
+        var fixtures = new List<LeagueFixture>();
         var rounds = rotation.Count - 1;
         var matchesPerRound = rotation.Count / 2;
 
@@ -60,7 +60,7 @@ public static class LeagueSetupGenerator
                 if (!first.HasValue || !second.HasValue) continue;
 
                 var swapHome = (round + match) % 2 == 1;
-                firstLeg.Add(new LeagueFixture
+                fixtures.Add(new LeagueFixture
                 {
                     LeagueId = leagueId,
                     Week = round + 1,
@@ -74,14 +74,6 @@ public static class LeagueSetupGenerator
             rotation.Insert(1, last);
         }
 
-        var secondLeg = firstLeg.Select(fixture => new LeagueFixture
-        {
-            LeagueId = leagueId,
-            Week = fixture.Week + rounds,
-            HomeTeamId = fixture.AwayTeamId,
-            AwayTeamId = fixture.HomeTeamId
-        });
-
-        return [.. firstLeg, .. secondLeg];
+        return fixtures;
     }
 }

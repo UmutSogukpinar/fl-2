@@ -8,16 +8,23 @@ namespace FantasyLeague.Infrastructure.Repositories;
 
 public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetupRepository
 {
-    public Task<bool> ExistsAsync(Guid leagueId, CancellationToken cancellationToken) =>
+    public Task<bool> DraftOrderExistsAsync(Guid leagueId, CancellationToken cancellationToken) =>
         dbContext.Set<DraftPickOrder>().AnyAsync(pick => pick.LeagueId == leagueId, cancellationToken);
 
-    public async Task AddAsync(
-        IReadOnlyCollection<LeagueFixture> fixtures,
+    public Task AddDraftOrderAsync(
         IReadOnlyCollection<DraftPickOrder> draftOrder,
         CancellationToken cancellationToken)
     {
-        await dbContext.Set<LeagueFixture>().AddRangeAsync(fixtures, cancellationToken);
-        await dbContext.Set<DraftPickOrder>().AddRangeAsync(draftOrder, cancellationToken);
+        return dbContext.Set<DraftPickOrder>()
+            .AddRangeAsync(draftOrder, cancellationToken);
+    }
+
+    public Task AddFixturesAsync(
+        IReadOnlyCollection<LeagueFixture> fixtures,
+        CancellationToken cancellationToken)
+    {
+        return dbContext.Set<LeagueFixture>()
+            .AddRangeAsync(fixtures, cancellationToken);
     }
 
     public async Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(

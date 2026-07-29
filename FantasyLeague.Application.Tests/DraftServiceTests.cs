@@ -36,8 +36,7 @@ public sealed class DraftServiceTests
         _teamRepository.Setup(repository => repository.GetIdsByLeagueIdAsync(
                 league.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync([Guid.NewGuid(), Guid.NewGuid()]);
-        _leagueSetupRepository.Setup(repository => repository.AddAsync(
-                It.IsAny<IReadOnlyCollection<LeagueFixture>>(),
+        _leagueSetupRepository.Setup(repository => repository.AddDraftOrderAsync(
                 It.IsAny<IReadOnlyCollection<DraftPickOrder>>(),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -53,6 +52,9 @@ public sealed class DraftServiceTests
         Assert.Equal(utcNow, league.UpdatedAt);
         _leagueRepository.Verify(repository => repository.SaveChangesAsync(
             It.IsAny<CancellationToken>()), Times.Once);
+        _leagueSetupRepository.Verify(repository => repository.AddFixturesAsync(
+            It.IsAny<IReadOnlyCollection<LeagueFixture>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -71,8 +73,7 @@ public sealed class DraftServiceTests
 
         Assert.Empty(states);
         Assert.Equal(LeagueStatus.DraftDelayed, league.Status);
-        _leagueSetupRepository.Verify(repository => repository.AddAsync(
-            It.IsAny<IReadOnlyCollection<LeagueFixture>>(),
+        _leagueSetupRepository.Verify(repository => repository.AddDraftOrderAsync(
             It.IsAny<IReadOnlyCollection<DraftPickOrder>>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -93,6 +94,16 @@ public sealed class DraftServiceTests
     }
 
     [Fact]
+    public async Task MakePickAsync_WithNullRequest_DoesNotQueryLeague()
+    {
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.MakePickAsync(Guid.NewGuid(), null!));
+
+        _leagueRepository.Verify(repository => repository.GetTrackedByIdAsync(
+            It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task MakePickAsync_OnFinalPick_AddsPlayerAndActivatesLeague()
     {
         var league = CreateLeague(LeagueStatus.Drafting);
@@ -100,9 +111,31 @@ public sealed class DraftServiceTests
         {
             Id = Guid.NewGuid(), LeagueId = league.Id, OwnerId = Guid.NewGuid(), Name = "Team"
         };
+        var firstTeamId = Guid.NewGuid();
         var nbaPlayerId = Guid.NewGuid();
         var currentPick = CreatePick(league.Id, team.Id);
-        var pendingResponse = CreatePickResponse(league.Id, team.Id);
+        currentPick.PositionInRound = 2;
+        currentPick.OverallPick = 2;
+        var firstPickResponse = new DraftPickResponse(
+            Guid.NewGuid(),
+            firstTeamId,
+            "First Team",
+            1,
+            1,
+            1,
+            Guid.NewGuid(),
+            "First Player",
+            DateTime.UtcNow.AddMinutes(-1));
+        var pendingResponse = new DraftPickResponse(
+            currentPick.Id,
+            team.Id,
+            team.Name,
+            1,
+            2,
+            2,
+            null,
+            null,
+            null);
         var completedResponse = pendingResponse with
         {
             NbaPlayerId = nbaPlayerId,
@@ -121,8 +154,8 @@ public sealed class DraftServiceTests
             .ReturnsAsync(true);
         _draftRepository.SetupSequence(repository => repository.GetPicksAsync(
                 league.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([pendingResponse])
-            .ReturnsAsync([completedResponse]);
+            .ReturnsAsync([firstPickResponse, pendingResponse])
+            .ReturnsAsync([firstPickResponse, completedResponse]);
         _draftRepository.Setup(repository => repository.TrySaveChangesAsync(
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -137,6 +170,15 @@ public sealed class DraftServiceTests
         _draftRepository.Verify(repository => repository.AddRosterPlayerAsync(
             It.Is<FantasyTeamPlayer>(player =>
                 player.FantasyTeamId == team.Id && player.NbaPlayerId == nbaPlayerId),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _leagueSetupRepository.Verify(repository => repository.AddFixturesAsync(
+            It.Is<IReadOnlyCollection<LeagueFixture>>(fixtures =>
+                fixtures.Count == 1
+                && fixtures.Single().LeagueId == league.Id
+                && (fixtures.Single().HomeTeamId == firstTeamId
+                    && fixtures.Single().AwayTeamId == team.Id
+                    || fixtures.Single().HomeTeamId == team.Id
+                    && fixtures.Single().AwayTeamId == firstTeamId)),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -192,6 +234,9 @@ public sealed class DraftServiceTests
             It.Is<FantasyTeamPlayer>(player =>
                 player.FantasyTeamId == currentPick.TeamId
                 && player.NbaPlayerId == nbaPlayerId),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _leagueSetupRepository.Verify(repository => repository.AddFixturesAsync(
+            It.IsAny<IReadOnlyCollection<LeagueFixture>>(),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

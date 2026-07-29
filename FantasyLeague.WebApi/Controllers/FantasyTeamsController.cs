@@ -94,63 +94,6 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService) : Co
 
 
     /// <summary>
-    /// Creates a new fantasy team.
-    /// </summary>
-    /// <param name="request">
-    /// The information required to create the fantasy team.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// A token used to cancel the operation when the HTTP request is aborted.
-    /// </param>
-    /// <returns>
-    /// An HTTP response containing the newly created fantasy team and the URL
-    /// from which it can be retrieved.
-    /// </returns>
-    /// <response code="201">
-    /// The fantasy team was created successfully.
-    /// </response>
-    /// <response code="400">
-    /// The request data is invalid.
-    /// </response>
-    /// <response code="404">
-    /// A related resource, such as the specified league, was not found.
-    /// </response>
-    /// <response code="409">
-    /// A fantasy team conflicting with an existing resource already exists.
-    /// </response>
-    /// <example>
-    /// Example request:
-    /// <code>
-    /// POST /api/FantasyTeams
-    /// {
-    ///   "name": "Istanbul Warriors",
-    ///   "leagueId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-    /// }
-    /// </code>
-    /// </example>
-    [HttpPost]
-    [ProducesResponseType<FantasyTeamResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<FantasyTeamResponse>> CreateAsync(
-        [FromBody] CreateFantasyTeamRequest request,
-        CancellationToken cancellationToken
-    ){
-        var response = await teamService.CreateAsync(
-            request,
-            cancellationToken
-        );
-
-        return CreatedAtAction(
-            "GetById",
-            new { id = response.Id },
-            response
-        );
-    }
-
-    
-    /// <summary>
     /// Updates an existing fantasy team.
     /// </summary>
     /// <param name="id">

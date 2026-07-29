@@ -42,7 +42,7 @@ public sealed class FantasyTeamServiceTests
             .ReturnsAsync(([CreateTeamResponse(team)], 1));
 
         var result = await _service.GetByLeagueIdAsync(
-            league.Id, new PaginationRequest(), CancellationToken.None);
+            league.Id, new PaginationRequest());
 
         var response = Assert.Single(result.Items);
         Assert.Equal(1, result.TotalCount);
@@ -52,11 +52,11 @@ public sealed class FantasyTeamServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_NormalizesMapsAndPersistsTeam()
+    public async Task AddLeagueMemberAsync_NormalizesMapsAndPersistsTeam()
     {
         var league = CreateLeague();
         var owner = CreateUser("owner");
-        var request = new CreateFantasyTeamRequest("  Winners  ", league.Id, owner.Id);
+        var request = new AddLeagueMemberRequest("  Winners  ", owner.Id);
         SetupLeague(league);
         _userRepository
             .Setup(repository => repository.GetResponseByIdAsync(
@@ -78,7 +78,7 @@ public sealed class FantasyTeamServiceTests
             .Callback<FantasyTeam, CancellationToken>((team, _) => addedTeam = team)
             .Returns(Task.CompletedTask);
 
-        var response = await _service.CreateAsync(request, CancellationToken.None);
+        var response = await _service.AddLeagueMemberAsync(league.Id, request);
 
         Assert.NotNull(addedTeam);
         Assert.Equal("winners", addedTeam.Name);
@@ -90,7 +90,7 @@ public sealed class FantasyTeamServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_WhenLeagueIsFull_ThrowsConflictException()
+    public async Task AddLeagueMemberAsync_WhenLeagueIsFull_ThrowsConflictException()
     {
         var league = CreateLeague(maxTeams: 2);
         var owner = CreateUser("owner");
@@ -104,10 +104,10 @@ public sealed class FantasyTeamServiceTests
                 league.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(2);
 
-        var request = new CreateFantasyTeamRequest("Team", league.Id, owner.Id);
+        var request = new AddLeagueMemberRequest("Team", owner.Id);
 
         await Assert.ThrowsAsync<ConflictException>(
-            () => _service.CreateAsync(request, CancellationToken.None));
+            () => _service.AddLeagueMemberAsync(league.Id, request));
         _teamRepository.Verify(
             repository => repository.AddAsync(
                 It.IsAny<FantasyTeam>(), It.IsAny<CancellationToken>()),
@@ -124,7 +124,7 @@ public sealed class FantasyTeamServiceTests
     [InlineData(
         FastasyTeamConflictResult.OwnerHasMultipleTeam | FastasyTeamConflictResult.NameIsTaken,
         "The owner already has a team and the team name is already used in this league.")]
-    public async Task CreateAsync_WhenTeamIsNotUnique_ThrowsSpecificConflictException(
+    public async Task AddLeagueMemberAsync_WhenTeamIsNotUnique_ThrowsSpecificConflictException(
         FastasyTeamConflictResult conflict,
         string expectedMessage)
     {
@@ -144,10 +144,10 @@ public sealed class FantasyTeamServiceTests
                 league.Id, owner.Id, "team", null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(conflict);
 
-        var request = new CreateFantasyTeamRequest("Team", league.Id, owner.Id);
+        var request = new AddLeagueMemberRequest("Team", owner.Id);
 
         var exception = await Assert.ThrowsAsync<ConflictException>(
-            () => _service.CreateAsync(request, CancellationToken.None));
+            () => _service.AddLeagueMemberAsync(league.Id, request));
 
         Assert.Equal(expectedMessage, exception.Message);
         _teamRepository.Verify(
@@ -179,8 +179,8 @@ public sealed class FantasyTeamServiceTests
 
         var response = await _service.UpdateAsync(
             team.Id,
-            new UpdateFantasyTeamRequest("  Updated  "),
-            CancellationToken.None);
+            new UpdateFantasyTeamRequest("  Updated  ")
+            );
 
         Assert.Equal("updated", team.Name);
         Assert.Equal("updated", response.Name);
@@ -213,8 +213,8 @@ public sealed class FantasyTeamServiceTests
         var exception = await Assert.ThrowsAsync<ConflictException>(() =>
             _service.UpdateAsync(
                 team.Id,
-                new UpdateFantasyTeamRequest("  Taken Name  "),
-                CancellationToken.None));
+                new UpdateFantasyTeamRequest("  Taken Name  ")
+                ));
 
         Assert.Equal("The team name is already used in this league.", exception.Message);
         Assert.Equal(originalName, team.Name);
@@ -234,7 +234,7 @@ public sealed class FantasyTeamServiceTests
             .ReturnsAsync((FantasyTeam?)null);
 
         await Assert.ThrowsAsync<NotFoundException>(
-            () => _service.DeleteAsync(id, CancellationToken.None));
+            () => _service.DeleteAsync(id));
         _teamRepository.Verify(
             repository => repository.Remove(It.IsAny<FantasyTeam>()), Times.Never);
     }
@@ -281,11 +281,10 @@ public sealed class FantasyTeamServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_WhenLastTeamJoins_GeneratesFixturesAndSnakeDraftOrder()
+    public async Task AddLeagueMemberAsync_WhenLastTeamJoins_DoesNotGenerateLeagueSetup()
     {
         var league = CreateLeague(maxTeams: 4);
         var owner = CreateUser("last-owner");
-        var existingTeamIds = Enumerable.Range(0, 3).Select(_ => Guid.NewGuid()).ToArray();
         SetupLeague(league);
         _userRepository
             .Setup(repository => repository.GetResponseByIdAsync(
@@ -296,40 +295,20 @@ public sealed class FantasyTeamServiceTests
                 league.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(3);
         _teamRepository
-            .Setup(repository => repository.GetIdsByLeagueIdAsync(
-                league.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(existingTeamIds);
-        _teamRepository
             .Setup(repository => repository.AddAsync(
                 It.IsAny<FantasyTeam>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        IReadOnlyCollection<LeagueFixture>? fixtures = null;
-        IReadOnlyCollection<DraftPickOrder>? draftOrder = null;
-        _leagueSetupRepository
-            .Setup(repository => repository.AddAsync(
-                It.IsAny<IReadOnlyCollection<LeagueFixture>>(),
-                It.IsAny<IReadOnlyCollection<DraftPickOrder>>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<IReadOnlyCollection<LeagueFixture>, IReadOnlyCollection<DraftPickOrder>, CancellationToken>(
-                (createdFixtures, createdDraftOrder, _) =>
-                {
-                    fixtures = createdFixtures;
-                    draftOrder = createdDraftOrder;
-                })
-            .Returns(Task.CompletedTask);
+        await _service.AddLeagueMemberAsync(
+            league.Id,
+            new AddLeagueMemberRequest("Final Team", owner.Id));
 
-        await _service.CreateAsync(
-            new CreateFantasyTeamRequest("Final Team", league.Id, owner.Id),
-            CancellationToken.None);
-
-        Assert.NotNull(fixtures);
-        Assert.Equal(12, fixtures.Count);
-        Assert.NotNull(draftOrder);
-        Assert.Equal(league.Settings.RosterSize * league.MaxTeams, draftOrder.Count);
-        var firstRound = draftOrder.Where(pick => pick.Round == 1).Select(pick => pick.TeamId);
-        var secondRound = draftOrder.Where(pick => pick.Round == 2).Select(pick => pick.TeamId);
-        Assert.Equal(firstRound.Reverse(), secondRound);
+        _leagueSetupRepository.Verify(repository => repository.AddDraftOrderAsync(
+            It.IsAny<IReadOnlyCollection<DraftPickOrder>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _leagueSetupRepository.Verify(repository => repository.AddFixturesAsync(
+            It.IsAny<IReadOnlyCollection<LeagueFixture>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -361,7 +340,7 @@ public sealed class FantasyTeamServiceTests
             .Returns(Task.CompletedTask);
 
         var response = await _service.JoinLeagueAsync(
-            new JoinLeagueRequest("  abc12345  ", "New Team", owner.Id), CancellationToken.None);
+            new JoinLeagueRequest("  abc12345  ", "New Team", owner.Id));
 
         Assert.Equal(league.Id, response.LeagueId);
         Assert.Equal(owner.Id, response.OwnerId);
@@ -374,7 +353,7 @@ public sealed class FantasyTeamServiceTests
         var request = new JoinLeagueRequest("ABC12345", "Team", Guid.Empty);
 
         await Assert.ThrowsAsync<BadRequestException>(() =>
-            _service.JoinLeagueAsync(request, CancellationToken.None));
+            _service.JoinLeagueAsync(request));
 
         _leagueRepository.Verify(repository => repository.GetResponseByJoinCodeAsync(
             It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -393,7 +372,7 @@ public sealed class FantasyTeamServiceTests
             .ReturnsAsync(team);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            _service.RemoveLeagueMemberAsync(league.Id, team.Id, CancellationToken.None));
+            _service.RemoveLeagueMemberAsync(league.Id, team.Id));
         _teamRepository.Verify(repository => repository.Remove(team), Times.Never);
     }
 

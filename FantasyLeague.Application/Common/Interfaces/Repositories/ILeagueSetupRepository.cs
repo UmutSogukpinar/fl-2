@@ -5,11 +5,13 @@ namespace FantasyLeague.Application.Common.Interfaces.Repositories;
 
 public interface ILeagueSetupRepository
 {
-    Task<bool> ExistsAsync(Guid leagueId, CancellationToken cancellationToken);
+    Task<bool> DraftOrderExistsAsync(Guid leagueId, CancellationToken cancellationToken);
     Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(Guid leagueId, CancellationToken cancellationToken);
     Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(Guid leagueId, CancellationToken cancellationToken);
-    Task AddAsync(
-        IReadOnlyCollection<LeagueFixture> fixtures,
+    Task AddDraftOrderAsync(
         IReadOnlyCollection<DraftPickOrder> draftOrder,
+        CancellationToken cancellationToken);
+    Task AddFixturesAsync(
+        IReadOnlyCollection<LeagueFixture> fixtures,
         CancellationToken cancellationToken);
 }

@@ -49,11 +49,11 @@ public sealed class DraftService(
                 continue;
             }
 
-            if (!await leagueSetupRepository.ExistsAsync(league.Id, cancellationToken))
+            if (!await leagueSetupRepository.DraftOrderExistsAsync(
+                    league.Id, cancellationToken))
             {
                 var randomOrder = LeagueSetupGenerator.CreateRandomTeamOrder(teamIds);
-                await leagueSetupRepository.AddAsync(
-                    LeagueSetupGenerator.CreateDoubleRoundRobinFixtures(league.Id, randomOrder),
+                await leagueSetupRepository.AddDraftOrderAsync(
                     LeagueSetupGenerator.CreateSnakeDraftOrder(
                         league.Id, randomOrder, league.Settings.RosterSize),
                     cancellationToken);
@@ -112,6 +112,7 @@ public sealed class DraftService(
 
             if (trackedPick.OverallPick == picks.Count)
             {
+                await CreateFixturesAsync(league.Id, picks, cancellationToken);
                 league.Status = LeagueStatus.Active;
                 league.UpdatedAt = utcNow;
             }
@@ -193,6 +194,7 @@ public sealed class DraftService(
         var picksBeforeSave = await draftRepository.GetPicksAsync(leagueId, cancellationToken);
         if (currentPick.OverallPick == picksBeforeSave.Count)
         {
+            await CreateFixturesAsync(leagueId, picksBeforeSave, cancellationToken);
             league.Status = LeagueStatus.Active;
             league.UpdatedAt = pickedAt;
         }
@@ -222,6 +224,23 @@ public sealed class DraftService(
             currentPick,
             pickDeadlineUtc,
             picks);
+    }
+
+    private Task CreateFixturesAsync(
+        Guid leagueId,
+        IReadOnlyList<DraftPickResponse> picks,
+        CancellationToken cancellationToken)
+    {
+        var teamOrder = picks
+            .Where(pick => pick.Round == 1)
+            .OrderBy(pick => pick.PositionInRound)
+            .Select(pick => pick.TeamId)
+            .ToArray();
+        var fixtures = LeagueSetupGenerator.CreateRoundRobinFixtures(
+            leagueId, teamOrder);
+
+        return leagueSetupRepository.AddFixturesAsync(
+            fixtures, cancellationToken);
     }
 
     private static DateTime? GetPickDeadlineUtc(

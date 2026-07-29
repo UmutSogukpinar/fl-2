@@ -11,7 +11,8 @@ public sealed partial class FantasyTeamService
         Guid leagueId,
         CancellationToken cancellationToken)
     {
-        if (await leagueSetupRepository.ExistsAsync(leagueId, cancellationToken))
+        if (await _leagueSetupRepository.DraftOrderExistsAsync(
+                leagueId, cancellationToken))
         {
             throw new ConflictException(
                 "League membership cannot change after " +
@@ -26,7 +27,7 @@ public sealed partial class FantasyTeamService
         Guid? excludedTeamId,
         CancellationToken cancellation)
     {
-        var conflict = await teamRepository.ExistsAsync(
+        var conflict = await _teamRepository.ExistsAsync(
             leagueId,
             ownerId,
             name,
@@ -55,7 +56,7 @@ public sealed partial class FantasyTeamService
         Guid id,
         CancellationToken cancellation)
     {
-        return await leagueRepository.GetResponseByIdAsync(id, cancellation)
+        return await _leagueRepository.GetResponseByIdAsync(id, cancellation)
             ?? throw new NotFoundException($"League '{id}' was not found.");
     }
 
@@ -63,7 +64,7 @@ public sealed partial class FantasyTeamService
         Guid id,
         CancellationToken cancellation)
     {
-        return await teamRepository.GetTrackedByIdAsync(id, cancellation)
+        return await _teamRepository.GetTrackedByIdAsync(id, cancellation)
             ?? throw new NotFoundException($"Fantasy team '{id}' was not found.");
     }
 }

@@ -23,5 +23,9 @@ public sealed class NbaPlayerConfiguration
         builder.Property(player => player.LastName)
             .IsRequired();
 
+        builder.HasIndex(player => player.FirstName);
+        builder.HasIndex(player => player.LastName);
+
+
     }
 }

@@ -2,11 +2,46 @@ using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;
+using FantasyLeague.Domain.Enums;
 
 namespace FantasyLeague.Application.Services.FantasyTeams;
 
 public sealed partial class FantasyTeamService
 {
+    private static void EnsureLeagueAcceptsMembers(LeagueResponse league)
+    {
+        if (league.Status is
+            LeagueStatus.Drafting or
+            LeagueStatus.Active or
+            LeagueStatus.Completed)
+        {
+            throw new ConflictException(
+                "The league is no longer accepting members.");
+        }
+    }
+
+    private async Task EnsureOwnerExistsAsync(
+        Guid ownerId,
+        CancellationToken cancellation)
+    {
+        _ = await _userRepository.GetResponseByIdAsync(ownerId, cancellation)
+            ?? throw new NotFoundException($"User '{ownerId}' was not found.");
+    }
+
+    private async Task EnsureLeagueHasCapacityAsync(
+        LeagueResponse league,
+        CancellationToken cancellation)
+    {
+        var teamCount = await _teamRepository.CountByLeagueIdAsync(
+            league.Id, cancellation);
+
+        if (teamCount >= league.MaxTeams)
+        {
+            throw new ConflictException(
+                "The league has reached its team capacity.");
+        }
+    }
+
     private async Task EnsureRegistrationIsOpenAsync(
         Guid leagueId,
         CancellationToken cancellationToken)

@@ -3,7 +3,7 @@ using System.Linq.Expressions;
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Domain.Entities;
 
-namespace FantasyLeague.Infrastructure.Repositories.Projections;
+namespace FantasyLeague.Infrastructure.Repositories.NbaPlayers;
 
 internal static class NbaPlayerProjections
 {

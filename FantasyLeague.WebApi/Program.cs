@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using FantasyLeague.Infrastructure.Context;
 using FantasyLeague.Infrastructure.ExternalServices.NbaApi;
 using FantasyLeague.Infrastructure.Repositories;
+using FantasyLeague.Infrastructure.Repositories.NbaPlayers;
 using FantasyLeague.Infrastructure.Security;
 using FantasyLeague.Application.Common.Interfaces.ExternalServices;
 using FantasyLeague.Application.Common.Interfaces.Repositories;

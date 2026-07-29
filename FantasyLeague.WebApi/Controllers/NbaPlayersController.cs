@@ -125,10 +125,10 @@ public sealed partial class NbaPlayersController(
     /// using the requested response detail level.
     /// </summary>
     /// <param name="name">
-    /// The full or partial name of the NBA player or players to search for.
+    /// The full name or beginning of the NBA player names to search for.
     /// </param>
     /// <param name="surname">
-    /// The full or partial surname of the NBA player or players to search for.
+    /// The full surname or beginning of the NBA player surnames to search for.
     /// </param>
     /// <param name="season">
     /// The season for which the players' statistics are retrieved.

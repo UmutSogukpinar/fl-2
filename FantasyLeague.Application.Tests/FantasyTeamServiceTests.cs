@@ -225,6 +225,49 @@ public sealed class FantasyTeamServiceTests
     }
 
     [Fact]
+    public async Task AddLeagueMemberAsync_WhenLeagueIsMissing_DoesNotQueryOwner()
+    {
+        var leagueId = Guid.NewGuid();
+        var ownerId = Guid.NewGuid();
+        _leagueRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                leagueId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((LeagueResponse?)null);
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.AddLeagueMemberAsync(
+                leagueId,
+                new AddLeagueMemberRequest("Team", ownerId)));
+
+        Assert.Equal($"League '{leagueId}' was not found.", exception.Message);
+        _userRepository.Verify(repository => repository.GetResponseByIdAsync(
+            It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        VerifyTeamWasNotAdded();
+    }
+
+    [Fact]
+    public async Task AddLeagueMemberAsync_WhenOwnerIsMissing_DoesNotCheckCapacity()
+    {
+        var league = CreateLeague();
+        var ownerId = Guid.NewGuid();
+        SetupLeague(league);
+        _userRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                ownerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserResponse?)null);
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.AddLeagueMemberAsync(
+                league.Id,
+                new AddLeagueMemberRequest("Team", ownerId)));
+
+        Assert.Equal($"User '{ownerId}' was not found.", exception.Message);
+        _teamRepository.Verify(repository => repository.CountByLeagueIdAsync(
+            It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        VerifyTeamWasNotAdded();
+    }
+
+    [Fact]
     public async Task DeleteAsync_WhenTeamDoesNotExist_ThrowsNotFoundException()
     {
         var id = Guid.NewGuid();
@@ -360,6 +403,26 @@ public sealed class FantasyTeamServiceTests
     }
 
     [Fact]
+    public async Task JoinLeagueAsync_WhenJoinCodeIsUnknown_DoesNotCreateTeam()
+    {
+        _leagueRepository
+            .Setup(repository => repository.GetResponseByJoinCodeAsync(
+                "UNKNOWN1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((LeagueResponse?)null);
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.JoinLeagueAsync(new JoinLeagueRequest(
+                "  unknown1  ",
+                "Team",
+                Guid.NewGuid())));
+
+        Assert.Equal(
+            "A league with the supplied join code was not found.",
+            exception.Message);
+        VerifyTeamWasNotAdded();
+    }
+
+    [Fact]
     public async Task RemoveLeagueMemberAsync_WhenTeamBelongsToAnotherLeague_ThrowsNotFound()
     {
         var league = CreateLeague();
@@ -403,4 +466,13 @@ public sealed class FantasyTeamServiceTests
         user.Email,
         user.CreatedAt,
         user.UpdatedAt);
+
+    private void VerifyTeamWasNotAdded()
+    {
+        _teamRepository.Verify(repository => repository.AddAsync(
+            It.IsAny<FantasyTeam>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _teamRepository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

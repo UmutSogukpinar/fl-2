@@ -153,6 +153,49 @@ public sealed class LeagueServiceTests
     }
 
     [Fact]
+    public async Task GetMatchStatsAsync_WhenTeamsAreSame_ThrowsBadRequest()
+    {
+        var teamId = Guid.NewGuid();
+
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.GetMatchStatsAsync(Guid.NewGuid(), teamId, teamId));
+
+        Assert.Equal(
+            "Home and away teams must be different.",
+            exception.Message);
+        _leagueRepository.Verify(repository =>
+            repository.GetResponseByIdAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        VerifyMatchStatsRepositoryWasNotCalled();
+    }
+
+    [Fact]
+    public async Task GetMatchStatsAsync_WhenLeagueIsMissing_ThrowsNotFound()
+    {
+        var leagueId = Guid.NewGuid();
+        _leagueRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                leagueId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((LeagueResponse?)null);
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.GetMatchStatsAsync(
+                leagueId,
+                Guid.NewGuid(),
+                Guid.NewGuid()));
+
+        Assert.Equal($"League '{leagueId}' was not found.", exception.Message);
+        _teamRepository.Verify(repository =>
+            repository.GetResponseByIdAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+        VerifyMatchStatsRepositoryWasNotCalled();
+    }
+
+    [Fact]
     public async Task GetMatchStatsAsync_WhenHomeTeamIsMissing_ThrowsNotFound()
     {
         var league = CreateLeague();
@@ -173,13 +216,88 @@ public sealed class LeagueServiceTests
                 Guid.NewGuid()));
 
         Assert.Contains("Home fantasy team", exception.Message);
+        VerifyMatchStatsRepositoryWasNotCalled();
+    }
+
+    [Fact]
+    public async Task GetMatchStatsAsync_WhenHomeTeamBelongsToAnotherLeague_ThrowsNotFound()
+    {
+        var league = CreateLeague();
+        var homeTeamId = Guid.NewGuid();
+        SetupLeagueResponse(league);
+        SetupTeamResponse(homeTeamId, Guid.NewGuid(), "Home");
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.GetMatchStatsAsync(
+                league.Id,
+                homeTeamId,
+                Guid.NewGuid()));
+
+        Assert.Contains($"Home fantasy team '{homeTeamId}'", exception.Message);
+        VerifyMatchStatsRepositoryWasNotCalled();
+    }
+
+    [Fact]
+    public async Task GetMatchStatsAsync_WhenAwayTeamIsMissing_ThrowsNotFound()
+    {
+        var league = CreateLeague();
+        var homeTeamId = Guid.NewGuid();
+        var awayTeamId = Guid.NewGuid();
+        SetupLeagueResponse(league);
+        SetupTeamResponse(homeTeamId, league.Id, "Home");
+        _teamRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                awayTeamId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((FantasyTeamResponse?)null);
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.GetMatchStatsAsync(
+                league.Id,
+                homeTeamId,
+                awayTeamId));
+
+        Assert.Contains($"Away fantasy team '{awayTeamId}'", exception.Message);
+        VerifyMatchStatsRepositoryWasNotCalled();
+    }
+
+    [Fact]
+    public async Task GetMatchStatsAsync_ForwardsCancellationToken()
+    {
+        var league = CreateLeague();
+        var homeTeamId = Guid.NewGuid();
+        var awayTeamId = Guid.NewGuid();
+        using var cancellationSource = new CancellationTokenSource();
+        var cancellationToken = cancellationSource.Token;
+        var expected = new MatchStats(
+            TeamMatchStats.Empty(homeTeamId, league.Season),
+            TeamMatchStats.Empty(awayTeamId, league.Season));
+
+        SetupLeagueResponse(league);
+        SetupTeamResponse(homeTeamId, league.Id, "Home");
+        SetupTeamResponse(awayTeamId, league.Id, "Away");
+        _nbaPlayerRepository
+            .Setup(repository => repository.GetMatchStatsByTeamIdsAsync(
+                league.Id,
+                homeTeamId,
+                awayTeamId,
+                league.Season,
+                cancellationToken))
+            .ReturnsAsync(expected);
+
+        await _service.GetMatchStatsAsync(
+            league.Id,
+            homeTeamId,
+            awayTeamId,
+            cancellationToken);
+
         _nbaPlayerRepository.Verify(repository =>
             repository.GetMatchStatsByTeamIdsAsync(
-                It.IsAny<Guid>(),
-                It.IsAny<Guid>(),
-                It.IsAny<Guid>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()), Times.Never);
+                league.Id,
+                homeTeamId,
+                awayTeamId,
+                league.Season,
+                cancellationToken),
+            Times.Once);
     }
 
     [Fact]
@@ -342,4 +460,38 @@ public sealed class LeagueServiceTests
         user.Email,
         user.CreatedAt,
         user.UpdatedAt);
+
+    private void SetupLeagueResponse(League league)
+    {
+        _leagueRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateLeagueResponse(league));
+    }
+
+    private void SetupTeamResponse(Guid teamId, Guid leagueId, string name)
+    {
+        _teamRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                teamId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FantasyTeamResponse(
+                teamId,
+                name,
+                leagueId,
+                Guid.NewGuid(),
+                DateTime.UtcNow,
+                null));
+    }
+
+    private void VerifyMatchStatsRepositoryWasNotCalled()
+    {
+        _nbaPlayerRepository.Verify(repository =>
+            repository.GetMatchStatsByTeamIdsAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<Guid>(),
+                It.IsAny<int>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 }

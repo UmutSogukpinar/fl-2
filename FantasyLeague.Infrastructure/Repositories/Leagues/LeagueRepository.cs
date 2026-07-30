@@ -11,11 +11,12 @@ namespace FantasyLeague.Infrastructure.Repositories;
 
 public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
 {
-    public async Task<(IReadOnlyCollection<LeagueResponse> Items, int TotalCount)> GetPagedAsync(
+    public async Task<(IReadOnlyCollection<LeagueResponse> Items, int TotalCount)> 
+    GetPagedAsync(
         int pageNumber,
         int pageSize,
         LeagueStatus? status,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var query = dbContext.Set<League>().AsNoTracking();
         if (status.HasValue)
@@ -23,49 +24,55 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
             query = query.Where(league => league.Status == status.Value);
         }
 
-        var totalCount = await query.CountAsync(cancellationToken);
+        var totalCount = await query.CountAsync(cancellation);
         var items = await query
             .OrderByDescending(league => league.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(LeagueProjections.Response)
-            .ToArrayAsync(cancellationToken);
+            .ToArrayAsync(cancellation);
 
         return (items, totalCount);
     }
 
     public Task<LeagueResponse?> GetResponseByIdAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return dbContext.Set<League>()
             .AsNoTracking()
             .Where(league => league.Id == id)
             .Select(LeagueProjections.Response)
-            .SingleOrDefaultAsync(cancellationToken);
+            .SingleOrDefaultAsync(cancellation);
     }
 
     public Task<LeagueResponse?> GetResponseByJoinCodeAsync(
         string joinCode,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return dbContext.Set<League>()
             .AsNoTracking()
             .Where(league => league.JoinCode == joinCode)
             .Select(LeagueProjections.Response)
-            .SingleOrDefaultAsync(cancellationToken);
+            .SingleOrDefaultAsync(cancellation);
     }
 
-    public Task<League?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken)
+    public Task<League?> GetTrackedByIdAsync(
+        Guid id,
+        CancellationToken cancellation
+    )
     {
         return dbContext.Set<League>()
             .Include(league => league.Settings)
-            .SingleOrDefaultAsync(league => league.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(
+                league => league.Id == id, cancellation
+            );
     }
 
     public async Task<IReadOnlyList<League>> GetDueForDraftAsync(
         DateTime utcNow,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         return await dbContext.Set<League>()
             .Include(league => league.Settings)
@@ -78,7 +85,8 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
     }
 
     public async Task<IReadOnlyList<League>> GetDraftingAsync(
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         return await dbContext.Set<League>()
             .Include(league => league.Settings)
@@ -86,9 +94,14 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task AddAsync(League league, CancellationToken cancellationToken)
+    public Task AddAsync(
+        League league,
+        CancellationToken cancellationToken
+    )
     {
-        return dbContext.Set<League>().AddAsync(league, cancellationToken).AsTask();
+        return dbContext.Set<League>()
+            .AddAsync(league, cancellationToken)
+            .AsTask();
     }
 
     public void Remove(League league)
@@ -96,7 +109,9 @@ public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
         dbContext.Set<League>().Remove(league);
     }
 
-    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    public async Task SaveChangesAsync(
+        CancellationToken cancellationToken
+    )
     {
         await dbContext.SaveChangesAsync(cancellationToken);
     }

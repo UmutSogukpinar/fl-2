@@ -1,6 +1,7 @@
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Domain.Entities;
+using FantasyLeague.Domain.Enums;
 using FantasyLeague.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,8 +9,14 @@ namespace FantasyLeague.Infrastructure.Repositories;
 
 public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetupRepository
 {
-    public Task<bool> DraftOrderExistsAsync(Guid leagueId, CancellationToken cancellationToken) =>
-        dbContext.Set<DraftPickOrder>().AnyAsync(pick => pick.LeagueId == leagueId, cancellationToken);
+    public Task<bool> DraftOrderExistsAsync(Guid leagueId, CancellationToken cancellationToken)
+    {
+        return dbContext.Set<DraftPickOrder>()
+        .AnyAsync(
+            pick => pick.LeagueId == leagueId,
+            cancellationToken
+        );
+    }
 
     public Task AddDraftOrderAsync(
         IReadOnlyCollection<DraftPickOrder> draftOrder,
@@ -28,29 +35,37 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
     }
 
     public async Task<IReadOnlyList<LeagueFixture>> GetDueFixturesAsync(
-        DateTime utcNow, CancellationToken cancellationToken) =>
-        await dbContext.Set<LeagueFixture>()
-            .Where(fixture => fixture.GameTime <= utcNow
-                && fixture.HomeScore == null && fixture.AwayScore == null)
-            .OrderBy(fixture => fixture.GameTime)
-            .ThenBy(fixture => fixture.Id)
-            .ToListAsync(cancellationToken);
+        DateTime utcNow, CancellationToken cancellationToken)
+    {
+        return await dbContext.Set<LeagueFixture>()
+                        .Where(fixture => fixture.GameTime <= utcNow)
+                        .Where(fixture => fixture.Status == MatchStatus.Scheduled)
+                        .OrderBy(fixture => fixture.GameTime)
+                        .ThenBy(fixture => fixture.Id)
+                        .ToListAsync(cancellationToken);
+    }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken) =>
-        dbContext.SaveChangesAsync(cancellationToken);
+    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        return dbContext.SaveChangesAsync(cancellationToken);
+    }
 
     public Task<bool> HasUnfinishedFixturesAsync(
         Guid leagueId,
-        CancellationToken cancellationToken) =>
-        dbContext.Set<LeagueFixture>().AnyAsync(
+        CancellationToken cancellationToken)
+    {
+        return dbContext.Set<LeagueFixture>().AnyAsync(
             fixture => fixture.LeagueId == leagueId
-                && (fixture.HomeScore == null || fixture.AwayScore == null),
+                && fixture.Status != MatchStatus.Completed
+                && fixture.Status != MatchStatus.Cancelled,
             cancellationToken);
+    }
 
     public async Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(
         Guid leagueId,
-        CancellationToken cancellationToken) =>
-        await dbContext.Set<LeagueFixture>()
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Set<LeagueFixture>()
             .AsNoTracking()
             .Where(fixture => fixture.LeagueId == leagueId)
             .Join(dbContext.Set<FantasyTeam>(), fixture => fixture.HomeTeamId, team => team.Id,
@@ -69,13 +84,16 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
                 item.away.Name,
                 item.fixture.HomeScore,
                 item.fixture.AwayScore,
-                item.fixture.GameTime))
+                item.fixture.GameTime,
+                item.fixture.Status))
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(
         Guid leagueId,
-        CancellationToken cancellationToken) =>
-        await dbContext.Set<DraftPickOrder>()
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Set<DraftPickOrder>()
             .AsNoTracking()
             .Where(pick => pick.LeagueId == leagueId)
             .Join(dbContext.Set<FantasyTeam>(), pick => pick.TeamId, team => team.Id,
@@ -90,6 +108,7 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
                 item.pick.PositionInRound,
                 item.pick.OverallPick))
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<LeagueStandingResponse>> GetStandingsAsync(
         Guid leagueId,
@@ -99,12 +118,15 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
             .Where(team => team.LeagueId == leagueId)
             .Select(team => new { team.Id, team.Name })
             .ToArrayAsync(cancellationToken);
+
         var fixtures = await dbContext.Set<LeagueFixture>().AsNoTracking()
             .Where(fixture => fixture.LeagueId == leagueId
+                && fixture.Status == MatchStatus.Completed
                 && fixture.HomeScore != null && fixture.AwayScore != null)
             .Select(fixture => new
             {
-                fixture.HomeTeamId, fixture.AwayTeamId,
+                fixture.HomeTeamId,
+                fixture.AwayTeamId,
                 HomeScore = fixture.HomeScore!.Value,
                 AwayScore = fixture.AwayScore!.Value
             })
@@ -123,8 +145,13 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
             var pointsAgainst = home.Sum(game => game.AwayScore) + away.Sum(game => game.HomeScore);
             return new
             {
-                team.Id, team.Name, Played = played, Won = won, Drawn = drawn,
-                Lost = played - won - drawn, PointsFor = pointsFor,
+                team.Id,
+                team.Name,
+                Played = played,
+                Won = won,
+                Drawn = drawn,
+                Lost = played - won - drawn,
+                PointsFor = pointsFor,
                 PointsAgainst = pointsAgainst,
                 Difference = pointsFor - pointsAgainst,
                 Points = won * 3 + drawn

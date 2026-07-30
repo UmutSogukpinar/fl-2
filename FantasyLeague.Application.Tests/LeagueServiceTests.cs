@@ -1,14 +1,16 @@
+using Castle.Core.Logging;
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
-using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Requests.Common;
-using FantasyLeague.Application.DTOs.Responses.Leagues;
+using FantasyLeague.Application.DTOs.Requests.Leagues;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
+using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Application.Services.Leagues;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Domain.Enums;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace FantasyLeague.Application.Tests;
@@ -20,6 +22,7 @@ public sealed class LeagueServiceTests
     private readonly Mock<ILeagueSetupRepository> _leagueSetupRepository = new();
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<INbaPlayerRepository> _nbaPlayerRepository = new();
+    private readonly Mock<ILogger<LeagueService>> _logger = new();
     private readonly LeagueService _service;
 
     public LeagueServiceTests()
@@ -29,7 +32,9 @@ public sealed class LeagueServiceTests
             _teamRepository.Object,
             _leagueSetupRepository.Object,
             _userRepository.Object,
-            _nbaPlayerRepository.Object);
+            _nbaPlayerRepository.Object,
+            _logger.Object
+            );
     }
 
     [Fact]
@@ -170,7 +175,7 @@ public sealed class LeagueServiceTests
     }
 
     [Fact]
-    public async Task ProcessDueFixturesAsync_WhenFinalFixtureCompletes_MarksLeagueCompleted()
+    public async Task ProcessDueFixturesAsync_CalculatesScoresAndCompletesFixtureAndLeague()
     {
         var league = CreateLeague();
         league.Status = LeagueStatus.Active;
@@ -197,8 +202,14 @@ public sealed class LeagueServiceTests
                 league.Id, fixture.HomeTeamId, fixture.AwayTeamId,
                 league.Season, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new MatchStats(
-                TeamMatchStats.Empty(fixture.HomeTeamId, league.Season),
-                TeamMatchStats.Empty(fixture.AwayTeamId, league.Season)));
+                new TeamMatchStats(
+                    fixture.HomeTeamId, league.Season,
+                    1, 21, 21, 30,
+                    10, 2, 3, 0, 0, 0, 0, 0, 0),
+                new TeamMatchStats(
+                    fixture.AwayTeamId, league.Season,
+                    1, 21, 21, 30,
+                    8, 2, 3, 0, 0, 0, 0, 0, 0)));
         _leagueSetupRepository
             .Setup(repository => repository.HasUnfinishedFixturesAsync(
                 league.Id, It.IsAny<CancellationToken>()))
@@ -208,13 +219,16 @@ public sealed class LeagueServiceTests
                 league.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(league);
 
+        Assert.Equal(MatchStatus.Scheduled, fixture.Status);
+
         var processed = await _service.ProcessDueFixturesAsync(utcNow);
 
         Assert.Equal(1, processed);
+        Assert.Equal(81, fixture.HomeScore);
+        Assert.Equal(71, fixture.AwayScore);
+        Assert.Equal(MatchStatus.Completed, fixture.Status);
         Assert.Equal(LeagueStatus.Completed, league.Status);
         Assert.Equal(utcNow, league.UpdatedAt);
-        Assert.NotNull(fixture.HomeScore);
-        Assert.NotNull(fixture.AwayScore);
         _leagueSetupRepository.Verify(repository =>
             repository.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _leagueRepository.Verify(repository =>

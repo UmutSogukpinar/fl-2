@@ -31,7 +31,7 @@ export interface LeagueFixture {
   homeScore?: number | null
   awayScore?: number | null
   gameTime?: string | null
-  status: MatchStatus | number
+  status: MatchStatus
 }
 
 export interface DraftPickOrder {

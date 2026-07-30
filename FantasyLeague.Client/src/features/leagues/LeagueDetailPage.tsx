@@ -4,14 +4,7 @@ import { useCurrentUser } from '../../app/UserContext'
 import { draftApi } from '../draft/draft.api'
 import { formatDraftDate, normalizeStatus, statusLabels } from './league.utils'
 import { leaguesApi, type FantasyTeam } from './leagues.api'
-import type { DraftPickOrder, League, LeagueFixture, LeagueStanding, MatchStatus } from './types'
-
-const matchStatuses: MatchStatus[] = [
-  'Scheduled', 'InProgress', 'Completed', 'Postponed', 'Cancelled',
-]
-
-const normalizeMatchStatus = (status: LeagueFixture['status']): MatchStatus =>
-  typeof status === 'number' ? (matchStatuses[status] ?? 'Scheduled') : status
+import type { DraftPickOrder, League, LeagueFixture, LeagueStanding } from './types'
 
 export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   const { navigate } = useApp()
@@ -168,7 +161,7 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
         {standings.map((row) => <div className="standings-row" key={row.teamId}><span>{row.position}</span><strong>{row.teamName}</strong><span>{row.played}</span><span>{row.won}</span><span>{row.drawn}</span><span>{row.lost}</span><span>{row.pointDifference > 0 ? `+${row.pointDifference}` : row.pointDifference}</span><b>{row.points}</b></div>)}
         {!standings.length && <p>Henüz puan durumu oluşturulmadı.</p>}
       </article>
-      <article className="detail-panel fixtures-panel"><h2>Fikstür</h2>{Array.from(weeks).map(([week, games]) => <div className="fixture-week" key={week}><h3>{week}. Hafta</h3>{games.map((game) => <button className="fixture-row fixture-link" key={game.id} onClick={() => navigate(`matches/${leagueId}/${game.id}`)}><span>{game.homeTeamName}</span><strong className="fixture-time"><b>{normalizeMatchStatus(game.status) === 'Completed' ? `${game.homeScore} - ${game.awayScore}` : 'vs'}</b><small>{formatGameTime(game.gameTime)}</small></strong><span>{game.awayTeamName}</span></button>)}</div>)}{!fixtures.length && <p>Lig kapanınca fikstür oluşturulur.</p>}</article>
+      <article className="detail-panel fixtures-panel"><h2>Fikstür</h2>{Array.from(weeks).map(([week, games]) => <div className="fixture-week" key={week}><h3>{week}. Hafta</h3>{games.map((game) => <button className="fixture-row fixture-link" key={game.id} onClick={() => navigate(`matches/${leagueId}/${game.id}`)}><span>{game.homeTeamName}</span><strong className="fixture-time"><b>{game.status === 'Completed' ? `${game.homeScore} - ${game.awayScore}` : 'vs'}</b><small>{formatGameTime(game.gameTime)}</small></strong><span>{game.awayTeamName}</span></button>)}</div>)}{!fixtures.length && <p>Lig kapanınca fikstür oluşturulur.</p>}</article>
       {myTeam && <p className="my-team-note">Bu ligdeki takımın: <strong>{myTeam.name}</strong></p>}
     </section>
   )

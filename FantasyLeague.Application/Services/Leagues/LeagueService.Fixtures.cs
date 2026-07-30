@@ -14,6 +14,7 @@ public sealed partial class LeagueService
     {
         var fixtures = await _leagueSetupRepository
                             .GetDueFixturesAsync(utcNow, cancellation);
+        var processedFixtures = new List<LeagueFixture>();
 
         foreach (var fixture in fixtures)
         {
@@ -25,8 +26,6 @@ public sealed partial class LeagueService
             if (league is null) 
                 continue;
 
-            fixture.Status = MatchStatus.InProgress;
-
             var stats = await _playerRepository.GetMatchStatsByTeamIdsAsync(
                 fixture.LeagueId,
                 fixture.HomeTeamId,
@@ -35,15 +34,39 @@ public sealed partial class LeagueService
                 cancellation
             );
 
+            if (stats.HomeTeamStats.PlayerCount == 0 ||
+                stats.AwayTeamStats.PlayerCount == 0 ||
+                stats.HomeTeamStats.GamesPlayed == 0 ||
+                stats.AwayTeamStats.GamesPlayed == 0)
+            {
+                _logger.LogWarning(
+                    "Fixture {FixtureId} was not scored because player stats " +
+                    "are missing. League: {LeagueId}, Season: {Season}, " +
+                    "Home players/games: {HomePlayerCount}/{HomeGamesPlayed}, " +
+                    "Away players/games: {AwayPlayerCount}/{AwayGamesPlayed}",
+                    fixture.Id,
+                    fixture.LeagueId,
+                    league.Season,
+                    stats.HomeTeamStats.PlayerCount,
+                    stats.HomeTeamStats.GamesPlayed,
+                    stats.AwayTeamStats.PlayerCount,
+                    stats.AwayTeamStats.GamesPlayed
+                );
+                continue;
+            }
+
+            fixture.Status = MatchStatus.InProgress;
+
             fixture.HomeScore = Score(stats.HomeTeamStats);
             fixture.AwayScore = Score(stats.AwayTeamStats);
 
             fixture.Status = MatchStatus.Completed;
+            processedFixtures.Add(fixture);
         }
 
-        await CommitProcessAsync(fixtures, utcNow, cancellation);
+        await CommitProcessAsync(processedFixtures, utcNow, cancellation);
 
-        return fixtures.Count;
+        return processedFixtures.Count;
     }
 
     private async Task CommitProcessAsync(

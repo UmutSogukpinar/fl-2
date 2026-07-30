@@ -39,7 +39,11 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
     {
         return await dbContext.Set<LeagueFixture>()
                         .Where(fixture => fixture.GameTime <= utcNow)
-                        .Where(fixture => fixture.Status == MatchStatus.Scheduled)
+                        .Where(fixture =>
+                            fixture.Status == MatchStatus.Scheduled ||
+                            (fixture.Status == MatchStatus.Completed &&
+                             fixture.HomeScore == 0 &&
+                             fixture.AwayScore == 0))
                         .OrderBy(fixture => fixture.GameTime)
                         .ThenBy(fixture => fixture.Id)
                         .ToListAsync(cancellationToken);
@@ -85,7 +89,7 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
                 item.fixture.HomeScore,
                 item.fixture.AwayScore,
                 item.fixture.GameTime,
-                item.fixture.Status))
+                item.fixture.Status.ToString()))
             .ToListAsync(cancellationToken);
     }
 

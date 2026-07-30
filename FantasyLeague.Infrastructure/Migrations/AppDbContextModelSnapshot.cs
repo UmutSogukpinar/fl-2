@@ -207,8 +207,10 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.Property<Guid>("LeagueId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<int>("Week")
                         .HasColumnType("integer");

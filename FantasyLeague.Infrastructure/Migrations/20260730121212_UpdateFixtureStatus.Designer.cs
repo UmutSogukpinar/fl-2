@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FantasyLeague.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260730093656_AddMatchStatusColumn")]
-    partial class AddMatchStatusColumn
+    [Migration("20260730121212_UpdateFixtureStatus")]
+    partial class UpdateFixtureStatus
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -210,8 +210,10 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.Property<Guid>("LeagueId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
 
                     b.Property<int>("Week")
                         .HasColumnType("integer");

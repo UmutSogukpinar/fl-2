@@ -15,4 +15,9 @@ public interface IFantasyTeamService
     Task<FantasyTeamResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<FantasyTeamResponse> UpdateAsync(Guid id, UpdateFantasyTeamRequest request, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task ReleaseAPlayerAsync(
+        Guid id, Guid playerId,
+        CancellationToken cancellation = default
+    );
 }

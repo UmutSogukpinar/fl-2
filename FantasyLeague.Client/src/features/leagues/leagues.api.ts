@@ -1,6 +1,12 @@
 import { apiClient } from '../../shared/api/client'
 import type { PagedResponse } from '../../shared/types/api'
-import type { DraftPickOrder, League, LeagueFixture, LeagueStanding, MatchStats } from './types'
+import type {
+  DraftPickOrder,
+  League,
+  LeagueFixture,
+  LeagueStanding,
+  MatchStats,
+} from './types'
 
 export interface CreateLeagueRequest {
   name: string

@@ -3,22 +3,12 @@ import { useApp } from '../../app/AppContext'
 import { leaguesApi } from '../leagues/leagues.api'
 import type { League, LeagueFixture, MatchStats, MatchStatus, TeamMatchStats } from '../leagues/types'
 
-const matchStatuses: MatchStatus[] = [
-  'Scheduled', 'InProgress', 'Completed', 'Postponed', 'Cancelled',
-]
-
 const matchStatusLabels: Record<MatchStatus, string> = {
   Scheduled: 'Maç planlandı',
   InProgress: 'Maç devam ediyor',
   Completed: 'Maç tamamlandı',
   Postponed: 'Maç ertelendi',
   Cancelled: 'Maç iptal edildi',
-}
-
-function normalizeMatchStatus(status: LeagueFixture['status']): MatchStatus {
-  return typeof status === 'number'
-    ? (matchStatuses[status] ?? 'Scheduled')
-    : status
 }
 
 const statRows: Array<{ label: string; key: keyof TeamMatchStats; digits?: number }> = [
@@ -82,7 +72,7 @@ export function MatchPage({ leagueId, fixtureId }: { leagueId: string; fixtureId
   if (loading) return <section className="workspace-page"><div className="empty">Maç yükleniyor...</div></section>
   if (!fixture || !stats) return <section className="workspace-page"><button className="text-button" onClick={() => navigate(`leagues/${leagueId}`)}>← Lige dön</button><div className="api-error">{error ?? 'Maç bulunamadı.'}</div></section>
 
-  const matchStatus = normalizeMatchStatus(fixture.status)
+  const matchStatus = fixture.status
   const completed = matchStatus === 'Completed'
   return (
     <section className="workspace-page match-page">

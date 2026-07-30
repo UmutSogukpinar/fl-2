@@ -37,5 +37,9 @@ public sealed class LeagueFixtureConfiguration : IEntityTypeConfiguration<League
             .HasPrincipalKey(team => new { team.Id, team.LeagueId })
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Property(fixture => fixture.Status)
+            .HasConversion<string>()
+            .HasMaxLength(30);
+
     }
 }

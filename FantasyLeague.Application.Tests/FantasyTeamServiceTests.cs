@@ -282,6 +282,157 @@ public sealed class FantasyTeamServiceTests
             repository => repository.Remove(It.IsAny<FantasyTeam>()), Times.Never);
     }
 
+    [Fact]
+    public async Task ReleaseAPlayerAsync_WhenTeamAndPlayerExist_ReleasesPlayer()
+    {
+        var teamId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
+        using var cancellationSource = new CancellationTokenSource();
+        var cancellationToken = cancellationSource.Token;
+        _teamRepository
+            .Setup(repository =>
+                repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                    teamId, null, playerId, cancellationToken))
+            .ReturnsAsync(TradeValidationResult.None);
+        _teamRepository
+            .Setup(repository => repository.ReleaseAPlayerAsync(
+                teamId, playerId, cancellationToken))
+            .Returns(Task.CompletedTask);
+
+        await _service.ReleaseAPlayerAsync(
+            teamId, playerId, cancellationToken);
+
+        _teamRepository.Verify(repository =>
+            repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                teamId, null, playerId, cancellationToken), Times.Once);
+        _teamRepository.Verify(repository => repository.ReleaseAPlayerAsync(
+            teamId, playerId, cancellationToken), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(
+        TradeValidationResult.HomeTeamNotFound,
+        "Home fantasy team '{0}' was not found.")]
+    [InlineData(
+        TradeValidationResult.PlayerNotFound,
+        "NBA player '{1}' was not found.")]
+    [InlineData(
+        TradeValidationResult.HomeTeamNotFound | TradeValidationResult.PlayerNotFound,
+        "Home fantasy team '{0}' was not found. NBA player '{1}' was not found.")]
+    [InlineData(
+        TradeValidationResult.AwayTeamNotFound,
+        "Away fantasy team was not found.")]
+    [InlineData(
+        TradeValidationResult.HomeTeamNotFound |
+        TradeValidationResult.AwayTeamNotFound |
+        TradeValidationResult.PlayerNotFound,
+        "Home fantasy team '{0}' was not found. Away fantasy team was not found. " +
+        "NBA player '{1}' was not found.")]
+    public async Task ReleaseAPlayerAsync_WhenValidationFails_ThrowsNotFoundAndDoesNotRelease(
+        TradeValidationResult validationResult,
+        string expectedMessageFormat)
+    {
+        var teamId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
+        _teamRepository
+            .Setup(repository =>
+                repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                    teamId,
+                    null,
+                    playerId,
+                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(validationResult);
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.ReleaseAPlayerAsync(teamId, playerId));
+
+        Assert.Equal(
+            string.Format(expectedMessageFormat, teamId, playerId),
+            exception.Message);
+        _teamRepository.Verify(repository => repository.ReleaseAPlayerAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<Guid>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReleaseAPlayerAsync_WhenValidationIsCancelled_DoesNotReleasePlayer()
+    {
+        var teamId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
+        using var cancellationSource = new CancellationTokenSource();
+        cancellationSource.Cancel();
+        var cancellationToken = cancellationSource.Token;
+        _teamRepository
+            .Setup(repository =>
+                repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                    teamId, null, playerId, cancellationToken))
+            .ThrowsAsync(new OperationCanceledException(cancellationToken));
+
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => _service.ReleaseAPlayerAsync(
+                teamId, playerId, cancellationToken));
+
+        Assert.Equal(cancellationToken, exception.CancellationToken);
+        _teamRepository.Verify(repository => repository.ReleaseAPlayerAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<Guid>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ReleaseAPlayerAsync_WhenPlayerIsNotInTeam_PropagatesRepositoryNotFound()
+    {
+        var teamId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
+        var expectedMessage =
+            $"NBA player '{playerId}' was not found in fantasy team '{teamId}'.";
+        _teamRepository
+            .Setup(repository =>
+                repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                    teamId,
+                    null,
+                    playerId,
+                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TradeValidationResult.None);
+        _teamRepository
+            .Setup(repository => repository.ReleaseAPlayerAsync(
+                teamId, playerId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new NotFoundException(expectedMessage));
+
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.ReleaseAPlayerAsync(teamId, playerId));
+
+        Assert.Equal(expectedMessage, exception.Message);
+        _teamRepository.Verify(repository => repository.ReleaseAPlayerAsync(
+            teamId, playerId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReleaseAPlayerAsync_WhenReleaseIsCancelled_PropagatesCancellation()
+    {
+        var teamId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
+        using var cancellationSource = new CancellationTokenSource();
+        cancellationSource.Cancel();
+        var cancellationToken = cancellationSource.Token;
+        _teamRepository
+            .Setup(repository =>
+                repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                    teamId, null, playerId, cancellationToken))
+            .ReturnsAsync(TradeValidationResult.None);
+        _teamRepository
+            .Setup(repository => repository.ReleaseAPlayerAsync(
+                teamId, playerId, cancellationToken))
+            .ThrowsAsync(new OperationCanceledException(cancellationToken));
+
+        var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => _service.ReleaseAPlayerAsync(
+                teamId, playerId, cancellationToken));
+
+        Assert.Equal(cancellationToken, exception.CancellationToken);
+    }
+
     private void SetupLeague(League league)
     {
         _leagueRepository

@@ -1,47 +1,187 @@
 namespace FantasyLeague.Application.Services.Leagues;
 
+using FantasyLeague.Application.Models;
+using FantasyLeague.Domain.Entities;
 using FantasyLeague.Domain.Enums;
+using Microsoft.Extensions.Logging;
 
 public sealed partial class LeagueService
 {
-    public async Task<int> ProcessDueFixturesAsync(DateTime utcNow, CancellationToken cancellationToken = default)
+    public async Task<int> ProcessDueFixturesAsync(
+        DateTime utcNow,
+        CancellationToken cancellation = default
+    )
     {
-        var fixtures = await _leagueSetupRepository.GetDueFixturesAsync(utcNow, cancellationToken);
+        var fixtures = await _leagueSetupRepository
+                            .GetDueFixturesAsync(utcNow, cancellation);
+
         foreach (var fixture in fixtures)
         {
-            var league = await _leagueRepository.GetResponseByIdAsync(fixture.LeagueId, cancellationToken);
-            if (league is null) continue;
+            var league = await _leagueRepository
+                                .GetResponseByIdAsync(
+                                    fixture.LeagueId, cancellation
+                                );
+
+            if (league is null) 
+                continue;
+
+            fixture.Status = MatchStatus.InProgress;
 
             var stats = await _playerRepository.GetMatchStatsByTeamIdsAsync(
-                fixture.LeagueId, fixture.HomeTeamId, fixture.AwayTeamId,
-                league.Season, cancellationToken);
-            fixture.HomeScore = Score(stats.HomeTeamStats.PointsPerGame);
-            fixture.AwayScore = Score(stats.AwayTeamStats.PointsPerGame);
-            if (fixture.HomeScore == fixture.AwayScore) fixture.HomeScore++;
+                fixture.LeagueId,
+                fixture.HomeTeamId,
+                fixture.AwayTeamId,
+                league.Season,
+                cancellation
+            );
+
+            fixture.HomeScore = Score(stats.HomeTeamStats);
+            fixture.AwayScore = Score(stats.AwayTeamStats);
+
+            fixture.Status = MatchStatus.Completed;
         }
 
-        if (fixtures.Count > 0)
-        {
-            await _leagueSetupRepository.SaveChangesAsync(cancellationToken);
-
-            foreach (var leagueId in fixtures.Select(fixture => fixture.LeagueId).Distinct())
-            {
-                if (await _leagueSetupRepository.HasUnfinishedFixturesAsync(
-                    leagueId, cancellationToken)) continue;
-
-                var league = await _leagueRepository.GetTrackedByIdAsync(
-                    leagueId, cancellationToken);
-                if (league is null || league.Status == LeagueStatus.Completed) continue;
-
-                league.Status = LeagueStatus.Completed;
-                league.UpdatedAt = utcNow;
-                await _leagueRepository.SaveChangesAsync(cancellationToken);
-            }
-        }
+        await CommitProcessAsync(fixtures, utcNow, cancellation);
 
         return fixtures.Count;
     }
 
-    private static int Score(double projectedPoints) =>
-        Math.Max(0, (int)Math.Round(projectedPoints, MidpointRounding.AwayFromZero));
+    private async Task CommitProcessAsync(
+        IReadOnlyList<LeagueFixture> fixtures,
+        DateTime utcNow,
+        CancellationToken cancellation = default
+    )
+    {
+        if (fixtures.Count > 0)
+        {
+            await _leagueSetupRepository.SaveChangesAsync(cancellation);
+
+            foreach (
+                var leagueId in fixtures
+                                .Select(fixture => fixture.LeagueId)
+                                .Distinct()
+            )
+            {
+                if (await _leagueSetupRepository
+                    .HasUnfinishedFixturesAsync(
+                        leagueId, cancellation))
+                {
+                    continue;
+                }
+
+                var league = await _leagueRepository
+                                   .GetTrackedByIdAsync(
+                                        leagueId, cancellation
+                                   );
+
+                if (league is null ||
+                    league.Status == LeagueStatus.Completed
+                )
+                    continue;
+
+                league.Status = LeagueStatus.Completed;
+                league.UpdatedAt = utcNow;
+
+                await _leagueRepository.SaveChangesAsync(cancellation);
+            }
+        }
+    }
+
+    private int Score(TeamMatchStats stats)
+    {
+        double densityCoef;
+        try
+        {
+            densityCoef = CalculateDensityCoefficient(stats.GamesPlayed);
+            densityCoef += CalculateEfficiencyCoefficient(stats);
+            densityCoef -= CalculateInefficiencyCoefficient(stats);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to calculate the density coefficient." +
+                "Games played: {GamesPlayed}",
+                stats.GamesPlayed
+            );
+
+            densityCoef = 0.0;
+        }
+
+        var result = CalculateOffenseValue(stats) +
+                    CalculateDefensiveValue(stats);
+
+        return (int)Math.Round(result * densityCoef);
+    }
+
+    private static double CalculateOffenseValue(
+        TeamMatchStats stats
+    )
+    {
+        var points = stats.PointsPerGame * 5;
+        var assists = stats.AssistsPerGame * 7;
+        var rebound = stats.ReboundsPerGame * 7;
+
+        return (points + assists + rebound);
+    }
+
+    private static double CalculateDefensiveValue(
+        TeamMatchStats stats        
+    )
+    {
+        return (25 * (stats.StealsPerGame + stats.BlocksPerGame));
+    }
+
+    private static double CalculateInefficiencyCoefficient(
+        TeamMatchStats stats
+    )
+    {
+        var turnover = stats.TurnoversPerGame;
+
+        return turnover switch
+        {
+            < 0 => throw new ArgumentOutOfRangeException(
+                nameof(turnover),
+                turnover,
+                "The 'Turnover' stats cannot be under 0"
+            ),
+
+            < 1 => 0.1,
+            < 2 => 0.2,
+            < 4 => 0.5,
+            < 6 => 0.7,
+            _ => 1
+        };
+    }
+
+    private static double CalculateEfficiencyCoefficient(
+        TeamMatchStats stats
+    )
+    {
+        var gamePercantages = new []
+        {
+            (percantage: stats.ThreePointPercentage, weight: 0.5),
+            (percantage: stats.FieldGoalPercentage, weight: 0.35),
+            (percantage: stats.FreeThrowPercentage, weight: 0.15)
+        };
+        var sum = gamePercantages.Sum(per => per.percantage * per.weight);
+        var amount = gamePercantages.Sum(per => per.weight) * 10;
+
+        return (sum / amount);
+    }
+
+    private static double CalculateDensityCoefficient(int gamesPlayed) =>
+    gamesPlayed switch
+    {
+        < 0 or > 82 => throw new ArgumentOutOfRangeException(
+            nameof(gamesPlayed),
+            gamesPlayed,
+            "Games played must be between 0 and 82."
+        ),
+
+        < 21 => 1.00,
+        < 42 => 1.05,
+        < 63 => 1.10,
+        _ => 1.15
+    };
 }

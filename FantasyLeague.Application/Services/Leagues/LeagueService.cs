@@ -2,6 +2,7 @@ using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace FantasyLeague.Application.Services.Leagues;
 
@@ -10,7 +11,8 @@ public sealed partial class LeagueService(
     IFantasyTeamRepository _teamRepository,
     ILeagueSetupRepository _leagueSetupRepository,
     IUserRepository _userRepository,
-    INbaPlayerRepository _playerRepository
+    INbaPlayerRepository _playerRepository,
+    ILogger<LeagueService> _logger
 ) : ILeagueService
 {
     private async Task<LeagueResponse> GetLeagueOrThrowAsync(

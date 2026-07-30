@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Enums;
+
 namespace FantasyLeague.Domain.Entities;
 
 public class LeagueFixture
@@ -12,4 +14,6 @@ public class LeagueFixture
     public int? AwayScore {get; set;}
 
     public DateTime? GameTime {get; set;}
+
+    public MatchStatus Status { get; set; } = MatchStatus.Scheduled;
 }

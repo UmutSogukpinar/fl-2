@@ -14,12 +14,15 @@ public sealed partial class LeagueService
         if (homeTeamId == awayTeamId)
         {
             throw new BadRequestException(
-                "Home and away teams must be different.");
+                "Home and away teams must be different."
+            );
         }
 
         var league = await _leagueRepository.GetResponseByIdAsync(
             leagueId, cancellationToken)
-            ?? throw new NotFoundException($"League '{leagueId}' was not found.");
+            ?? throw new NotFoundException(
+                    $"League '{leagueId}' was not found."
+                );
 
         await EnsureTeamBelongsToLeagueAsync(
             homeTeamId, leagueId, "Home", cancellationToken

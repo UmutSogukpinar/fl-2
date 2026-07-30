@@ -20,22 +20,27 @@ public sealed record TeamMatchStats(
     double TurnoversPerGame,
     double FieldGoalPercentage,
     double ThreePointPercentage,
-    double FreeThrowPercentage)
+    double FreeThrowPercentage
+)
 {
-    public static TeamMatchStats Empty(Guid fantasyTeamId, int season) => new(
-        fantasyTeamId,
-        season,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0);
+    public static TeamMatchStats Empty(
+        Guid fantasyTeamId,
+        int season
+        ) => new(
+            fantasyTeamId,
+            season,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        );
 }

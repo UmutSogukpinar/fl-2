@@ -21,11 +21,18 @@ public sealed class MatchSchedulerService(
         try
         {
             await using var scope = scopeFactory.CreateAsyncScope();
-            var service = scope.ServiceProvider.GetRequiredService<ILeagueService>();
-            var count = await service.ProcessDueFixturesAsync(DateTime.UtcNow, cancellationToken);
-            if (count > 0) logger.LogInformation("Completed {FixtureCount} scheduled demo matches.", count);
+            var leagueService = scope.ServiceProvider.GetRequiredService<ILeagueService>();
+            var count = await leagueService.ProcessDueFixturesAsync(
+                DateTime.UtcNow,
+                cancellationToken
+            );
+
+            if (count > 0)
+                logger.LogInformation(
+                    "Completed {FixtureCount} scheduled demo matches.",
+                    count
+                );
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
         catch (Exception exception)
         {
             logger.LogError(exception, "Failed to process scheduled demo matches.");

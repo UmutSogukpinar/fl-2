@@ -1,16 +1,24 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useApp } from '../../app/AppContext'
 import { useCurrentUser } from '../../app/UserContext'
 import { draftApi } from '../draft/draft.api'
 import { formatDraftDate, normalizeStatus, statusLabels } from './league.utils'
 import { leaguesApi, type FantasyTeam } from './leagues.api'
-import type { DraftPickOrder, League, LeagueFixture, LeagueStanding } from './types'
+import type { DraftPickOrder, League, LeagueFixture, LeagueStanding, MatchStatus } from './types'
+
+const matchStatuses: MatchStatus[] = [
+  'Scheduled', 'InProgress', 'Completed', 'Postponed', 'Cancelled',
+]
+
+const normalizeMatchStatus = (status: LeagueFixture['status']): MatchStatus =>
+  typeof status === 'number' ? (matchStatuses[status] ?? 'Scheduled') : status
 
 export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   const { navigate } = useApp()
   const { userId } = useCurrentUser()
   const [league, setLeague] = useState<League | null>(null)
   const [members, setMembers] = useState<FantasyTeam[]>([])
+  const [membersLoading, setMembersLoading] = useState(true)
   const [fixtures, setFixtures] = useState<LeagueFixture[]>([])
   const [draftOrder, setDraftOrder] = useState<DraftPickOrder[]>([])
   const [standings, setStandings] = useState<LeagueStanding[]>([])
@@ -18,6 +26,8 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [closing, setClosing] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [showJoinForm, setShowJoinForm] = useState(false)
+  const [joining, setJoining] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -33,6 +43,7 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
     leaguesApi.members(leagueId, controller.signal)
       .then(({ items }) => setMembers(items))
       .catch(() => setMembers([]))
+      .finally(() => setMembersLoading(false))
     leaguesApi.fixtures(leagueId, controller.signal)
       .then(setFixtures)
       .catch(() => setFixtures([]))
@@ -89,6 +100,25 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
     }
   }
 
+  async function joinLeague(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!userId || !league) return
+
+    const form = new FormData(event.currentTarget)
+    const teamName = String(form.get('teamName')).trim()
+    setJoining(true)
+    setError(null)
+    try {
+      const team = await leaguesApi.join(league.joinCode, teamName, userId)
+      setMembers((current) => [...current, team])
+      setShowJoinForm(false)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Lige katılma başarısız oldu.')
+    } finally {
+      setJoining(false)
+    }
+  }
+
   if (loading) return <section className="workspace-page"><div className="empty">Lig yükleniyor...</div></section>
   if (!league) return <section className="workspace-page"><div className="api-error">{error ?? 'Lig bulunamadı.'}</div></section>
   const status = normalizeStatus(league.status)
@@ -102,10 +132,32 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
       </div>
       {error && <div className="api-error" role="alert"><span />{error}</div>}
       <div className="detail-actions">
+        {!membersLoading && !myTeam && !showJoinForm && (
+          <button className="create" onClick={() => setShowJoinForm(true)}>Lige katıl</button>
+        )}
         {status === 'Drafting' && <button className="create" onClick={() => navigate(`draft/${leagueId}`)}>Draft odasına git</button>}
         {status === 'DraftDelayed' && league.commissionerId === userId && <button className="create" disabled={closing} onClick={closeDelayedLeague}>{closing ? 'Kapatılıyor...' : 'Geciken ligi sonlandır'}</button>}
         {league.commissionerId === userId && ['Created', 'RegistrationOpen', 'DraftDelayed'].includes(status) && <button className="danger-button" disabled={cancelling} onClick={cancelLeague}>{cancelling ? 'İptal ediliyor...' : 'Ligi iptal et'}</button>}
       </div>
+      {!membersLoading && !myTeam && showJoinForm && (
+        <form className="join-league-panel detail-join-panel" onSubmit={joinLeague}>
+          <label>
+            Takım adı
+            <input name="teamName" required maxLength={100} autoFocus />
+          </label>
+          <button className="create" disabled={joining}>
+            {joining ? 'Katılınıyor...' : 'Katıl'}
+          </button>
+          <button
+            className="text-button"
+            type="button"
+            disabled={joining}
+            onClick={() => setShowJoinForm(false)}
+          >
+            Vazgeç
+          </button>
+        </form>
+      )}
       <div className="detail-grid">
         <article className="detail-panel"><h2>Lig üyeleri</h2>{members.map((member) => <div className="member-row" key={member.id}><strong>{member.name}</strong><span>{member.ownerId === userId ? 'Senin takımın' : 'Üye'}</span></div>)}{!members.length && <p>Henüz takım yok.</p>}</article>
         <article className="detail-panel"><h2>Draft sırası</h2>{draftOrder.slice(0, 20).map((pick) => <div className="member-row" key={pick.id}><strong>#{pick.overallPick} {pick.teamName}</strong><span>Tur {pick.round}</span></div>)}{!draftOrder.length && <p>Lig kapanınca snake draft sırası oluşturulur.</p>}</article>
@@ -116,7 +168,7 @@ export function LeagueDetailPage({ leagueId }: { leagueId: string }) {
         {standings.map((row) => <div className="standings-row" key={row.teamId}><span>{row.position}</span><strong>{row.teamName}</strong><span>{row.played}</span><span>{row.won}</span><span>{row.drawn}</span><span>{row.lost}</span><span>{row.pointDifference > 0 ? `+${row.pointDifference}` : row.pointDifference}</span><b>{row.points}</b></div>)}
         {!standings.length && <p>Henüz puan durumu oluşturulmadı.</p>}
       </article>
-      <article className="detail-panel fixtures-panel"><h2>Fikstür</h2>{Array.from(weeks).map(([week, games]) => <div className="fixture-week" key={week}><h3>{week}. Hafta</h3>{games.map((game) => <button className="fixture-row fixture-link" key={game.id} onClick={() => navigate(`matches/${leagueId}/${game.id}`)}><span>{game.homeTeamName}</span><strong className="fixture-time"><b>{game.homeScore != null && game.awayScore != null ? `${game.homeScore} - ${game.awayScore}` : 'vs'}</b><small>{formatGameTime(game.gameTime)}</small></strong><span>{game.awayTeamName}</span></button>)}</div>)}{!fixtures.length && <p>Lig kapanınca fikstür oluşturulur.</p>}</article>
+      <article className="detail-panel fixtures-panel"><h2>Fikstür</h2>{Array.from(weeks).map(([week, games]) => <div className="fixture-week" key={week}><h3>{week}. Hafta</h3>{games.map((game) => <button className="fixture-row fixture-link" key={game.id} onClick={() => navigate(`matches/${leagueId}/${game.id}`)}><span>{game.homeTeamName}</span><strong className="fixture-time"><b>{normalizeMatchStatus(game.status) === 'Completed' ? `${game.homeScore} - ${game.awayScore}` : 'vs'}</b><small>{formatGameTime(game.gameTime)}</small></strong><span>{game.awayTeamName}</span></button>)}</div>)}{!fixtures.length && <p>Lig kapanınca fikstür oluşturulur.</p>}</article>
       {myTeam && <p className="my-team-note">Bu ligdeki takımın: <strong>{myTeam.name}</strong></p>}
     </section>
   )

@@ -1,10 +1,28 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '../../shared/ui/Icon'
 import { usePlayers } from './usePlayers'
 
 export function PlayersPage() {
   const [page, setPage] = useState(1)
-  const { players, totalCount, totalPages, loading, error } = usePlayers(page)
+  const [name, setName] = useState('')
+  const [surname, setSurname] = useState('')
+  const [debouncedName, setDebouncedName] = useState('')
+  const [debouncedSurname, setDebouncedSurname] = useState('')
+  const { players, totalCount, totalPages, loading, error } = usePlayers(
+    page,
+    debouncedName,
+    debouncedSurname,
+  )
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setPage(1)
+      setDebouncedName(name)
+      setDebouncedSurname(surname)
+    }, 350)
+
+    return () => window.clearTimeout(timeout)
+  }, [name, surname])
 
   return (
     <section className="players-page">
@@ -13,6 +31,39 @@ export function PlayersPage() {
           <span>NBA OYUNCULARI</span>
           <h1>Oyuncu havuzu</h1>
           <p>{totalCount} aktif oyuncu</p>
+        </div>
+      </div>
+
+      <div className="players-search-fields">
+        <div className="players-search">
+          <Icon name="search" size={18} />
+          <input
+            type="search"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Ada göre ara..."
+            aria-label="Oyuncu adına göre ara"
+          />
+          {name && (
+            <button type="button" onClick={() => setName('')} aria-label="Ad aramasını temizle">
+              <Icon name="close" size={16} />
+            </button>
+          )}
+        </div>
+        <div className="players-search">
+          <Icon name="search" size={18} />
+          <input
+            type="search"
+            value={surname}
+            onChange={(event) => setSurname(event.target.value)}
+            placeholder="Soyada göre ara..."
+            aria-label="Oyuncu soyadına göre ara"
+          />
+          {surname && (
+            <button type="button" onClick={() => setSurname('')} aria-label="Soyad aramasını temizle">
+              <Icon name="close" size={16} />
+            </button>
+          )}
         </div>
       </div>
 

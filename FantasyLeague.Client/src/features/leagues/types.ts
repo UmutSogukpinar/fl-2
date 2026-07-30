@@ -1,6 +1,9 @@
 export type LeagueStatus =
   'Created' | 'RegistrationOpen' | 'DraftDelayed' | 'Drafting' | 'Active' | 'Completed'
 
+export type MatchStatus =
+  'Scheduled' | 'InProgress' | 'Completed' | 'Postponed' | 'Cancelled'
+
 export interface League {
   id: string
   name: string
@@ -28,6 +31,7 @@ export interface LeagueFixture {
   homeScore?: number | null
   awayScore?: number | null
   gameTime?: string | null
+  status: MatchStatus | number
 }
 
 export interface DraftPickOrder {

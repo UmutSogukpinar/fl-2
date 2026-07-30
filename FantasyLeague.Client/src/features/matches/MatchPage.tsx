@@ -1,7 +1,25 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useApp } from '../../app/AppContext'
 import { leaguesApi } from '../leagues/leagues.api'
-import type { League, LeagueFixture, MatchStats, TeamMatchStats } from '../leagues/types'
+import type { League, LeagueFixture, MatchStats, MatchStatus, TeamMatchStats } from '../leagues/types'
+
+const matchStatuses: MatchStatus[] = [
+  'Scheduled', 'InProgress', 'Completed', 'Postponed', 'Cancelled',
+]
+
+const matchStatusLabels: Record<MatchStatus, string> = {
+  Scheduled: 'Maç planlandı',
+  InProgress: 'Maç devam ediyor',
+  Completed: 'Maç tamamlandı',
+  Postponed: 'Maç ertelendi',
+  Cancelled: 'Maç iptal edildi',
+}
+
+function normalizeMatchStatus(status: LeagueFixture['status']): MatchStatus {
+  return typeof status === 'number'
+    ? (matchStatuses[status] ?? 'Scheduled')
+    : status
+}
 
 const statRows: Array<{ label: string; key: keyof TeamMatchStats; digits?: number }> = [
   { label: 'Oyuncu', key: 'playerCount' },
@@ -64,7 +82,8 @@ export function MatchPage({ leagueId, fixtureId }: { leagueId: string; fixtureId
   if (loading) return <section className="workspace-page"><div className="empty">Maç yükleniyor...</div></section>
   if (!fixture || !stats) return <section className="workspace-page"><button className="text-button" onClick={() => navigate(`leagues/${leagueId}`)}>← Lige dön</button><div className="api-error">{error ?? 'Maç bulunamadı.'}</div></section>
 
-  const completed = fixture.homeScore != null && fixture.awayScore != null
+  const matchStatus = normalizeMatchStatus(fixture.status)
+  const completed = matchStatus === 'Completed'
   return (
     <section className="workspace-page match-page">
       <button className="text-button" onClick={() => navigate(`leagues/${leagueId}`)}>← Lig detayına dön</button>
@@ -76,9 +95,9 @@ export function MatchPage({ leagueId, fixtureId }: { leagueId: string; fixtureId
           <div><span>DEPLASMAN</span><h1>{fixture.awayTeamName}</h1></div>
         </div>
         <div className={`match-state ${completed ? 'finished' : ''}`}>
-          {completed ? 'Maç tamamlandı' : fixture.gameTime
+          {matchStatus !== 'Scheduled' ? matchStatusLabels[matchStatus] : fixture.gameTime
             ? `Başlangıç: ${new Date(fixture.gameTime).toLocaleString('tr-TR')}`
-            : 'Maç programı bekleniyor'}
+            : matchStatusLabels.Scheduled}
         </div>
       </div>
       {error && <div className="api-error">{error}</div>}

@@ -10,10 +10,9 @@ type Props = {
   onClose: () => void
 }
 
-function tomorrowAtEight() {
+function fiveMinutesFromNow() {
   const value = new Date()
-  value.setDate(value.getDate() + 1)
-  value.setHours(20, 0, 0, 0)
+  value.setMinutes(value.getMinutes() + 5)
   const local = new Date(value.getTime() - value.getTimezoneOffset() * 60_000)
   return local.toISOString().slice(0, 16)
 }
@@ -74,7 +73,7 @@ export function CreateLeagueModal({ onClose }: Props) {
             <label>Demo sezonu<input name="season" type="number" value={DEMO_SEASON} readOnly /></label>
             <label>Maksimum takım<input name="maxTeams" type="number" min="2" max="30" defaultValue={10} required /></label>
             <label>Kadro büyüklüğü<input name="rosterSize" type="number" min="1" max="30" defaultValue={13} required /></label>
-            <label>Draft zamanı<input name="draftDate" type="datetime-local" defaultValue={tomorrowAtEight()} required /></label>
+            <label>Draft zamanı<input name="draftDate" type="datetime-local" defaultValue={fiveMinutesFromNow()} required /></label>
           </div>
           {error && <p className="form-error" role="alert">{error}</p>}
 

@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 using FantasyLeague.Infrastructure.Context;
 using FantasyLeague.Infrastructure.ExternalServices.NbaApi;
@@ -16,7 +18,8 @@ using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Application.Services.Drafts;
 using FantasyLeague.WebApi.ExceptionHandlers;
 using FantasyLeague.WebApi.Hubs;
-using FantasyLeague.WebApi.BackgroundServices;
+using FantasyLeague.WebApi.Jobs.Drafts;
+using FantasyLeague.WebApi.Jobs.Matches;
 using FantasyLeague.Infrastructure.Caching;
 using FantasyLeague.Application.Common.Interfaces.Caching;
 using FantasyLeague.WebApi.Middleware;
@@ -47,8 +50,8 @@ builder.Services.AddScoped<ILeagueRepository, LeagueRepository>();
 builder.Services.AddScoped<ILeagueSetupRepository, LeagueSetupRepository>();
 builder.Services.AddScoped<IDraftRepository, DraftRepository>();
 builder.Services.AddScoped<IDraftService, DraftService>();
-builder.Services.AddHostedService<DraftSchedulerService>();
-builder.Services.AddHostedService<MatchSchedulerService>();
+builder.Services.AddScoped<DraftSchedulerJob>();
+builder.Services.AddScoped<MatchSchedulerJob>();
 builder.Services.AddScoped<IFantasyTeamService, FantasyTeamService>();
 builder.Services.AddScoped<IFantasyTeamRepository, FantasyTeamRepository>();
 builder.Services.Configure<ApiSportsOptions>(
@@ -71,6 +74,11 @@ var connectionString = $"Host={dbSettings["Host"]};" +
                        $"Password={dbSettings["Password"]};";
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+builder.Services.AddHangfire(configuration => configuration
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
@@ -81,7 +89,18 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseHangfireDashboard("/hangfire");
 }
+
+var recurringJobs = app.Services.GetRequiredService<IRecurringJobManager>();
+recurringJobs.AddOrUpdate<DraftSchedulerJob>(
+    "draft-scheduler",
+    job => job.ExecuteAsync(CancellationToken.None),
+    Cron.Minutely);
+recurringJobs.AddOrUpdate<MatchSchedulerJob>(
+    "match-scheduler",
+    job => job.ExecuteAsync(CancellationToken.None),
+    Cron.Minutely);
 
 app.UseHttpsRedirection();
 

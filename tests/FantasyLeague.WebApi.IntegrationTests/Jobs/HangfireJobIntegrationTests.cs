@@ -1,8 +1,11 @@
 using FantasyLeague.Application.Services.Drafts;
 using FantasyLeague.Application.Services.Leagues;
+using FantasyLeague.Application.Services.NbaPlayers;
+using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.WebApi.Hubs;
 using FantasyLeague.WebApi.Jobs.Drafts;
 using FantasyLeague.WebApi.Jobs.Matches;
+using FantasyLeague.WebApi.Jobs.NbaPlayers;
 using Hangfire;
 using Hangfire.InMemory;
 using Microsoft.AspNetCore.SignalR;
@@ -84,6 +87,38 @@ public sealed class HangfireJobIntegrationTests
 
         leagueService.Verify(service => service.ProcessDueFixturesAsync(
             It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // Case: NBA player synchronization job is enqueued through Hangfire
+    // Reasoning: The nightly job should be resolved and executed through the same Hangfire worker pipeline used in production.
+    // Expected Result: NBA player synchronization is executed once.
+    [Fact]
+    public async Task NbaPlayerSyncJob_WhenEnqueued_SynchronizesPlayers()
+    {
+        var completed = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var syncService = new Mock<INbaPlayerSyncService>();
+        syncService
+            .Setup(service => service.SyncActivePlayersAsync(
+                It.IsAny<CancellationToken>()))
+            .Callback(() => completed.TrySetResult())
+            .ReturnsAsync(new NbaPlayerSyncResponse(2024, 1, 1, 0, 1));
+
+        using var host = CreateHost(services =>
+        {
+            services.AddSingleton(syncService.Object);
+            services.AddScoped<NbaPlayerSyncJob>();
+        });
+        await host.StartAsync();
+
+        var client = host.Services.GetRequiredService<IBackgroundJobClient>();
+        client.Enqueue<NbaPlayerSyncJob>(
+            job => job.ExecuteAsync(CancellationToken.None));
+
+        await completed.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        syncService.Verify(service => service.SyncActivePlayersAsync(
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private static IHost CreateHost(Action<IServiceCollection> configureServices)

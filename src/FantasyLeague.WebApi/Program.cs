@@ -20,6 +20,7 @@ using FantasyLeague.WebApi.ExceptionHandlers;
 using FantasyLeague.WebApi.Hubs;
 using FantasyLeague.WebApi.Jobs.Drafts;
 using FantasyLeague.WebApi.Jobs.Matches;
+using FantasyLeague.WebApi.Jobs.NbaPlayers;
 using FantasyLeague.Infrastructure.Caching;
 using FantasyLeague.Application.Common.Interfaces.Caching;
 using FantasyLeague.WebApi.Middleware;
@@ -52,6 +53,7 @@ builder.Services.AddScoped<IDraftRepository, DraftRepository>();
 builder.Services.AddScoped<IDraftService, DraftService>();
 builder.Services.AddScoped<DraftSchedulerJob>();
 builder.Services.AddScoped<MatchSchedulerJob>();
+builder.Services.AddScoped<NbaPlayerSyncJob>();
 builder.Services.AddScoped<IFantasyTeamService, FantasyTeamService>();
 builder.Services.AddScoped<IFantasyTeamRepository, FantasyTeamRepository>();
 builder.Services.Configure<ApiSportsOptions>(
@@ -101,6 +103,14 @@ recurringJobs.AddOrUpdate<MatchSchedulerJob>(
     "match-scheduler",
     job => job.ExecuteAsync(CancellationToken.None),
     Cron.Minutely);
+recurringJobs.AddOrUpdate<NbaPlayerSyncJob>(
+    "nba-player-sync",
+    job => job.ExecuteAsync(CancellationToken.None),
+    Cron.Daily(1),
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Istanbul")
+    });
 
 app.UseHttpsRedirection();
 

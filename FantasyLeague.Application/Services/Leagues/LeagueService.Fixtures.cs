@@ -23,7 +23,7 @@ public sealed partial class LeagueService
                                     fixture.LeagueId, cancellation
                                 );
 
-            if (league is null) 
+            if (league is null)
                 continue;
 
             var stats = await _playerRepository.GetMatchStatsByTeamIdsAsync(
@@ -149,7 +149,7 @@ public sealed partial class LeagueService
     }
 
     private static double CalculateDefensiveValue(
-        TeamMatchStats stats        
+        TeamMatchStats stats
     )
     {
         return (25 * (stats.StealsPerGame + stats.BlocksPerGame));
@@ -181,7 +181,7 @@ public sealed partial class LeagueService
         TeamMatchStats stats
     )
     {
-        var gamePercantages = new []
+        var gamePercantages = new[]
         {
             (percantage: stats.ThreePointPercentage, weight: 0.5),
             (percantage: stats.FieldGoalPercentage, weight: 0.35),

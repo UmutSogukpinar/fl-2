@@ -1,5 +1,8 @@
 ﻿using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Models;
+using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
+using FantasyLeague.Application.Common.Normalization;
+using FantasyLeague.Application.Common.Validation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,14 +11,47 @@ namespace FantasyLeague.Application.Services.FantasyTeams;
 
 public sealed partial class FantasyTeamService
 {
+    public async Task<Guid> CreateTransferAsync(
+        Guid initiatingTeamId,
+        CreateTransferRequest request,
+        CancellationToken cancellation = default
+    )
+    {
+        request = request.NormalizeCreateTransferRequest();
+        request.ValidateCreateTransferRequest(initiatingTeamId);
+
+        var conflict = await _teamRepository
+            .ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                initiatingTeamId, request.CounterpartyTeamId, null, cancellation);
+
+        CheckConflictForFantasyTeamIdAndNbaPlayerId(
+            conflict, initiatingTeamId, request.CounterpartyTeamId);
+
+        return await _teamRepository.CreateTransferAsync(
+            initiatingTeamId,
+            request.CounterpartyTeamId,
+            request.OfferedPlayerIds,
+            request.RequestedPlayerIds,
+            cancellation);
+    }
+
+    public Task ApproveTransferAsync(
+        Guid transferId, Guid approvingTeamId,
+        CancellationToken cancellation = default)
+    {
+        TransferValidation.ValidateApproveTransferRequest(
+            transferId, approvingTeamId);
+
+        return _teamRepository.ApproveTransferAsync(
+            transferId, approvingTeamId, cancellation);
+    }
+
     public async Task ReleaseAPlayerAsync(
         Guid id, Guid playerId,
         CancellationToken cancellation = default
     )
     {
-
-        // TODO: Add validation for not going
-        // under of half of roster size
+        TransferValidation.ValidateReleasePlayerRequest(id, playerId);
 
         var conflict = await _teamRepository
             .ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
@@ -28,6 +64,17 @@ public sealed partial class FantasyTeamService
             awayTeamId: null,
             nbaPlayerId: playerId
         );
+
+        var (playerCount, rosterSize) = await _teamRepository
+            .GetRosterStateAsync(id, cancellation);
+        var minimumRosterSize = (rosterSize + 1) / 2;
+
+        if (playerCount - 1 < minimumRosterSize)
+        {
+            throw new ConflictException(
+                $"A player cannot be released because the roster must contain at least {minimumRosterSize} players."
+            );
+        }
 
         await _teamRepository.ReleaseAPlayerAsync(
                 id, playerId, cancellation

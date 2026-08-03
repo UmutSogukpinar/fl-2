@@ -272,7 +272,8 @@ public class UserServiceTests
             .ReturnsAsync((User?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(async () => {
+        await Assert.ThrowsAsync<NotFoundException>(async () =>
+        {
             await _service.DeleteAsync(userId);
         });
     }

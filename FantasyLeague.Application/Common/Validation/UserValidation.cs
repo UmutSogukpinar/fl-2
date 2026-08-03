@@ -8,7 +8,8 @@ namespace FantasyLeague.Application.Common.Validation;
 
 internal static class UserValidation
 {
-    public static void ValidateCreateUserRequest(this CreateUserRequest request){
+    public static void ValidateCreateUserRequest(this CreateUserRequest request)
+    {
         ValidateEmail(request.Email);
         ValidatePassword(request.Password);
         ValidateUsername(request.Username);
@@ -28,21 +29,25 @@ internal static class UserValidation
 
     // ========================= Utils =========================
 
-    private static void ValidateEmail(string email){
+    private static void ValidateEmail(string email)
+    {
         const char AtSymbol = '@';
         const char DotSymbol = '.';
 
-        if (string.IsNullOrWhiteSpace(email)){
+        if (string.IsNullOrWhiteSpace(email))
+        {
             throw new BadRequestException("Email cannot be empty.");
         }
 
         var atIndex = email.IndexOf(AtSymbol);
-        if (atIndex <= 0 || atIndex == email.Length - 1){
+        if (atIndex <= 0 || atIndex == email.Length - 1)
+        {
             throw new BadRequestException("Email must contain a valid '@' symbol.");
         }
 
         var domainPart = email.Substring(atIndex + 1);
-        if (!domainPart.Contains(DotSymbol)){
+        if (!domainPart.Contains(DotSymbol))
+        {
             throw new BadRequestException(
                 "Email domain must contain a '.' symbol."
             );
@@ -53,19 +58,22 @@ internal static class UserValidation
         const int MaxLength = 128;
         const int MinLength = 8;
 
-        if (string.IsNullOrWhiteSpace(password)) {
+        if (string.IsNullOrWhiteSpace(password))
+        {
             throw new BadRequestException(
                 "Password cannot be empty."
             );
         }
 
-        if (password.Length > MaxLength) {
+        if (password.Length > MaxLength)
+        {
             throw new BadRequestException(
                 $"Password cannot exceed {MaxLength} characters."
             );
         }
 
-        if (password.Length < MinLength) {
+        if (password.Length < MinLength)
+        {
             throw new BadRequestException(
                 $"Password must be at least {MinLength} characters long."
             );

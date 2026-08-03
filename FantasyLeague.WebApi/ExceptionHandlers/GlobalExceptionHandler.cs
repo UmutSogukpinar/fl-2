@@ -14,9 +14,8 @@ public sealed class GlobalExceptionHandler(
         Exception exception,
         CancellationToken cancellationToken)
     {
-        LogException(httpContext, exception);
-
         var exceptionDetails = GetExceptionDetails(exception);
+        LogException(httpContext, exception, exceptionDetails.StatusCode);
         SetResponseStatusCode(httpContext, exceptionDetails.StatusCode);
 
         var problemDetails = CreateProblemDetails(httpContext, exceptionDetails);
@@ -30,12 +29,28 @@ public sealed class GlobalExceptionHandler(
         return await _problemDetailsService.TryWriteAsync(context);
     }
 
-    private void LogException(HttpContext httpContext, Exception exception)
+    private void LogException(
+        HttpContext httpContext,
+        Exception exception,
+        int statusCode)
     {
+        if (statusCode < StatusCodes.Status500InternalServerError)
+        {
+            _logger.LogWarning(
+                "Request {Method} {Path} was rejected with {StatusCode}. " +
+                "TraceId: {TraceId}. Reason: {Reason}",
+                httpContext.Request.Method,
+                httpContext.Request.Path,
+                statusCode,
+                httpContext.TraceIdentifier,
+                exception.Message);
+            return;
+        }
+
         _logger.LogError(
             exception,
-            "An unhandled exception occurred" +
-            "while processing {Method} {Path}. TraceId: {TraceId}",
+            "An unhandled exception occurred while processing {Method} {Path}. " +
+            "TraceId: {TraceId}",
             httpContext.Request.Method,
             httpContext.Request.Path,
             httpContext.TraceIdentifier);
@@ -47,7 +62,7 @@ public sealed class GlobalExceptionHandler(
         {
             BadRequestException => new(
                 StatusCodes.Status400BadRequest,
-                "Bad request", 
+                "Bad request",
                 exception.Message
             ),
             UnauthorizedException => new(
@@ -61,7 +76,7 @@ public sealed class GlobalExceptionHandler(
                 exception.Message
             ),
             NotFoundException => new(
-                StatusCodes.Status404NotFound, 
+                StatusCodes.Status404NotFound,
                 "Resource not found",
                 exception.Message
             ),

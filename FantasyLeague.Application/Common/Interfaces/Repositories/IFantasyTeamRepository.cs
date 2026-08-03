@@ -28,11 +28,25 @@ public interface IFantasyTeamRepository
 
     void Remove(FantasyTeam team);
     Task SaveChangesAsync(CancellationToken cancellationToken);
-    
+
     Task ReleaseAPlayerAsync(
         Guid id, Guid playerId,
         CancellationToken cancellation
     );
+
+    Task<(int PlayerCount, int RosterSize)> GetRosterStateAsync(
+        Guid teamId,
+        CancellationToken cancellation
+    );
+
+    Task<Guid> CreateTransferAsync(
+        Guid initiatingTeamId,
+        Guid counterpartyTeamId,
+        IReadOnlyCollection<Guid> offeredPlayerIds,
+        IReadOnlyCollection<Guid> requestedPlayerIds,
+        CancellationToken cancellation
+    );
+    Task ApproveTransferAsync(Guid transferId, Guid approvingTeamId, CancellationToken cancellation);
 
 
     public Task<TradeValidationResult>

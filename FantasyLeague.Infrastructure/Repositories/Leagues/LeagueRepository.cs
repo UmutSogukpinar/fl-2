@@ -11,7 +11,7 @@ namespace FantasyLeague.Infrastructure.Repositories;
 
 public sealed class LeagueRepository(AppDbContext dbContext) : ILeagueRepository
 {
-    public async Task<(IReadOnlyCollection<LeagueResponse> Items, int TotalCount)> 
+    public async Task<(IReadOnlyCollection<LeagueResponse> Items, int TotalCount)>
     GetPagedAsync(
         int pageNumber,
         int pageSize,

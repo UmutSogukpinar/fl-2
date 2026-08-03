@@ -20,4 +20,11 @@ public interface IFantasyTeamService
         Guid id, Guid playerId,
         CancellationToken cancellation = default
     );
+
+    Task<Guid> CreateTransferAsync(
+        Guid initiatingTeamId,
+        CreateTransferRequest request,
+        CancellationToken cancellation = default
+    );
+    Task ApproveTransferAsync(Guid transferId, Guid approvingTeamId, CancellationToken cancellation = default);
 }

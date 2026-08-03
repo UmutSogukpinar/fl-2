@@ -59,4 +59,4 @@ public sealed partial class NbaPlayerRepository
         return new MatchStats(homeTeamStats, awayTeamStats);
     }
 }
- 
+

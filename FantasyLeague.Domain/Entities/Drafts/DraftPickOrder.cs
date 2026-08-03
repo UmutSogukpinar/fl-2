@@ -1,4 +1,4 @@
-namespace FantasyLeague.Domain.Entities;
+namespace FantasyLeague.Domain.Entities.Drafts;
 
 public class DraftPickOrder
 {

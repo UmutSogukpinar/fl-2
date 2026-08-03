@@ -184,15 +184,15 @@ public sealed partial class NbaPlayersController(
 
     // ============================ Logging helper methods ============================
 
-     [LoggerMessage(
-        Level = LogLevel.Information,
-        Message =
-            "NBA player sync completed for season {Season}: " +
-            "{CreatedCount} created, {UpdatedCount} updated, " +
-            "{StatisticsCount} statistics.")]
+    [LoggerMessage(
+       Level = LogLevel.Information,
+       Message =
+           "NBA player sync completed for season {Season}: " +
+           "{CreatedCount} created, {UpdatedCount} updated, " +
+           "{StatisticsCount} statistics.")]
     private partial void LogNbaPlayerSyncCompleted(
-        int season,
-        int createdCount,
-        int updatedCount,
-        int statisticsCount);
+       int season,
+       int createdCount,
+       int updatedCount,
+       int statisticsCount);
 }

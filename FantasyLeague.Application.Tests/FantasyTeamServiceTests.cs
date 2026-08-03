@@ -28,6 +28,10 @@ public sealed class FantasyTeamServiceTests
             _leagueRepository.Object,
             _leagueSetupRepository.Object,
             _userRepository.Object);
+        _teamRepository
+            .Setup(repository => repository.GetRosterStateAsync(
+                It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((8, 13));
     }
 
     [Fact]
@@ -298,7 +302,6 @@ public sealed class FantasyTeamServiceTests
             .Setup(repository => repository.ReleaseAPlayerAsync(
                 teamId, playerId, cancellationToken))
             .Returns(Task.CompletedTask);
-
         await _service.ReleaseAPlayerAsync(
             teamId, playerId, cancellationToken);
 
@@ -307,6 +310,38 @@ public sealed class FantasyTeamServiceTests
                 teamId, null, playerId, cancellationToken), Times.Once);
         _teamRepository.Verify(repository => repository.ReleaseAPlayerAsync(
             teamId, playerId, cancellationToken), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(7, 13, 7)]
+    [InlineData(6, 12, 6)]
+    public async Task ReleaseAPlayerAsync_WhenReleaseWouldDropRosterBelowHalf_ThrowsConflict(
+        int playerCount,
+        int rosterSize,
+        int expectedMinimum)
+    {
+        var teamId = Guid.NewGuid();
+        var playerId = Guid.NewGuid();
+        _teamRepository
+            .Setup(repository =>
+                repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                    teamId, null, playerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TradeValidationResult.None);
+        _teamRepository
+            .Setup(repository => repository.GetRosterStateAsync(
+                teamId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((playerCount, rosterSize));
+
+        var exception = await Assert.ThrowsAsync<ConflictException>(() =>
+            _service.ReleaseAPlayerAsync(teamId, playerId));
+
+        Assert.Equal(
+            $"A player cannot be released because the roster must contain at least {expectedMinimum} players.",
+            exception.Message);
+        _teamRepository.Verify(repository => repository.ReleaseAPlayerAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<Guid>(),
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Theory]
@@ -431,6 +466,101 @@ public sealed class FantasyTeamServiceTests
                 teamId, playerId, cancellationToken));
 
         Assert.Equal(cancellationToken, exception.CancellationToken);
+    }
+
+    [Fact]
+    public async Task CreateTransferAsync_WithValidRequest_CreatesRequest()
+    {
+        var homeTeamId = Guid.NewGuid();
+        var awayTeamId = Guid.NewGuid();
+        var homePlayerId = Guid.NewGuid();
+        var awayPlayerId = Guid.NewGuid();
+        var request = new CreateTransferRequest(
+            awayTeamId, [homePlayerId], [awayPlayerId]);
+        _teamRepository
+            .Setup(repository =>
+                repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                    homeTeamId, awayTeamId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TradeValidationResult.None);
+
+        var transferId = Guid.NewGuid();
+        _teamRepository.Setup(repository => repository.CreateTransferAsync(
+            homeTeamId, awayTeamId, request.OfferedPlayerIds, request.RequestedPlayerIds,
+            It.IsAny<CancellationToken>())).ReturnsAsync(transferId);
+
+        var result = await _service.CreateTransferAsync(homeTeamId, request);
+
+        Assert.Equal(transferId, result);
+        _teamRepository.Verify(repository => repository.CreateTransferAsync(
+            homeTeamId,
+            awayTeamId,
+            request.OfferedPlayerIds,
+            request.RequestedPlayerIds,
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateTransferAsync_WhenTeamsAreSame_ThrowsBadRequest()
+    {
+        var teamId = Guid.NewGuid();
+        var request = new CreateTransferRequest(
+            teamId, [Guid.NewGuid()], [Guid.NewGuid()]);
+
+        var exception = await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.CreateTransferAsync(teamId, request));
+
+        Assert.Equal("A team cannot transfer players with itself.", exception.Message);
+        _teamRepository.Verify(repository => repository.CreateTransferAsync(
+            It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(),
+            It.IsAny<IReadOnlyCollection<Guid>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateTransferAsync_WhenTeamIsMissing_DoesNotCreateRequest()
+    {
+        var homeTeamId = Guid.NewGuid();
+        var request = new CreateTransferRequest(
+            Guid.NewGuid(), [Guid.NewGuid()], [Guid.NewGuid()]);
+        _teamRepository
+            .Setup(repository =>
+                repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                    homeTeamId,
+                    request.CounterpartyTeamId,
+                    null,
+                    It.IsAny<CancellationToken>()))
+            .ReturnsAsync(TradeValidationResult.AwayTeamNotFound);
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            _service.CreateTransferAsync(homeTeamId, request));
+
+        _teamRepository.Verify(repository => repository.CreateTransferAsync(
+            It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<IReadOnlyCollection<Guid>>(),
+            It.IsAny<IReadOnlyCollection<Guid>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ApproveTransferAsync_WithValidIdentifiers_ApprovesRequest()
+    {
+        var transferId = Guid.NewGuid();
+        var approvingTeamId = Guid.NewGuid();
+
+        await _service.ApproveTransferAsync(transferId, approvingTeamId);
+
+        _teamRepository.Verify(repository => repository.ApproveTransferAsync(
+            transferId, approvingTeamId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ApproveTransferAsync_WithEmptyApprovingTeamId_ThrowsBadRequest()
+    {
+        await Assert.ThrowsAsync<BadRequestException>(() =>
+            _service.ApproveTransferAsync(Guid.NewGuid(), Guid.Empty));
+
+        _teamRepository.Verify(repository => repository.ApproveTransferAsync(
+            It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     private void SetupLeague(League league)

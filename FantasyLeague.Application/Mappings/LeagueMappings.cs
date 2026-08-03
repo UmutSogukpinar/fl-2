@@ -12,21 +12,21 @@ public static class LeagueMappings
         this CreateLeagueRequest request,
         DateTime? draftDateUtc,
         string draftTimeZoneId) => new()
-    {
-        Name = request.Name,
-        Description = request.Description,
-        Season = request.Season,
-        MaxTeams = request.MaxTeams,
-        CommissionerId = request.CommissionerId,
-        Status = LeagueStatus.Created,
-        Settings = new LeagueSettings
         {
-            DraftDate = draftDateUtc,
-            DraftTimeZoneId = draftTimeZoneId,
-            RosterSize = request.RosterSize
-        },
-        JoinCode = Convert.ToHexString(RandomNumberGenerator.GetBytes(4))
-    };
+            Name = request.Name,
+            Description = request.Description,
+            Season = request.Season,
+            MaxTeams = request.MaxTeams,
+            CommissionerId = request.CommissionerId,
+            Status = LeagueStatus.Created,
+            Settings = new LeagueSettings
+            {
+                DraftDate = draftDateUtc,
+                DraftTimeZoneId = draftTimeZoneId,
+                RosterSize = request.RosterSize
+            },
+            JoinCode = Convert.ToHexString(RandomNumberGenerator.GetBytes(4))
+        };
 
     public static void MapTo(
         this UpdateLeagueRequest request,

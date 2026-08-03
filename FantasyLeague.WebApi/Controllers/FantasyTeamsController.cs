@@ -193,8 +193,38 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService)
         CancellationToken cancellation
     )
     {
-        await teamService.ReleaseAPlayerAsync(id,  PlayerId, cancellation);
+        await teamService.ReleaseAPlayerAsync(id, PlayerId, cancellation);
 
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/transfers")]
+    [ProducesResponseType<TransferCreatedResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<TransferCreatedResponse>> CreateTransferAsync(
+        [FromRoute] Guid id,
+        [FromBody] CreateTransferRequest request,
+        CancellationToken cancellation
+    )
+    {
+        var transferId = await teamService.CreateTransferAsync(id, request, cancellation);
+        return StatusCode(StatusCodes.Status201Created, new TransferCreatedResponse(transferId));
+    }
+
+    [HttpPatch("transfers/{transferId:guid}/approve")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ApproveTransferAsync(
+        [FromRoute] Guid transferId,
+        [FromBody] ApproveTransferRequest request,
+        CancellationToken cancellation)
+    {
+        await teamService.ApproveTransferAsync(
+            transferId, request.ApprovingTeamId, cancellation);
         return NoContent();
     }
 

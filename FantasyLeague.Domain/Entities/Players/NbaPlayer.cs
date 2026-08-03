@@ -1,9 +1,9 @@
-namespace FantasyLeague.Domain.Entities;
+namespace FantasyLeague.Domain.Entities.Players;
 
 public class NbaPlayer
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    
+
     public int NbaId { get; set; }
 
     public required string FirstName { get; set; }
@@ -24,5 +24,5 @@ public class NbaPlayer
 
     public DateTime? UpdatedAt { get; set; }
 
-    public ICollection<PlayerStats> SeasonStats { get; set; } = [] ;
+    public ICollection<PlayerStats> SeasonStats { get; set; } = [];
 }

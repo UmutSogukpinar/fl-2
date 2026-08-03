@@ -2,7 +2,7 @@ using FantasyLeague.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace FantasyLeague.Infrastructure.EntityConfigurations;
+namespace FantasyLeague.Infrastructure.EntityConfigurations.Transfers;
 
 public sealed class TransferRequestConfiguration : IEntityTypeConfiguration<TransferRequest>
 {
@@ -13,14 +13,5 @@ public sealed class TransferRequestConfiguration : IEntityTypeConfiguration<Tran
         builder.Property(request => request.Status).HasConversion<string>().HasMaxLength(32);
         builder.HasMany(request => request.Players).WithOne()
             .HasForeignKey(player => player.TransferRequestId).OnDelete(DeleteBehavior.Cascade);
-    }
-}
-
-public sealed class TransferRequestPlayerConfiguration : IEntityTypeConfiguration<TransferRequestPlayer>
-{
-    public void Configure(EntityTypeBuilder<TransferRequestPlayer> builder)
-    {
-        builder.ToTable("transfer_request_players");
-        builder.HasKey(player => new { player.TransferRequestId, player.FromTeamId, player.NbaPlayerId });
     }
 }

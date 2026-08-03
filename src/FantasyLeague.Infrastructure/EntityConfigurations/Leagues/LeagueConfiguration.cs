@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using FantasyLeague.Domain.Entities;
 
-namespace FantasyLeague.Infrastructure.EntityConfigurations;
+namespace FantasyLeague.Infrastructure.EntityConfigurations.Leagues;
 
 public sealed class LeagueConfiguration : IEntityTypeConfiguration<League>
 {

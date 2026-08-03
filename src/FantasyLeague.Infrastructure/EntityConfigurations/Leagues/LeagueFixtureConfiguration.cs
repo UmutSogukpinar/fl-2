@@ -2,7 +2,7 @@ using FantasyLeague.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace FantasyLeague.Infrastructure.EntityConfigurations;
+namespace FantasyLeague.Infrastructure.EntityConfigurations.Leagues;
 
 public sealed class LeagueFixtureConfiguration : IEntityTypeConfiguration<LeagueFixture>
 {

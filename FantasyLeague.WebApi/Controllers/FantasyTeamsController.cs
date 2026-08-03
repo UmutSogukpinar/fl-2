@@ -9,7 +9,8 @@ namespace FantasyLeague.WebApi.Controllers;
 
 [ApiController]
 [Route("api/fantasy-teams")]
-public sealed class FantasyTeamsController(IFantasyTeamService teamService) : ControllerBase
+public sealed class FantasyTeamsController(IFantasyTeamService teamService)
+    : ControllerBase
 {
     /// <summary>
     /// Retrieves all fantasy teams belonging to the specified league.
@@ -42,11 +43,11 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService) : Co
     GetByLeagueIdAsync(
         [FromQuery] Guid leagueId,
         [FromQuery] PaginationRequest request,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     )
     {
         var response = await teamService.GetByLeagueIdAsync(
-            leagueId, request, cancellationToken
+            leagueId, request, cancellation
         );
 
         return Ok(response);
@@ -82,11 +83,11 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService) : Co
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<FantasyTeamResponse>> GetByIdAsync(
         [FromRoute] Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var response = await teamService.GetByIdAsync(
             id,
-            cancellationToken
+            cancellation
         );
 
         return Ok(response);
@@ -137,10 +138,10 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService) : Co
     public async Task<ActionResult<FantasyTeamResponse>> UpdateAsync(
         [FromRoute] Guid id,
         [FromBody] UpdateFantasyTeamRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var response = await teamService.UpdateAsync(
-            id, request, cancellationToken
+            id, request, cancellation
         );
 
         return Ok(response);
@@ -176,9 +177,55 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService) : Co
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(
         Guid id,
-        CancellationToken cancellationToken
-    ){
-        await teamService.DeleteAsync(id, cancellationToken);
+        CancellationToken cancellation
+    )
+    {
+        await teamService.DeleteAsync(id, cancellation);
         return NoContent();
     }
+
+    [HttpPatch("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReleaseAPlayerAsync(
+        Guid id,
+        [FromQuery] Guid PlayerId,
+        CancellationToken cancellation
+    )
+    {
+        await teamService.ReleaseAPlayerAsync(id, PlayerId, cancellation);
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/transfers")]
+    [ProducesResponseType<TransferCreatedResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<TransferCreatedResponse>> CreateTransferAsync(
+        [FromRoute] Guid id,
+        [FromBody] CreateTransferRequest request,
+        CancellationToken cancellation
+    )
+    {
+        var transferId = await teamService.CreateTransferAsync(id, request, cancellation);
+        return StatusCode(StatusCodes.Status201Created, new TransferCreatedResponse(transferId));
+    }
+
+    [HttpPatch("transfers/{transferId:guid}/approve")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ApproveTransferAsync(
+        [FromRoute] Guid transferId,
+        [FromBody] ApproveTransferRequest request,
+        CancellationToken cancellation)
+    {
+        await teamService.ApproveTransferAsync(
+            transferId, request.ApprovingTeamId, cancellation);
+        return NoContent();
+    }
+
 }

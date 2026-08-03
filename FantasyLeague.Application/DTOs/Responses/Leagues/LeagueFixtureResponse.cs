@@ -1,5 +1,3 @@
-using FantasyLeague.Domain.Enums;
-
 namespace FantasyLeague.Application.DTOs.Responses.Leagues;
 
 public sealed record LeagueFixtureResponse(
@@ -13,4 +11,4 @@ public sealed record LeagueFixtureResponse(
     int? HomeScore,
     int? AwayScore,
     DateTime? GameTime,
-    MatchStatus Status);
+    string Status);

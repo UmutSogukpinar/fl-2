@@ -33,12 +33,12 @@ public sealed class LeagueSetupGeneratorTests
         Assert.Equal(expectedFixtureCount, fixtures.Count);
         Assert.DoesNotContain(fixtures, fixture => fixture.HomeTeamId == fixture.AwayTeamId);
         for (var first = 0; first < teams.Length; first++)
-        for (var second = first + 1; second < teams.Length; second++)
-        {
-            Assert.Single(fixtures, fixture =>
-                fixture.HomeTeamId == teams[first] && fixture.AwayTeamId == teams[second]
-                || fixture.HomeTeamId == teams[second] && fixture.AwayTeamId == teams[first]);
-        }
+            for (var second = first + 1; second < teams.Length; second++)
+            {
+                Assert.Single(fixtures, fixture =>
+                    fixture.HomeTeamId == teams[first] && fixture.AwayTeamId == teams[second]
+                    || fixture.HomeTeamId == teams[second] && fixture.AwayTeamId == teams[first]);
+            }
     }
 
     [Fact]

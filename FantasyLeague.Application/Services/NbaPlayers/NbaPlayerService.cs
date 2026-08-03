@@ -27,7 +27,7 @@ public sealed class NbaPlayerService(
     {
         req.ValidatePaginationRequest();
 
-        var (items, totalCount) = await 
+        var (items, totalCount) = await
             _nbaPlayerRepository.GetPagedAsync(
                 req.PageNumber,
                 req.PageSize,

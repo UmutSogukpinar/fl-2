@@ -6,24 +6,24 @@ using FantasyLeague.Domain.Entities;
 namespace FantasyLeague.Infrastructure.EntityConfigurations;
 
 public sealed class UserConfiguration
-	: IEntityTypeConfiguration<User>
+    : IEntityTypeConfiguration<User>
 {
-	public void Configure(EntityTypeBuilder<User> builder)
-	{
-		builder.ToTable("users");
+    public void Configure(EntityTypeBuilder<User> builder)
+    {
+        builder.ToTable("users");
 
-		builder.HasKey(user => user.Id);
+        builder.HasKey(user => user.Id);
 
-		builder.Property(user => user.Username)
-			.HasMaxLength(50)
-			.IsRequired();
+        builder.Property(user => user.Username)
+            .HasMaxLength(50)
+            .IsRequired();
 
-		builder.Property(user => user.Email)
-			.IsRequired();
+        builder.Property(user => user.Email)
+            .IsRequired();
 
-		builder.Property(user => user.TimeZoneId)
-			.HasMaxLength(100)
-			.HasDefaultValue("UTC")
-			.IsRequired();
+        builder.Property(user => user.TimeZoneId)
+            .HasMaxLength(100)
+            .HasDefaultValue("UTC")
+            .IsRequired();
     }
 }

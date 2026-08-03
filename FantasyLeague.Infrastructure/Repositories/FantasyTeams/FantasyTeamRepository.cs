@@ -7,27 +7,30 @@ using FantasyLeague.Infrastructure.Context;
 using FantasyLeague.Infrastructure.Repositories.Projections;
 using FantasyLeague.Application.Models;
 
-namespace FantasyLeague.Infrastructure.Repositories;
+namespace FantasyLeague.Infrastructure.Repositories.FantasyTeams;
 
-public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeamRepository
+public sealed partial class FantasyTeamRepository(
+    AppDbContext _dbContext) : IFantasyTeamRepository
 {
-    public async Task<(IReadOnlyCollection<FantasyTeamResponse> Items, int TotalCount)> GetPagedByLeagueIdAsync(
+    public async Task<(IReadOnlyCollection<FantasyTeamResponse> Items, int TotalCount)>
+        GetPagedByLeagueIdAsync(
         Guid leagueId,
         int pageNumber,
         int pageSize,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     )
     {
-        var query = dbContext.Set<FantasyTeam>()
+        var query = _dbContext.Set<FantasyTeam>()
             .AsNoTracking()
             .Where(team => team.LeagueId == leagueId);
-        var totalCount = await query.CountAsync(cancellationToken);
+
+        var totalCount = await query.CountAsync(cancellation);
         var items = await query
             .OrderBy(team => team.Name)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Select(FantasyTeamProjections.Response)
-            .ToArrayAsync(cancellationToken);
+            .ToArrayAsync(cancellation);
 
         return (items, totalCount);
     }
@@ -37,7 +40,7 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
         CancellationToken cancellationToken
     )
     {
-        return dbContext.Set<FantasyTeam>()
+        return _dbContext.Set<FantasyTeam>()
             .AsNoTracking()
             .Where(team => team.Id == id)
             .Select(FantasyTeamProjections.Response)
@@ -49,7 +52,7 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
         CancellationToken cancellationToken
     )
     {
-        return dbContext.Set<FantasyTeam>()
+        return _dbContext.Set<FantasyTeam>()
             .SingleOrDefaultAsync(team => team.Id == id, cancellationToken);
     }
 
@@ -58,7 +61,7 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
         CancellationToken cancellationToken
     )
     {
-        return dbContext.Set<FantasyTeam>()
+        return _dbContext.Set<FantasyTeam>()
             .CountAsync(team => team.LeagueId == leagueId, cancellationToken);
     }
 
@@ -66,7 +69,7 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
         Guid leagueId,
         CancellationToken cancellationToken)
     {
-        return await dbContext.Set<FantasyTeam>()
+        return await _dbContext.Set<FantasyTeam>()
             .AsNoTracking()
             .Where(team => team.LeagueId == leagueId)
             .Select(team => team.Id)
@@ -80,7 +83,7 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
         Guid? excludedTeamId,
         CancellationToken cancellation)
     {
-        var conflict = await dbContext.Set<FantasyTeam>()
+        var conflict = await _dbContext.Set<FantasyTeam>()
             .Where(team =>
                 team.LeagueId == leagueId
                 && (!excludedTeamId.HasValue || team.Id != excludedTeamId.Value))
@@ -114,17 +117,17 @@ public sealed class FantasyTeamRepository(AppDbContext dbContext) : IFantasyTeam
 
     public Task AddAsync(FantasyTeam team, CancellationToken cancellationToken)
     {
-        return dbContext.Set<FantasyTeam>()
+        return _dbContext.Set<FantasyTeam>()
             .AddAsync(team, cancellationToken).AsTask();
     }
 
     public void Remove(FantasyTeam team)
     {
-        dbContext.Set<FantasyTeam>().Remove(team);
+        _dbContext.Set<FantasyTeam>().Remove(team);
     }
 
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 }

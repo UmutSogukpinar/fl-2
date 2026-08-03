@@ -109,7 +109,10 @@ public sealed class DraftServiceTests
         var league = CreateLeague(LeagueStatus.Drafting);
         var team = new FantasyTeam
         {
-            Id = Guid.NewGuid(), LeagueId = league.Id, OwnerId = Guid.NewGuid(), Name = "Team"
+            Id = Guid.NewGuid(),
+            LeagueId = league.Id,
+            OwnerId = Guid.NewGuid(),
+            Name = "Team"
         };
         var firstTeamId = Guid.NewGuid();
         var nbaPlayerId = Guid.NewGuid();

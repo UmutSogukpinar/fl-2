@@ -54,7 +54,7 @@ public sealed partial class FantasyTeamService(
                 $"Fantasy team '{id}' was not found."
             );
 
-        return result; 
+        return result;
     }
 
     public async Task RemoveLeagueMemberAsync(

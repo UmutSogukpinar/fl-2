@@ -29,17 +29,18 @@ public sealed partial class NbaPlayerRepository
 
     public async Task<IPlayerResponse?> GetByIdAndSeasonAsync(
         Guid id,
-        int season, 
+        int season,
         PlayerResponseSize size,
         CancellationToken cancellationToken
-    ){
+    )
+    {
         return size switch
         {
             PlayerResponseSize.Basic => await GetBasicAsync(
                                             id,
                                             cancellationToken
                                         ),
-            
+
             PlayerResponseSize.Detailed => await GetDetailedAsync(
                                                 id,
                                                 cancellationToken),
@@ -60,7 +61,8 @@ public sealed partial class NbaPlayerRepository
     private Task<NbaPlayerBasicResponse?> GetBasicAsync(
        Guid id,
        CancellationToken cancelllation
-    ){
+    )
+    {
         return _dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(p => p.Id == id)
@@ -71,7 +73,8 @@ public sealed partial class NbaPlayerRepository
     private Task<NbaPlayerDetailedResponse?> GetDetailedAsync(
         Guid id,
         CancellationToken cancellation
-    ){
+    )
+    {
         return _dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(p => p.Id == id)
@@ -83,7 +86,8 @@ public sealed partial class NbaPlayerRepository
         Guid id,
         int season,
         CancellationToken cancellation
-    ){
+    )
+    {
         return _dbContext.Set<NbaPlayer>()
             .AsNoTracking()
             .Where(player => player.Id == id)

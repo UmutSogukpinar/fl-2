@@ -1,4 +1,4 @@
-namespace FantasyLeague.Domain.Entities;
+namespace FantasyLeague.Domain.Entities.Leagues;
 
 using FantasyLeague.Domain.Enums;
 

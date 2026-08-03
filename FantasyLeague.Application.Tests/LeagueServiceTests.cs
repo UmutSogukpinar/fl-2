@@ -236,6 +236,47 @@ public sealed class LeagueServiceTests
     }
 
     [Fact]
+    public async Task ProcessDueFixturesAsync_WhenPlayerStatsAreMissing_DoesNotCompleteFixture()
+    {
+        var league = CreateLeague();
+        league.Status = LeagueStatus.Active;
+        var fixture = new LeagueFixture
+        {
+            LeagueId = league.Id,
+            HomeTeamId = Guid.NewGuid(),
+            AwayTeamId = Guid.NewGuid(),
+            Week = 1,
+            GameTime = DateTime.UtcNow.AddMinutes(-1)
+        };
+        var utcNow = DateTime.UtcNow;
+
+        _leagueSetupRepository
+            .Setup(repository => repository.GetDueFixturesAsync(
+                utcNow, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([fixture]);
+        _leagueRepository
+            .Setup(repository => repository.GetResponseByIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateLeagueResponse(league));
+        _nbaPlayerRepository
+            .Setup(repository => repository.GetMatchStatsByTeamIdsAsync(
+                league.Id, fixture.HomeTeamId, fixture.AwayTeamId,
+                league.Season, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MatchStats(
+                TeamMatchStats.Empty(fixture.HomeTeamId, league.Season),
+                TeamMatchStats.Empty(fixture.AwayTeamId, league.Season)));
+
+        var processed = await _service.ProcessDueFixturesAsync(utcNow);
+
+        Assert.Equal(0, processed);
+        Assert.Null(fixture.HomeScore);
+        Assert.Null(fixture.AwayScore);
+        Assert.Equal(MatchStatus.Scheduled, fixture.Status);
+        _leagueSetupRepository.Verify(repository =>
+            repository.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task GetMatchStatsAsync_WhenTeamsAreSame_ThrowsBadRequest()
     {
         var teamId = Guid.NewGuid();

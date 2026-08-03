@@ -1,0 +1,126 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useApp } from '../../app/AppContext'
+import { useCurrentUser } from '../../app/UserContext'
+import { leaguesApi, type FantasyTeam } from '../leagues/leagues.api'
+import { transfersApi, type RosterPlayer, type Transfer } from './transfers.api'
+
+export function TransfersPage({ leagueId }: { leagueId?: string }) {
+  const { navigate } = useApp()
+  const { userId } = useCurrentUser()
+  const [teams, setTeams] = useState<FantasyTeam[]>([])
+  const [myRoster, setMyRoster] = useState<RosterPlayer[]>([])
+  const [otherRoster, setOtherRoster] = useState<RosterPlayer[]>([])
+  const [transfers, setTransfers] = useState<Transfer[]>([])
+  const [counterpartyId, setCounterpartyId] = useState('')
+  const [offered, setOffered] = useState<string[]>([])
+  const [requested, setRequested] = useState<string[]>([])
+  const [loading, setLoading] = useState(Boolean(leagueId))
+  const [submitting, setSubmitting] = useState(false)
+  const [approving, setApproving] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const myTeam = useMemo(() => teams.find((team) => team.ownerId === userId), [teams, userId])
+  const teamNames = useMemo(() => new Map(teams.map((team) => [team.id, team.name])), [teams])
+
+  useEffect(() => {
+    if (!leagueId) return
+    const controller = new AbortController()
+    leaguesApi.members(leagueId, controller.signal)
+      .then(({ items }) => setTeams(items))
+      .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : 'Takımlar yüklenemedi.'))
+      .finally(() => setLoading(false))
+    return () => controller.abort()
+  }, [leagueId])
+
+  useEffect(() => {
+    if (!myTeam) return
+    const controller = new AbortController()
+    Promise.all([
+      transfersApi.roster(myTeam.id, controller.signal),
+      transfersApi.list(myTeam.id, controller.signal),
+    ]).then(([roster, items]) => {
+      setMyRoster(roster)
+      setTransfers(items)
+    }).catch((requestError: unknown) => {
+      if (requestError instanceof DOMException && requestError.name === 'AbortError') return
+      setError(requestError instanceof Error ? requestError.message : 'Transfer bilgileri yüklenemedi.')
+    })
+    return () => controller.abort()
+  }, [myTeam])
+
+  useEffect(() => {
+    setRequested([])
+    if (!counterpartyId) return setOtherRoster([])
+    const controller = new AbortController()
+    transfersApi.roster(counterpartyId, controller.signal)
+      .then(setOtherRoster)
+      .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : 'Rakip kadro yüklenemedi.'))
+    return () => controller.abort()
+  }, [counterpartyId])
+
+  const toggle = (id: string, selected: string[], setSelected: (ids: string[]) => void) =>
+    setSelected(selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id])
+
+  async function createTransfer() {
+    if (!myTeam || !counterpartyId) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      await transfersApi.create(myTeam.id, counterpartyId, offered, requested)
+      setTransfers(await transfersApi.list(myTeam.id))
+      setOffered([])
+      setRequested([])
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Transfer teklifi oluşturulamadı.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function approveTransfer(transferId: string) {
+    if (!myTeam) return
+    setApproving(transferId)
+    setError(null)
+    try {
+      await transfersApi.approve(transferId, myTeam.id)
+      setTransfers(await transfersApi.list(myTeam.id))
+      setMyRoster(await transfersApi.roster(myTeam.id))
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Transfer onaylanamadı.')
+    } finally {
+      setApproving(null)
+    }
+  }
+
+  if (!leagueId) return <section className="workspace-page"><div className="empty"><h3>Bir lig seç</h3><p>Transfer merkezini lig detayından açabilirsin.</p><button className="create" onClick={() => navigate('leagues')}>Liglere git</button></div></section>
+  if (loading) return <section className="workspace-page"><div className="empty">Transfer merkezi yükleniyor...</div></section>
+  if (!myTeam) return <section className="workspace-page"><button className="text-button" onClick={() => navigate(`leagues/${leagueId}`)}>← Lige dön</button><div className="empty">Bu ligde bir takımın bulunmuyor.</div></section>
+
+  const isPending = (status: Transfer['status']) => status === 'Pending' || status === 0
+  return (
+    <section className="workspace-page transfer-page">
+      <button className="text-button" onClick={() => navigate(`leagues/${leagueId}`)}>← Lig detayına dön</button>
+      <div className="page-title-row"><div><span>TRANSFER MERKEZİ</span><h1>{myTeam.name}</h1><p>Çoklu oyuncu tekliflerini oluştur ve gelen teklifleri yönet.</p></div></div>
+      {error && <div className="api-error" role="alert">{error}</div>}
+      <article className="detail-panel transfer-builder">
+        <div className="panel-heading"><div><h2>Yeni teklif</h2><p>Transfer sonrasında iki kadro da lig roster limitinin altında kalamaz.</p></div></div>
+        <label className="transfer-team-select">Takas yapılacak takım<select value={counterpartyId} onChange={(event) => setCounterpartyId(event.target.value)}><option value="">Takım seç</option>{teams.filter((team) => team.id !== myTeam.id).map((team) => <option value={team.id} key={team.id}>{team.name}</option>)}</select></label>
+        <div className="transfer-rosters">
+          <Roster title="Teklif ettiğin oyuncular" players={myRoster} selected={offered} onToggle={(id) => toggle(id, offered, setOffered)} />
+          <Roster title="İstediğin oyuncular" players={otherRoster} selected={requested} onToggle={(id) => toggle(id, requested, setRequested)} emptyText={counterpartyId ? 'Bu takımın kadrosu boş.' : 'Önce bir takım seç.'} />
+        </div>
+        <div className="transfer-summary"><span>{offered.length} oyuncu veriyorsun</span><b>⇄</b><span>{requested.length} oyuncu alıyorsun</span><button className="create" disabled={submitting || !counterpartyId || !offered.length || !requested.length} onClick={createTransfer}>{submitting ? 'Gönderiliyor...' : 'Teklifi gönder'}</button></div>
+      </article>
+      <article className="detail-panel"><h2>Transfer teklifleri</h2>{transfers.map((transfer) => {
+        const incoming = transfer.counterpartyTeamId === myTeam.id
+        const offeredPlayers = transfer.players.filter((player) => player.fromTeamId === transfer.initiatingTeamId)
+        const requestedPlayers = transfer.players.filter((player) => player.fromTeamId === transfer.counterpartyTeamId)
+        return <div className="transfer-card" key={transfer.id}><div><strong>{incoming ? teamNames.get(transfer.initiatingTeamId) : teamNames.get(transfer.counterpartyTeamId)}</strong><span>{incoming ? 'Gelen teklif' : 'Gönderilen teklif'} · {new Date(transfer.createdAt).toLocaleDateString('tr-TR')}</span></div><div className="transfer-card-players"><span>{offeredPlayers.map((player) => `${player.firstName} ${player.lastName}`).join(', ')}</span><b>⇄</b><span>{requestedPlayers.map((player) => `${player.firstName} ${player.lastName}`).join(', ')}</span></div><div className="transfer-card-action"><em className={isPending(transfer.status) ? 'pending' : 'approved'}>{isPending(transfer.status) ? 'Bekliyor' : 'Onaylandı'}</em>{incoming && isPending(transfer.status) && <button className="create" disabled={approving === transfer.id} onClick={() => approveTransfer(transfer.id)}>{approving === transfer.id ? 'Onaylanıyor...' : 'Onayla'}</button>}</div></div>
+      })}{!transfers.length && <p>Henüz transfer teklifi yok.</p>}</article>
+    </section>
+  )
+}
+
+function Roster({ title, players, selected, onToggle, emptyText = 'Kadro boş.' }: { title: string; players: RosterPlayer[]; selected: string[]; onToggle: (id: string) => void; emptyText?: string }) {
+  return <div className="transfer-roster"><h3>{title}<span>{selected.length} seçili</span></h3>{players.map((player) => <label className={selected.includes(player.id) ? 'selected' : ''} key={player.id}><input type="checkbox" checked={selected.includes(player.id)} onChange={() => onToggle(player.id)} /><span><strong>{player.firstName} {player.lastName}</strong><small>{player.nbaTeam ?? 'FA'} · {player.position ?? '-'}</small></span></label>)}{!players.length && <p>{emptyText}</p>}</div>
+}

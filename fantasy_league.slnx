@@ -1,11 +1,15 @@
 <Solution>
-  <Folder Name="/Çözüm Öğeleri/">
+  <Folder Name="/Solution Items/">
     <File Path=".dockerignore" />
     <File Path="docker-compose.yml" />
   </Folder>
-  <Project Path="FantasyLeague.Application.Tests/FantasyLeague.Application.Tests.csproj" Id="66eaea1f-686e-41e3-9b7a-fbc40782bccc" />
-  <Project Path="FantasyLeague.Application/FantasyLeague.Application.csproj" />
-  <Project Path="FantasyLeague.Domain/FantasyLeague.Domain.csproj" />
-  <Project Path="FantasyLeague.Infrastructure/FantasyLeague.Infrastructure.csproj" />
-  <Project Path="FantasyLeague.WebApi/FantasyLeague.WebApi.csproj" Id="9c9e6fd4-f195-4e54-9bba-f034c1cb5626" />
+  <Folder Name="/src/">
+    <Project Path="src/FantasyLeague.Application/FantasyLeague.Application.csproj" />
+    <Project Path="src/FantasyLeague.Domain/FantasyLeague.Domain.csproj" />
+    <Project Path="src/FantasyLeague.Infrastructure/FantasyLeague.Infrastructure.csproj" />
+    <Project Path="src/FantasyLeague.WebApi/FantasyLeague.WebApi.csproj" Id="9c9e6fd4-f195-4e54-9bba-f034c1cb5626" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FantasyLeague.Application.Tests/FantasyLeague.Application.Tests.csproj" Id="66eaea1f-686e-41e3-9b7a-fbc40782bccc" />
+  </Folder>
 </Solution>

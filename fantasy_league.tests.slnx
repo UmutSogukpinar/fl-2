@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/FantasyLeague.Application.Tests/FantasyLeague.Application.Tests.csproj" />
+    <Project Path="tests/FantasyLeague.Infrastructure.IntegrationTests/FantasyLeague.Infrastructure.IntegrationTests.csproj" />
+    <Project Path="tests/FantasyLeague.WebApi.IntegrationTests/FantasyLeague.WebApi.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

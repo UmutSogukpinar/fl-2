@@ -11,5 +11,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FantasyLeague.Application.Tests/FantasyLeague.Application.Tests.csproj" Id="66eaea1f-686e-41e3-9b7a-fbc40782bccc" />
+    <Project Path="tests/FantasyLeague.Infrastructure.IntegrationTests/FantasyLeague.Infrastructure.IntegrationTests.csproj" />
+    <Project Path="tests/FantasyLeague.WebApi.IntegrationTests/FantasyLeague.WebApi.IntegrationTests.csproj" />
   </Folder>
 </Solution>

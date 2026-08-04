@@ -35,6 +35,7 @@ public sealed class PostgreSqlFixture : IAsyncLifetime
         await context.Database.ExecuteSqlRawAsync(
             """
             TRUNCATE TABLE
+                refresh_tokens,
                 transfer_request_players,
                 transfer_requests,
                 fantasy_team_players,

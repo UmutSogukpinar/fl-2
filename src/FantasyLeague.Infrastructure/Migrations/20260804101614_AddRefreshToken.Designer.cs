@@ -3,6 +3,7 @@ using System;
 using FantasyLeague.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FantasyLeague.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260804101614_AddRefreshToken")]
+    partial class AddRefreshToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,77 +24,6 @@ namespace FantasyLeague.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("FantasyLeague.Domain.Entities.Auth.RefreshToken", b =>
-                {
-                    b.Property<string>("Token")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("JwtId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Token");
-
-                    b.ToTable("refresh_tokens", (string)null);
-                });
-
-            modelBuilder.Entity("FantasyLeague.Domain.Entities.Drafts.DraftPickOrder", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("LeagueId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("NbaPlayerId")
-                        .IsConcurrencyToken()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("OverallPick")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("PickedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("PositionInRound")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Round")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("TeamId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NbaPlayerId");
-
-                    b.HasIndex("LeagueId", "NbaPlayerId")
-                        .IsUnique()
-                        .HasFilter("\"NbaPlayerId\" IS NOT NULL");
-
-                    b.HasIndex("LeagueId", "OverallPick")
-                        .IsUnique();
-
-                    b.HasIndex("TeamId", "LeagueId");
-
-                    b.HasIndex("LeagueId", "Round", "PositionInRound")
-                        .IsUnique();
-
-                    b.ToTable("draft_pick_orders", (string)null);
-                });
 
             modelBuilder.Entity("FantasyLeague.Domain.Entities.FantasyTeams.FantasyTeam", b =>
                 {
@@ -465,27 +397,6 @@ namespace FantasyLeague.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("users", (string)null);
-                });
-
-            modelBuilder.Entity("FantasyLeague.Domain.Entities.Drafts.DraftPickOrder", b =>
-                {
-                    b.HasOne("FantasyLeague.Domain.Entities.Leagues.League", null)
-                        .WithMany()
-                        .HasForeignKey("LeagueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FantasyLeague.Domain.Entities.Players.NbaPlayer", null)
-                        .WithMany()
-                        .HasForeignKey("NbaPlayerId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("FantasyLeague.Domain.Entities.FantasyTeams.FantasyTeam", null)
-                        .WithMany()
-                        .HasForeignKey("TeamId", "LeagueId")
-                        .HasPrincipalKey("Id", "LeagueId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("FantasyLeague.Domain.Entities.FantasyTeams.FantasyTeam", b =>

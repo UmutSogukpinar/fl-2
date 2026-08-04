@@ -5,7 +5,7 @@ using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.Services.FantasyTeams;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FantasyLeague.WebApi.Controllers;
+namespace FantasyLeague.WebApi.Controllers.FantasyTeams;
 
 [ApiController]
 [Route("api/fantasy-teams")]

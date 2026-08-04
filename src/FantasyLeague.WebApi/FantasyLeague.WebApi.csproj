@@ -22,10 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\FantasyLeague.Application\FantasyLeague.Application.csproj" />
     <ProjectReference Include="..\FantasyLeague.Infrastructure\FantasyLeague.Infrastructure.csproj" />
   </ItemGroup>

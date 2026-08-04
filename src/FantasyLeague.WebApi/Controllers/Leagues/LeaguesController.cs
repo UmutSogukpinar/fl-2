@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Enums;
 
-namespace FantasyLeague.WebApi.Controllers;
+namespace FantasyLeague.WebApi.Controllers.Leagues;
 
 [ApiController]
 [Route("api/leagues")]

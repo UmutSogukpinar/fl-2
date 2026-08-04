@@ -6,7 +6,7 @@ using FantasyLeague.Application.Models;
 using FantasyLeague.Application.Services.NbaPlayers;
 using Microsoft.AspNetCore.Mvc;
 
-namespace FantasyLeague.WebApi.Controllers;
+namespace FantasyLeague.WebApi.Controllers.NbaPlayers;
 
 [ApiController]
 [Route("api/nba-players")]

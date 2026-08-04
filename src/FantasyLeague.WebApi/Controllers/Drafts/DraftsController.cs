@@ -6,7 +6,7 @@ using FantasyLeague.WebApi.Hubs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
-namespace FantasyLeague.WebApi.Controllers;
+namespace FantasyLeague.WebApi.Controllers.Drafts;
 
 [ApiController]
 [Route("api/leagues/{leagueId:guid}/draft")]

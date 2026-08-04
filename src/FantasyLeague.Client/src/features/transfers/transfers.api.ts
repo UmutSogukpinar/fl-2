@@ -1,4 +1,5 @@
 import { apiClient } from '../../shared/api/client'
+import type { PagedResponse } from '../../shared/types/api'
 
 export interface RosterPlayer {
   id: string
@@ -28,6 +29,15 @@ export interface Transfer {
 export const transfersApi = {
   roster: (teamId: string, signal?: AbortSignal) =>
     apiClient<RosterPlayer[]>(`/fantasy-teams/${teamId}/players`, { signal }),
+  playerPool: (teamId: string, pageNumber: number, pageSize: number, signal?: AbortSignal) =>
+    apiClient<PagedResponse<RosterPlayer>>(
+      `/fantasy-teams/${teamId}/player-pool?pageNumber=${pageNumber}&pageSize=${pageSize}`,
+      { signal },
+    ),
+  addFromPool: (teamId: string, playerId: string) =>
+    apiClient<void>(`/fantasy-teams/${teamId}/players/${playerId}`, {
+      method: 'POST',
+    }),
   list: (teamId: string, signal?: AbortSignal) =>
     apiClient<Transfer[]>(`/fantasy-teams/${teamId}/transfers`, { signal }),
   create: (

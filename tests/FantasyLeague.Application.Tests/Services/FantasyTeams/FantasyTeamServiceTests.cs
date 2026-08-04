@@ -45,7 +45,10 @@ public sealed class FantasyTeamServiceTests
         SetupLeague(league);
         _teamRepository
             .Setup(repository => repository.GetPagedByLeagueIdAsync(
-                league.Id, 1, 10, It.IsAny<CancellationToken>()))
+                league.Id,
+                It.Is<PaginationRequest>(pagination =>
+                    pagination.PageNumber == 1 && pagination.PageSize == 10),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(([CreateTeamResponse(team)], 1));
 
         var result = await _service.GetByLeagueIdAsync(

@@ -46,7 +46,9 @@ public sealed class LeagueServiceTests
         var league = CreateLeague();
         _leagueRepository
             .Setup(repository => repository.GetPagedAsync(
-                1, 10, null, It.IsAny<CancellationToken>()))
+                It.Is<PaginationRequest>(pagination =>
+                    pagination.PageNumber == 1 && pagination.PageSize == 10),
+                null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(([CreateLeagueResponse(league)], 1));
 
         var result = await _service.GetAsync(new PaginationRequest());
@@ -66,7 +68,8 @@ public sealed class LeagueServiceTests
     {
         _leagueRepository
             .Setup(repository => repository.GetPagedAsync(
-                1, 10, LeagueStatus.Completed, It.IsAny<CancellationToken>()))
+                It.IsAny<PaginationRequest>(), LeagueStatus.Completed,
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync((Array.Empty<LeagueResponse>(), 0));
 
         var result = await _service.GetAsync(
@@ -74,7 +77,9 @@ public sealed class LeagueServiceTests
 
         Assert.Empty(result.Items);
         _leagueRepository.Verify(repository => repository.GetPagedAsync(
-            1, 10, LeagueStatus.Completed, It.IsAny<CancellationToken>()),
+            It.Is<PaginationRequest>(pagination =>
+                pagination.PageNumber == 1 && pagination.PageSize == 10),
+            LeagueStatus.Completed, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

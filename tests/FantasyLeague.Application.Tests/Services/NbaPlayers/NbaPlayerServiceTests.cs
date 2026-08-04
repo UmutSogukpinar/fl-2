@@ -36,7 +36,9 @@ public sealed class NbaPlayerServiceTests
         };
         _repository
             .Setup(repository => repository.GetPagedAsync(
-                2, 5, It.IsAny<CancellationToken>()))
+                It.Is<PaginationRequest>(pagination =>
+                    pagination.PageNumber == 2 && pagination.PageSize == 5),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(([player], 12));
 
         var result = await _service.GetAsync(request);
@@ -59,8 +61,7 @@ public sealed class NbaPlayerServiceTests
             _service.GetAsync(request));
 
         _repository.Verify(repository => repository.GetPagedAsync(
-            It.IsAny<int>(),
-            It.IsAny<int>(),
+            It.IsAny<PaginationRequest>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 

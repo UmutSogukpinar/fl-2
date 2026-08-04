@@ -34,7 +34,9 @@ public sealed class NbaPlayerServiceAdditionalTests
         };
         _repository
             .Setup(repository => repository.GetPagedAsync(
-                3, 5, It.IsAny<CancellationToken>()))
+                It.Is<PaginationRequest>(pagination =>
+                    pagination.PageNumber == 3 && pagination.PageSize == 5),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync((players, 11));
 
         var response = await _service.GetAsync(request);

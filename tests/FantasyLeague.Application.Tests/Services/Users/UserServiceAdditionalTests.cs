@@ -34,7 +34,9 @@ public sealed class UserServiceAdditionalTests
         };
         _repository
             .Setup(repository => repository.GetPagedAsync(
-                2, 3, It.IsAny<CancellationToken>()))
+                It.Is<PaginationRequest>(request =>
+                    request.PageNumber == 2 && request.PageSize == 3),
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync((users, 8));
 
         var response = await _service.GetAsync(request);
@@ -56,8 +58,7 @@ public sealed class UserServiceAdditionalTests
             _service.GetAsync(new PaginationRequest { PageSize = 0 }));
 
         _repository.Verify(repository => repository.GetPagedAsync(
-            It.IsAny<int>(),
-            It.IsAny<int>(),
+            It.IsAny<PaginationRequest>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -71,8 +72,7 @@ public sealed class UserServiceAdditionalTests
             _service.GetAsync(null!));
 
         _repository.Verify(repository => repository.GetPagedAsync(
-            It.IsAny<int>(),
-            It.IsAny<int>(),
+            It.IsAny<PaginationRequest>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
 

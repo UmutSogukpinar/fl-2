@@ -29,17 +29,11 @@ public sealed class NbaPlayerService(
 
         var (items, totalCount) = await
             _nbaPlayerRepository.GetPagedAsync(
-                req.PageNumber,
-                req.PageSize,
+                req,
                 cancellation
             );
 
-        return new PagedResponse<NbaPlayerBasicResponse>(
-            items,
-            req.PageNumber,
-            req.PageSize,
-            totalCount,
-            totalCount.CalculateTotalPage(req.PageSize));
+        return Pagination.CreateResponse(items, totalCount, req);
     }
 
     public async Task<IPlayerResponse> GetNbaPlayerByIdAndYearAsync(
@@ -87,12 +81,7 @@ public sealed class NbaPlayerService(
                 cancellation
             );
 
-        return new PagedResponse<IPlayerResponse>(
-            items,
-            pagReq.PageNumber,
-            pagReq.PageSize,
-            totalCount,
-            totalCount.CalculateTotalPage(pagReq.PageSize));
+        return Pagination.CreateResponse(items, totalCount, pagReq);
     }
 
     private static string GetCacheKey(

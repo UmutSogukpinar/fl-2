@@ -5,22 +5,22 @@ using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
 using FantasyLeague.Infrastructure.Repositories.Projections;
+using FantasyLeague.Application.Common.Pagination;
+using FantasyLeague.Application.DTOs.Requests.Common;
 
 namespace FantasyLeague.Infrastructure.Repositories;
 
 public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
 {
     public async Task<(IReadOnlyCollection<UserResponse> Items, int TotalCount)> GetPagedAsync(
-        int pageNumber,
-        int pageSize,
+        PaginationRequest request,
         CancellationToken cancellationToken)
     {
         var query = dbContext.Set<User>().AsNoTracking();
         var totalCount = await query.CountAsync(cancellationToken);
         var users = await query
             .OrderBy(user => user.Username)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
+            .ApplyPagination(request)
             .Select(UserProjections.Response)
             .ToArrayAsync(cancellationToken);
 

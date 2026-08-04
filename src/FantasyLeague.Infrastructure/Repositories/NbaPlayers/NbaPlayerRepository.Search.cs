@@ -4,6 +4,7 @@ using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using FantasyLeague.Application.Common.Pagination;
 
 namespace FantasyLeague.Infrastructure.Repositories.NbaPlayers;
 
@@ -62,8 +63,7 @@ public sealed partial class NbaPlayerRepository
             .OrderBy(player => player.FirstName)
             .ThenBy(player => player.LastName)
             .ThenBy(player => player.Id)
-            .Skip((pagination.PageNumber - 1) * pagination.PageSize)
-            .Take(pagination.PageSize);
+            .ApplyPagination(pagination);
     }
 
     private static async Task<IReadOnlyCollection<IPlayerResponse>>

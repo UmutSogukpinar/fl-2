@@ -30,17 +30,11 @@ public sealed partial class FantasyTeamService(
 
         var (items, totalCount) = await _teamRepository.GetPagedByLeagueIdAsync(
             leagueId,
-            req.PageNumber,
-            req.PageSize,
+            req,
             cancellation
         );
 
-        return new PagedResponse<FantasyTeamResponse>(
-            items,
-            req.PageNumber,
-            req.PageSize,
-            totalCount,
-            totalCount.CalculateTotalPage(req.PageSize));
+        return Pagination.CreateResponse(items, totalCount, req);
     }
 
     public async Task<FantasyTeamResponse> GetByIdAsync(

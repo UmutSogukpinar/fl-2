@@ -17,17 +17,11 @@ public sealed partial class LeagueService
         request.ValidatePaginationRequest();
 
         var (items, totalCount) = await _leagueRepository.GetPagedAsync(
-            request.PageNumber,
-            request.PageSize,
+            request,
             status,
             cancellationToken);
 
-        return new PagedResponse<LeagueResponse>(
-            items,
-            request.PageNumber,
-            request.PageSize,
-            totalCount,
-            totalCount.CalculateTotalPage(request.PageSize));
+        return items.CreateResponse(totalCount, request);
     }
 
     public Task<LeagueResponse> GetByIdAsync(

@@ -4,9 +4,10 @@ using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Application.Common.Normalization;
 using FantasyLeague.Application.Common.Validation;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using FantasyLeague.Application.Common.Pagination;
+using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Responses.Common;
+
 
 namespace FantasyLeague.Application.Services.FantasyTeams;
 
@@ -16,13 +17,29 @@ public sealed partial class FantasyTeamService
         Guid teamId, CancellationToken cancellation = default)
     {
         await GetTrackedTeamOrThrowAsync(teamId, cancellation);
+
         return await _teamRepository.GetRosterPlayersAsync(teamId, cancellation);
+    }
+
+    public async Task<PagedResponse<TeamRosterPlayerResponse>> GetPlayerPoolAsync(
+        Guid teamId,
+        PaginationRequest request,
+        CancellationToken cancellation = default)
+    {
+        request.ValidatePaginationRequest();
+        await GetTrackedTeamOrThrowAsync(teamId, cancellation);
+
+        var (items, totalCount) = await _teamRepository.GetPlayerPoolAsync(
+            teamId, request, cancellation);
+
+        return items.CreateResponse(totalCount, request);
     }
 
     public async Task<IReadOnlyCollection<TransferResponse>> GetTransfersAsync(
         Guid teamId, CancellationToken cancellation = default)
     {
         await GetTrackedTeamOrThrowAsync(teamId, cancellation);
+
         return await _teamRepository.GetTransfersAsync(teamId, cancellation);
     }
 
@@ -87,13 +104,48 @@ public sealed partial class FantasyTeamService
         if (playerCount - 1 < minimumRosterSize)
         {
             throw new ConflictException(
-                $"A player cannot be released because the roster must contain at least {minimumRosterSize} players."
+                $"A player cannot be released " +
+                $"because the roster must contain " +
+                $"at least {minimumRosterSize} players."
             );
         }
 
         await _teamRepository.ReleaseAPlayerAsync(
                 id, playerId, cancellation
             );
+    }
+
+    public async Task AddPlayerFromPoolAsync(
+        Guid teamId, Guid playerId,
+        CancellationToken cancellation = default
+    )
+    {
+        TransferValidation.ValidateAddPlayerFromPoolRequest(teamId, playerId);
+
+        var conflict = await _teamRepository
+            .ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
+                teamId, null, playerId, cancellation
+        );
+
+        CheckConflictForFantasyTeamIdAndNbaPlayerId(
+            conflict,
+            homeTeamId: teamId,
+            awayTeamId: null,
+            nbaPlayerId: playerId
+        );
+
+        var (playerCount, rosterSize) = await _teamRepository
+            .GetRosterStateAsync(teamId, cancellation);
+        if (playerCount >= rosterSize)
+        {
+            throw new ConflictException(
+                $"A player cannot be added" +
+                $"because the roster limit is {rosterSize}."
+            );
+        }
+
+        await _teamRepository.AddPlayerFromPoolAsync(
+            teamId, playerId, cancellation);
     }
 
     // ==================== Validations ====================

@@ -31,6 +31,12 @@ internal static class TransferValidation
         ValidateRequiredId(playerId, "PlayerId");
     }
 
+    public static void ValidateAddPlayerFromPoolRequest(Guid teamId, Guid playerId)
+    {
+        ValidateRequiredId(teamId, "TeamId");
+        ValidateRequiredId(playerId, "PlayerId");
+    }
+
     private static void ValidatePlayerIds(IReadOnlyCollection<Guid> playerIds, string fieldName)
     {
         if (playerIds.Count == 0)

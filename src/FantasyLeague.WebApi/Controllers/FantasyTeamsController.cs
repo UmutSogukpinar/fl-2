@@ -17,6 +17,15 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService)
         Guid id, CancellationToken cancellation) =>
         Ok(await teamService.GetRosterPlayersAsync(id, cancellation));
 
+    [HttpGet("{id:guid}/player-pool")]
+    public async Task<ActionResult<PagedResponse<TeamRosterPlayerResponse>>> GetPlayerPoolAsync(
+        Guid id,
+        [FromQuery] PaginationRequest request,
+        CancellationToken cancellation)
+    {
+        return Ok(await teamService.GetPlayerPoolAsync(id, request, cancellation));
+    }
+
     [HttpGet("{id:guid}/transfers")]
     public async Task<ActionResult<IReadOnlyCollection<TransferResponse>>> GetTransfersAsync(
         Guid id, CancellationToken cancellation) =>
@@ -205,6 +214,19 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService)
     {
         await teamService.ReleaseAPlayerAsync(id, PlayerId, cancellation);
 
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/players/{playerId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AddPlayerFromPoolAsync(
+        Guid id,
+        Guid playerId,
+        CancellationToken cancellation)
+    {
+        await teamService.AddPlayerFromPoolAsync(id, playerId, cancellation);
         return NoContent();
     }
 

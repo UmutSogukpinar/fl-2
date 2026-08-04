@@ -6,6 +6,8 @@ using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
 using FantasyLeague.Infrastructure.Repositories.Projections;
 using FantasyLeague.Application.Models;
+using FantasyLeague.Application.Common.Pagination;
+using FantasyLeague.Application.DTOs.Requests.Common;
 
 namespace FantasyLeague.Infrastructure.Repositories.FantasyTeams;
 
@@ -15,8 +17,7 @@ public sealed partial class FantasyTeamRepository(
     public async Task<(IReadOnlyCollection<FantasyTeamResponse> Items, int TotalCount)>
         GetPagedByLeagueIdAsync(
         Guid leagueId,
-        int pageNumber,
-        int pageSize,
+        PaginationRequest request,
         CancellationToken cancellation
     )
     {
@@ -27,8 +28,7 @@ public sealed partial class FantasyTeamRepository(
         var totalCount = await query.CountAsync(cancellation);
         var items = await query
             .OrderBy(team => team.Name)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
+            .ApplyPagination(request)
             .Select(FantasyTeamProjections.Response)
             .ToArrayAsync(cancellation);
 

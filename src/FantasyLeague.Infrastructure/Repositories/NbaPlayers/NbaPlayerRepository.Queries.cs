@@ -2,6 +2,8 @@ using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using FantasyLeague.Application.Common.Pagination;
+using FantasyLeague.Application.DTOs.Requests.Common;
 
 namespace FantasyLeague.Infrastructure.Repositories.NbaPlayers;
 
@@ -10,8 +12,7 @@ public sealed partial class NbaPlayerRepository
     public async Task<(IReadOnlyCollection<NbaPlayerBasicResponse> Items,
         int TotalCount)>
     GetPagedAsync(
-        int pageNumber,
-        int pageSize,
+        PaginationRequest request,
         CancellationToken cancellationToken)
     {
         var query = _dbContext.Set<NbaPlayer>().AsNoTracking();
@@ -19,8 +20,7 @@ public sealed partial class NbaPlayerRepository
         var items = await query
             .OrderBy(player => player.FirstName)
             .ThenBy(player => player.LastName)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
+            .ApplyPagination(request)
             .ToBasic()
             .ToArrayAsync(cancellationToken);
 

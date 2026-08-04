@@ -24,16 +24,10 @@ public sealed class UserService(
         req.ValidatePaginationRequest();
 
         var (items, totalCount) = await _userRepository.GetPagedAsync(
-            req.PageNumber,
-            req.PageSize,
+            req,
             cancellationToken);
 
-        return new PagedResponse<UserResponse>(
-            items,
-            req.PageNumber,
-            req.PageSize,
-            totalCount,
-            totalCount.CalculateTotalPage(req.PageSize));
+        return Pagination.CreateResponse(items, totalCount, req);
     }
 
     public async Task<UserResponse> GetByIdAsync(

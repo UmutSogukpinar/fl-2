@@ -20,6 +20,10 @@ public interface IFantasyTeamService
         Guid id, Guid playerId,
         CancellationToken cancellation = default
     );
+    Task AddPlayerFromPoolAsync(
+        Guid teamId, Guid playerId,
+        CancellationToken cancellation = default
+    );
 
     Task<Guid> CreateTransferAsync(
         Guid initiatingTeamId,
@@ -29,6 +33,10 @@ public interface IFantasyTeamService
     Task ApproveTransferAsync(Guid transferId, Guid approvingTeamId, CancellationToken cancellation = default);
     Task<IReadOnlyCollection<TeamRosterPlayerResponse>> GetRosterPlayersAsync(
         Guid teamId, CancellationToken cancellation = default);
+    Task<PagedResponse<TeamRosterPlayerResponse>> GetPlayerPoolAsync(
+        Guid teamId,
+        PaginationRequest request,
+        CancellationToken cancellation = default);
     Task<IReadOnlyCollection<TransferResponse>> GetTransfersAsync(
         Guid teamId, CancellationToken cancellation = default);
 }

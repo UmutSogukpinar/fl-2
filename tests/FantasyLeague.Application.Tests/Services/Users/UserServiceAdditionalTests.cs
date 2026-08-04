@@ -108,7 +108,7 @@ public sealed class UserServiceAdditionalTests
         var request = new SignInRequest(user.Email, "password123");
         _repository
             .Setup(repository => repository.GetByEmailAsync(
-                request.Email, It.IsAny<CancellationToken>()))
+                request.Identifier, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         _passwordHasher
             .Setup(hasher => hasher.Verify(request.Password, user.Password))
@@ -118,6 +118,31 @@ public sealed class UserServiceAdditionalTests
 
         Assert.Equal(user.Id, response.Id);
         Assert.Equal(user.Email, response.Email);
+    }
+
+    // Case: Sign In with username
+    // Reasoning: A username identifier should be normalized and routed to the username query.
+    // Expected Result: The authenticated user is returned without querying by email.
+    [Fact]
+    public async Task SignInAsync_WithUsername_UsesNormalizedUsername()
+    {
+        var user = CreateUser();
+        var request = new SignInRequest("  USER  ", "password123");
+        _repository
+            .Setup(repository => repository.GetByUsernameAsync(
+                "user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _passwordHasher
+            .Setup(hasher => hasher.Verify(request.Password, user.Password))
+            .Returns(true);
+
+        var response = await _service.SignInAsync(request);
+
+        Assert.Equal(user.Id, response.Id);
+        _repository.Verify(repository => repository.GetByUsernameAsync(
+            "user", It.IsAny<CancellationToken>()), Times.Once);
+        _repository.Verify(repository => repository.GetByEmailAsync(
+            It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // Case: Create when With Null Request
@@ -141,7 +166,7 @@ public sealed class UserServiceAdditionalTests
     [Fact]
     public async Task SignInAsync_WithInvalidEmail_DoesNotQueryRepository()
     {
-        var request = new SignInRequest("invalid-email", "password123");
+        var request = new SignInRequest("invalid@", "password123");
 
         await Assert.ThrowsAsync<BadRequestException>(() =>
             _service.SignInAsync(request));
@@ -159,7 +184,7 @@ public sealed class UserServiceAdditionalTests
         var request = new SignInRequest("missing@example.com", "password123");
         _repository
             .Setup(repository => repository.GetByEmailAsync(
-                request.Email, It.IsAny<CancellationToken>()))
+                request.Identifier, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
         await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request));
@@ -178,7 +203,7 @@ public sealed class UserServiceAdditionalTests
         var request = new SignInRequest(user.Email, "wrong-password");
         _repository
             .Setup(repository => repository.GetByEmailAsync(
-                request.Email, It.IsAny<CancellationToken>()))
+                request.Identifier, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         _passwordHasher
             .Setup(hasher => hasher.Verify(request.Password, user.Password))

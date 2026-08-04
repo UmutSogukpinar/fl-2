@@ -2,27 +2,29 @@ using Microsoft.EntityFrameworkCore;
 
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.Users;
-using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
-using FantasyLeague.Infrastructure.Repositories.Projections;
 using FantasyLeague.Application.Common.Pagination;
 using FantasyLeague.Application.DTOs.Requests.Common;
 
-namespace FantasyLeague.Infrastructure.Repositories;
+namespace FantasyLeague.Infrastructure.Repositories.Users;
 
-public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
+public sealed class UserRepository
+    (AppDbContext dbContext) : IUserRepository
 {
-    public async Task<(IReadOnlyCollection<UserResponse> Items, int TotalCount)> GetPagedAsync(
-        PaginationRequest request,
-        CancellationToken cancellationToken)
+    public async 
+        Task<(IReadOnlyCollection<UserResponse> Items, int TotalCount)> 
+        GetPagedAsync(
+            PaginationRequest request,
+            CancellationToken cancellation
+        )
     {
         var query = dbContext.Set<User>().AsNoTracking();
-        var totalCount = await query.CountAsync(cancellationToken);
+        var totalCount = await query.CountAsync(cancellation);
         var users = await query
             .OrderBy(user => user.Username)
             .ApplyPagination(request)
             .Select(UserProjections.Response)
-            .ToArrayAsync(cancellationToken);
+            .ToArrayAsync(cancellation);
 
         return (users, totalCount);
     }
@@ -38,18 +40,34 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    public Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken)
+    public Task<User?> GetTrackedByIdAsync(
+        Guid id, 
+        CancellationToken cancellation)
     {
         return dbContext.Set<User>()
-            .SingleOrDefaultAsync(user => user.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(user => user.Id == id, cancellation);
     }
 
-    public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken)
+    public Task<User?> GetByEmailAsync(
+        string email,
+        CancellationToken cancellation
+    )
     {
-        var normalizedEmail = email.Trim().ToLowerInvariant();
         return dbContext.Set<User>()
             .AsNoTracking()
-            .SingleOrDefaultAsync(user => user.Email == normalizedEmail, cancellationToken);
+            .Where(user => user.Email == email)
+            .SingleOrDefaultAsync(cancellation);
+    }
+
+    public Task<User?> GetByUsernameAsync(
+        string username,
+        CancellationToken cancellation
+    )
+    {
+        return dbContext.Set<User>()
+            .AsNoTracking()
+            .Where(user => user.Username.ToLower() == username)
+            .SingleOrDefaultAsync(cancellation);
     }
 
 
@@ -57,14 +75,16 @@ public sealed class UserRepository(AppDbContext dbContext) : IUserRepository
         string username,
         string email,
         Guid? excludedUserId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation
+    )
     {
         var normalizedUsername = username.ToLower();
 
         return dbContext.Set<User>().AnyAsync(
             user => (!excludedUserId.HasValue || user.Id != excludedUserId.Value)
-                && (user.Username.ToLower() == normalizedUsername || user.Email == email),
-            cancellationToken);
+                && (user.Username.ToLower() == normalizedUsername ||
+                       user.Email == email),
+            cancellation);
     }
 
     public User Add(User user)

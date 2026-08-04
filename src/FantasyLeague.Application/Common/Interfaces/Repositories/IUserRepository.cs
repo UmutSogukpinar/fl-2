@@ -10,6 +10,7 @@ public interface IUserRepository
     Task<UserResponse?> GetResponseByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken);
+    Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken);
     Task<bool> ExistsAsync(string username, string email, Guid? excludedUserId, CancellationToken cancellationToken);
     User Add(User user);
     void Remove(User user);

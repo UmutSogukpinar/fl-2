@@ -1,29 +1,29 @@
-using Microsoft.EntityFrameworkCore;
-using Hangfire;
-using Hangfire.PostgreSql;
-
-using FantasyLeague.Infrastructure.Context;
-using FantasyLeague.Infrastructure.ExternalServices.NbaApi;
-using FantasyLeague.Infrastructure.Repositories;
-using FantasyLeague.Infrastructure.Repositories.NbaPlayers;
-using FantasyLeague.Infrastructure.Repositories.FantasyTeams;
-using FantasyLeague.Infrastructure.Security;
+using FantasyLeague.Application.Common.Interfaces.Caching;
 using FantasyLeague.Application.Common.Interfaces.ExternalServices;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Interfaces.Security;
-using FantasyLeague.Application.Services.NbaPlayers;
+using FantasyLeague.Application.Services.Drafts;
 using FantasyLeague.Application.Services.FantasyTeams;
 using FantasyLeague.Application.Services.Leagues;
+using FantasyLeague.Application.Services.NbaPlayers;
 using FantasyLeague.Application.Services.Users;
-using FantasyLeague.Application.Services.Drafts;
+using FantasyLeague.Infrastructure.Caching;
+using FantasyLeague.Infrastructure.Context;
+using FantasyLeague.Infrastructure.ExternalServices.NbaApi;
+using FantasyLeague.Infrastructure.Repositories;
+using FantasyLeague.Infrastructure.Repositories.FantasyTeams;
+using FantasyLeague.Infrastructure.Repositories.NbaPlayers;
+using FantasyLeague.Infrastructure.Repositories.Users;
+using FantasyLeague.Infrastructure.Security;
 using FantasyLeague.WebApi.ExceptionHandlers;
 using FantasyLeague.WebApi.Hubs;
 using FantasyLeague.WebApi.Jobs.Drafts;
 using FantasyLeague.WebApi.Jobs.Matches;
 using FantasyLeague.WebApi.Jobs.NbaPlayers;
-using FantasyLeague.Infrastructure.Caching;
-using FantasyLeague.Application.Common.Interfaces.Caching;
 using FantasyLeague.WebApi.Middleware;
+using Hangfire;
+using Hangfire.PostgreSql;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,12 +74,16 @@ var connectionString = $"Host={dbSettings["Host"]};" +
                        $"Database={dbSettings["Database"]};" +
                        $"Username={dbSettings["Username"]};" +
                        $"Password={dbSettings["Password"]};";
+
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+
 builder.Services.AddHangfire(configuration => configuration
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
     .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+
 builder.Services.AddHangfireServer();
 
 var app = builder.Build();

@@ -12,6 +12,7 @@ using FantasyLeague.Domain.Entities.Players;
 using FantasyLeague.Domain.Enums;
 using FantasyLeague.Infrastructure.IntegrationTests.Database;
 using FantasyLeague.Infrastructure.Repositories;
+using FantasyLeague.Infrastructure.Repositories.Users;
 using FantasyLeague.Infrastructure.Repositories.FantasyTeams;
 using FantasyLeague.Infrastructure.Repositories.NbaPlayers;
 using Microsoft.EntityFrameworkCore;

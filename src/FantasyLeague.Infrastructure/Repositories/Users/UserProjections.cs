@@ -1,13 +1,13 @@
 using System.Linq.Expressions;
 
 using FantasyLeague.Application.DTOs.Responses.Users;
-using FantasyLeague.Domain.Entities;
 
-namespace FantasyLeague.Infrastructure.Repositories.Projections;
+namespace FantasyLeague.Infrastructure.Repositories.Users;
 
 internal static class UserProjections
 {
-    internal static readonly Expression<Func<User, UserResponse>> Response =
+    internal static readonly 
+        Expression<Func<User, UserResponse>> Response =
         user => new UserResponse(
             user.Id,
             user.Username,

@@ -6,6 +6,7 @@ using FantasyLeague.Domain.Entities.Players;
 using FantasyLeague.Domain.Enums;
 using FantasyLeague.Infrastructure.IntegrationTests.Database;
 using FantasyLeague.Infrastructure.Repositories;
+using FantasyLeague.Infrastructure.Repositories.Users;
 using FantasyLeague.Infrastructure.Repositories.FantasyTeams;
 using FantasyLeague.Infrastructure.Repositories.NbaPlayers;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,7 @@ public sealed class RepositoryIntegrationTests(PostgreSqlFixture database) : IAs
     public Task DisposeAsync() => Task.CompletedTask;
 
     // Case: User repository persists and queries a user
-    // Reasoning: Repository writes and normalized email queries should work against the real PostgreSQL schema.
+    // Reasoning: Repository writes and normalized application input should work against the real PostgreSQL schema.
     // Expected Result: The persisted user is returned with its projected response.
     [Fact]
     public async Task UserRepository_WhenUserIsSaved_ReturnsUserByEmailAndId()
@@ -33,7 +34,7 @@ public sealed class RepositoryIntegrationTests(PostgreSqlFixture database) : IAs
         await repository.SaveChangesAsync(CancellationToken.None);
 
         var byEmail = await repository.GetByEmailAsync(
-            " REPOSITORY-USER@EXAMPLE.COM ", CancellationToken.None);
+            "repository-user@example.com", CancellationToken.None);
         var response = await repository.GetResponseByIdAsync(
             user.Id, CancellationToken.None);
 

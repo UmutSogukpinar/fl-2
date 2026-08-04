@@ -1,51 +1,132 @@
 ﻿using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.DTOs.Requests.Users;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace FantasyLeague.Application.Common.Validation;
 
 internal static class UserValidation
 {
-    public static void ValidateCreateUserRequest(this CreateUserRequest request)
+    public static void ValidateCreateUserRequest(
+        this CreateUserRequest request
+    )
     {
+        if (request == null)
+        {
+            throw new BadRequestException(
+                "CreateUserRequest cannot be null."
+            );
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Username))
+        {
+            throw new BadRequestException(
+                "Username must be provided."
+            );
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Password))
+        {
+            throw new BadRequestException(
+                "Password must be provided."
+            );
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            throw new BadRequestException(
+                "Email must be provided."
+            );
+        }
+
         ValidateEmail(request.Email);
         ValidatePassword(request.Password);
         ValidateUsername(request.Username);
     }
 
-    public static void ValidateUpdateUserRequest(this UpdateUserRequest request)
+    public static void ValidateUpdateUserRequest(
+        this UpdateUserRequest request
+    )
     {
+        if (request == null)
+        {
+            throw new BadRequestException(
+                "UpdateUserRequest cannot be null."
+            );
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+        {
+            throw new BadRequestException(
+                "Email must be provided."
+            );
+        }
+
+        if (string.IsNullOrEmpty(request.Username))
+        {
+            throw new BadRequestException(
+                "Username must be provided."
+            );
+        }
+
         ValidateEmail(request.Email);
         ValidateUsername(request.Username);
     }
 
     public static void ValidateSignInRequest(this SignInRequest request)
     {
-        ValidateEmail(request.Email);
+        var identifierType = DetermineIdentifierType(request.Identifier);
+
+        if (identifierType.HasFlag(SignInIdentifierType.Username))
+        {
+            ValidateUsername(request.Identifier);
+        }
+
+        if (identifierType.HasFlag(SignInIdentifierType.Email))
+        {
+            ValidateEmail(request.Identifier);
+        }
+
         ValidatePassword(request.Password);
     }
 
     // ========================= Utils =========================
 
-    private static void ValidateEmail(string email)
+    public static SignInIdentifierType DetermineIdentifierType(
+        this string Identifier
+    )
     {
+        if (string.IsNullOrWhiteSpace(Identifier))
+        {
+            throw new BadRequestException(
+                "Identifier must be provided."
+            );
+        }
+
+        if (Identifier.Contains('@'))
+        {
+            return SignInIdentifierType.Email;
+        }
+
+        return SignInIdentifierType.Username;
+    }
+
+    private static void ValidateEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return;
+
         const char AtSymbol = '@';
         const char DotSymbol = '.';
 
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            throw new BadRequestException("Email cannot be empty.");
-        }
 
         var atIndex = email.IndexOf(AtSymbol);
         if (atIndex <= 0 || atIndex == email.Length - 1)
         {
-            throw new BadRequestException("Email must contain a valid '@' symbol.");
+            throw new BadRequestException(
+                "Email must contain a valid '@' symbol."
+            );
         }
 
-        var domainPart = email.Substring(atIndex + 1);
+        var domainPart = email[(atIndex + 1)..];
+
         if (!domainPart.Contains(DotSymbol))
         {
             throw new BadRequestException(
@@ -53,6 +134,7 @@ internal static class UserValidation
             );
         }
     }
+
     private static void ValidatePassword(string password)
     {
         const int MaxLength = 128;
@@ -80,14 +162,12 @@ internal static class UserValidation
         }
     }
 
-    private static void ValidateUsername(string username)
+    private static void ValidateUsername(string? username)
     {
+        if (string.IsNullOrWhiteSpace(username)) return;
+
         const int MinUsernameLength = 4;
 
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            throw new BadRequestException("Username cannot be empty.");
-        }
         if (username.Length < MinUsernameLength)
         {
             throw new BadRequestException(

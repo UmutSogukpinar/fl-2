@@ -1,17 +1,17 @@
-using FantasyLeague.Application.Mappings;
-using FantasyLeague.Domain.Entities;
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Interfaces.Security;
-using FantasyLeague.Application.DTOs.Requests.Users;
-using FantasyLeague.Application.DTOs.Requests.Common;
-using FantasyLeague.Application.DTOs.Responses.Common;
-using FantasyLeague.Application.DTOs.Responses.Users;
-using FantasyLeague.Application.Common.Validation;
 using FantasyLeague.Application.Common.Normalization;
 using FantasyLeague.Application.Common.Pagination;
+using FantasyLeague.Application.Common.Validation;
+using FantasyLeague.Application.DTOs.Requests.Common;
+using FantasyLeague.Application.DTOs.Requests.Users;
+using FantasyLeague.Application.DTOs.Responses.Common;
+using FantasyLeague.Application.DTOs.Responses.Users;
+using FantasyLeague.Application.Mappings;
 
 namespace FantasyLeague.Application.Services.Users;
+
 
 public sealed class UserService(
     IUserRepository _userRepository,
@@ -34,8 +34,10 @@ public sealed class UserService(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        return await _userRepository.GetResponseByIdAsync(id, cancellationToken)
-            ?? throw new NotFoundException($"User '{id}' was not found.");
+        return await _userRepository.GetResponseByIdAsync(
+            id, cancellationToken)
+            ?? throw new NotFoundException(
+                $"User '{id}' was not found.");
     }
 
     public async Task<UserResponse> CreateAsync(
@@ -66,11 +68,25 @@ public sealed class UserService(
     {
         req = req.NormalizeSignInRequest();
         req.ValidateSignInRequest();
-        var user = await _userRepository.GetByEmailAsync(req.Email, cancellation);
 
-        if (user is null || !_passwordHasher.Verify(req.Password, user.Password))
+        var identifierType = req.Identifier.DetermineIdentifierType();
+
+        var identifierTypeString = identifierType switch
+        {
+            SignInIdentifierType.Username => "username",
+            SignInIdentifierType.Email => "email",
+            _ => throw new BadRequestException(
+                "The identifier must be a valid username or email."
+            )
+        };
+
+        var identifierValue = req.Identifier;
+        var user = await GetUserAsync(
+            identifierType, identifierValue, identifierTypeString, cancellation);
+
+        if (_passwordHasher.Verify(req.Password, user.Password) is false)
             throw new UnauthorizedException(
-                "The email or password is incorrect."
+                "Password is incorrect."
             );
 
         return user.ToResponse();
@@ -86,7 +102,12 @@ public sealed class UserService(
         req = req.NormalizeUpdateUserRequest();
         req.ValidateUpdateUserRequest();
 
-        await EnsureUniqueAsync(req.Username, req.Email, id, cancellation);
+        await EnsureUniqueAsync(
+            req.Username,
+            req.Email,
+            id,
+            cancellation
+        );
 
         req.MapTo(user);
 
@@ -105,10 +126,13 @@ public sealed class UserService(
 
     private async Task<User> GetTrackedUserOrThrowAsync(
         Guid id,
-        CancellationToken cancellation)
+        CancellationToken cancellation
+    )
     {
-        return await _userRepository.GetTrackedByIdAsync(id, cancellation)
-            ?? throw new NotFoundException($"User '{id}' was not found.");
+        return await _userRepository.GetTrackedByIdAsync(
+            id, cancellation)
+            ?? throw new NotFoundException(
+                    $"User '{id}' was not found.");
     }
 
     private async Task EnsureUniqueAsync(
@@ -127,6 +151,34 @@ public sealed class UserService(
                 "The username or email is already in use."
             );
         }
+    }
+
+    private async Task<User> GetUserAsync(
+        SignInIdentifierType type,
+        string identifierValue,
+        string identifier,
+        CancellationToken cancellation
+    )
+    {
+        return type switch
+        {
+            SignInIdentifierType.Username =>
+                await _userRepository.GetByUsernameAsync(
+                    identifierValue,
+                    cancellation),
+
+            SignInIdentifierType.Email =>
+                await _userRepository.GetByEmailAsync(
+                    identifierValue,
+                    cancellation),
+
+            _ => throw new BadRequestException(
+                "The identifier must be a valid username or email."
+                )
+
+        } ?? throw new UnauthorizedException(
+                    $"The {identifier} is incorrect."
+                );
     }
 
 }

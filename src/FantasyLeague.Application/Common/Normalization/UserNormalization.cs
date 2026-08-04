@@ -42,7 +42,7 @@ internal static class UserNormalization
 
         return req with
         {
-            Email = NormalizeEmail(req.Email)
+            Identifier = NormalizeIdentifier(req.Identifier)
         };
     }
 
@@ -68,5 +68,10 @@ internal static class UserNormalization
     private static string NormalizeUsername(string? username)
     {
         return username?.Trim()!;
+    }
+
+    private static string NormalizeIdentifier(string? identifier)
+    {
+        return identifier?.Trim().ToLowerInvariant()!;
     }
 }

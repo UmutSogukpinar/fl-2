@@ -23,6 +23,7 @@ public sealed partial class DraftRepository
         }
         catch (DbUpdateException)
         {
+            dbContext.ChangeTracker.Clear();
             return false;
         }
     }

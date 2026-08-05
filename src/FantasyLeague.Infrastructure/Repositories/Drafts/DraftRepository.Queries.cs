@@ -41,15 +41,26 @@ public sealed partial class DraftRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public Task<bool> IsPlayerDraftedAsync(
+    public async Task<bool> IsPlayerUnavailableAsync(
         Guid leagueId,
         Guid nbaPlayerId,
         CancellationToken cancellationToken)
     {
-        return dbContext.Set<DraftPickOrder>()
+        var isDrafted = await dbContext.Set<DraftPickOrder>()
             .Where(pick => pick.LeagueId == leagueId)
             .AnyAsync(
                 pick => pick.NbaPlayerId == nbaPlayerId,
+                cancellationToken);
+
+        if (isDrafted)
+        {
+            return true;
+        }
+
+        return await dbContext.Set<FantasyTeamPlayer>()
+            .Where(player => player.LeagueId == leagueId)
+            .AnyAsync(
+                player => player.NbaPlayerId == nbaPlayerId,
                 cancellationToken);
     }
 
@@ -70,6 +81,9 @@ public sealed partial class DraftRepository
             .Where(player => !dbContext.Set<DraftPickOrder>()
                 .Where(pick => pick.LeagueId == leagueId)
                 .Any(pick => pick.NbaPlayerId == player.Id))
+            .Where(player => !dbContext.Set<FantasyTeamPlayer>()
+                .Where(rosterPlayer => rosterPlayer.LeagueId == leagueId)
+                .Any(rosterPlayer => rosterPlayer.NbaPlayerId == player.Id))
             .OrderBy(player => player.FirstName)
             .ThenBy(player => player.LastName)
             .Select(player => (Guid?)player.Id)

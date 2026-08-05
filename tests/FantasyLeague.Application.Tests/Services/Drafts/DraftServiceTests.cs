@@ -115,6 +115,43 @@ public sealed class DraftServiceTests
             It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task MakePickAsync_WhenPlayerIsAlreadyAssigned_ThrowsConflict()
+    {
+        var league = CreateLeague(LeagueStatus.Drafting);
+        var team = new FantasyTeam
+        {
+            Id = Guid.NewGuid(),
+            LeagueId = league.Id,
+            OwnerId = Guid.NewGuid(),
+            Name = "Team"
+        };
+        var currentPick = CreatePick(league.Id, team.Id);
+        var nbaPlayerId = Guid.NewGuid();
+
+        SetupTrackedLeague(league);
+        _draftRepository.Setup(repository => repository.GetCurrentTrackedPickAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentPick);
+        _draftRepository.Setup(repository => repository.GetTeamAsync(
+                league.Id, team.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(team);
+        _draftRepository.Setup(repository => repository.NbaPlayerExistsAsync(
+                nbaPlayerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _draftRepository.Setup(repository => repository.IsPlayerUnavailableAsync(
+                league.Id, nbaPlayerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        await Assert.ThrowsAsync<ConflictException>(() => _service.MakePickAsync(
+            league.Id,
+            new MakeDraftPickRequest(team.Id, team.OwnerId, nbaPlayerId)));
+
+        _draftRepository.Verify(repository => repository.AddRosterPlayerAsync(
+            It.IsAny<FantasyTeamPlayer>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     // Case: Make Pick when On Final Pick
     // Reasoning: This test verifies Make Pick under the On Final Pick condition.
     // Expected Result: The expected outcome is: Adds Player And Activates League.
@@ -259,6 +296,46 @@ public sealed class DraftServiceTests
         _leagueSetupRepository.Verify(repository => repository.AddFixturesAsync(
             It.IsAny<IReadOnlyCollection<LeagueFixture>>(),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AutoPickExpiredAsync_OnFifthSystemFailure_CancelsDraft()
+    {
+        var utcNow = DateTime.UtcNow;
+        var league = CreateLeague(LeagueStatus.Drafting);
+        league.UpdatedAt = utcNow.AddSeconds(-61);
+        league.ConsecutiveDraftFailureCount = 4;
+        var currentPick = CreatePick(league.Id);
+        var pendingResponse = CreatePickResponse(league.Id, currentPick.TeamId) with
+        {
+            Id = currentPick.Id
+        };
+
+        _leagueRepository.Setup(repository => repository.GetDraftingAsync(
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([league]);
+        _draftRepository.Setup(repository => repository.GetPicksAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([pendingResponse]);
+        _draftRepository.Setup(repository => repository.GetCurrentTrackedPickAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentPick);
+        _draftRepository.Setup(repository => repository.GetFirstAvailablePlayerIdAsync(
+                league.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Guid.NewGuid());
+        _draftRepository.Setup(repository => repository.TrySaveChangesAsync(
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _leagueRepository.Setup(repository => repository.RecordDraftFailureAsync(
+                league.Id, 5, utcNow, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var states = await _service.AutoPickExpiredAsync(utcNow);
+
+        var state = Assert.Single(states);
+        Assert.Equal(LeagueStatus.DraftCancelled, state.Status);
+        _leagueRepository.Verify(repository => repository.RecordDraftFailureAsync(
+            league.Id, 5, utcNow, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private void SetupTrackedLeague(League league) =>

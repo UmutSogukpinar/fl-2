@@ -1,5 +1,4 @@
 using FantasyLeague.Application.DTOs.Responses.Drafts;
-using FantasyLeague.Domain.Entities;
 
 namespace FantasyLeague.Application.Services.Drafts;
 
@@ -66,32 +65,19 @@ public sealed partial class DraftService
             utcNow,
             cancellationToken);
 
+        ResetFailureCount(league);
+
         if (!await draftRepository.TrySaveChangesAsync(cancellationToken))
         {
-            return null;
+            return await GetCancellationStateAfterFailureAsync(
+                league.Id,
+                utcNow,
+                cancellationToken);
         }
 
         var updatedPicks = await draftRepository.GetPicksAsync(
             league.Id, cancellationToken);
         return CreateState(
             league.Id, league.Status, league.UpdatedAt, updatedPicks);
-    }
-
-    private async Task ApplyPickAsync(
-        Guid leagueId,
-        DraftPickOrder pick,
-        Guid nbaPlayerId,
-        DateTime pickedAt,
-        CancellationToken cancellationToken)
-    {
-        pick.NbaPlayerId = nbaPlayerId;
-        pick.PickedAt = pickedAt;
-        await draftRepository.AddRosterPlayerAsync(new FantasyTeamPlayer
-        {
-            LeagueId = leagueId,
-            FantasyTeamId = pick.TeamId,
-            NbaPlayerId = nbaPlayerId,
-            AcquiredAt = pickedAt
-        }, cancellationToken);
     }
 }

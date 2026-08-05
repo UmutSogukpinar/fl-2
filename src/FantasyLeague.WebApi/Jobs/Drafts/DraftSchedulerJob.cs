@@ -32,15 +32,27 @@ public sealed class DraftSchedulerJob(
                 DateTime.UtcNow, cancellationToken);
             foreach (var state in autoPickedStates)
             {
-                var eventName = state.Status == LeagueStatus.Active
-                    ? "DraftCompleted"
-                    : "DraftUpdated";
+                var eventName = state.Status switch
+                {
+                    LeagueStatus.Active => "DraftCompleted",
+                    LeagueStatus.DraftCancelled => "DraftCancelled",
+                    _ => "DraftUpdated"
+                };
                 await hubContext.Clients
                     .Group(FantasyLeagueHub.LeagueGroup(state.LeagueId))
                     .SendAsync(eventName, state, cancellationToken);
-                logger.LogInformation(
-                    "An expired draft pick was completed automatically for league {LeagueId}. Completed picks: {CompletedPicks}/{TotalPicks}.",
-                    state.LeagueId, state.CompletedPicks, state.TotalPicks);
+                if (state.Status == LeagueStatus.DraftCancelled)
+                {
+                    logger.LogError(
+                        "Draft for league {LeagueId} was cancelled after five consecutive system failures.",
+                        state.LeagueId);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "An expired draft pick was completed automatically for league {LeagueId}. Completed picks: {CompletedPicks}/{TotalPicks}.",
+                        state.LeagueId, state.CompletedPicks, state.TotalPicks);
+                }
             }
         }
         catch (Exception exception)

@@ -64,6 +64,7 @@ public sealed partial class LeagueRepository
             .Include(league => league.Settings)
             .Where(league => league.Settings.DraftDate <= utcNow)
             .Where(league => league.Status != LeagueStatus.Drafting)
+            .Where(league => league.Status != LeagueStatus.DraftCancelled)
             .Where(league => league.Status != LeagueStatus.Active)
             .Where(league => league.Status != LeagueStatus.Completed)
             .ToListAsync(cancellationToken);

@@ -18,6 +18,8 @@ public class League
 
     public LeagueStatus Status { get; set; } = LeagueStatus.Created;
 
+    public int ConsecutiveDraftFailureCount { get; set; }
+
     public LeagueSettings Settings { get; set; } = new();
 
     public string JoinCode { get; set; } = string.Empty;

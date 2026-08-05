@@ -1,5 +1,5 @@
 export type LeagueStatus =
-  'Created' | 'RegistrationOpen' | 'DraftDelayed' | 'Drafting' | 'Active' | 'Completed'
+  'Created' | 'RegistrationOpen' | 'DraftDelayed' | 'Drafting' | 'DraftCancelled' | 'Active' | 'Completed'
 
 export type MatchStatus =
   'Scheduled' | 'InProgress' | 'Completed' | 'Postponed' | 'Cancelled'

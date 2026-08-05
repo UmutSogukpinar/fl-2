@@ -3,7 +3,13 @@ import { useSocket } from '../../shared/socket/SocketContext'
 import { draftApi } from './draft.api'
 import type { DraftState, MakeDraftPickRequest } from './types'
 
-const draftEvents = ['DraftStarted', 'DraftUpdated', 'DraftCompleted', 'LeagueClosed'] as const
+const draftEvents = [
+  'DraftStarted',
+  'DraftUpdated',
+  'DraftCompleted',
+  'DraftCancelled',
+  'LeagueClosed',
+] as const
 
 export function useDraft(leagueId: string) {
   const { connection, status: socketStatus } = useSocket()

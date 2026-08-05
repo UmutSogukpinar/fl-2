@@ -7,7 +7,7 @@ public interface IDraftRepository
 {
     Task<IReadOnlyList<DraftPickResponse>> GetPicksAsync(Guid leagueId, CancellationToken cancellationToken);
     Task<DraftPickOrder?> GetCurrentTrackedPickAsync(Guid leagueId, CancellationToken cancellationToken);
-    Task<bool> IsPlayerDraftedAsync(Guid leagueId, Guid nbaPlayerId, CancellationToken cancellationToken);
+    Task<bool> IsPlayerUnavailableAsync(Guid leagueId, Guid nbaPlayerId, CancellationToken cancellationToken);
     Task<bool> NbaPlayerExistsAsync(Guid nbaPlayerId, CancellationToken cancellationToken);
     Task<Guid?> GetFirstAvailablePlayerIdAsync(Guid leagueId, CancellationToken cancellationToken);
     Task<FantasyTeam?> GetTeamAsync(Guid leagueId, Guid teamId, CancellationToken cancellationToken);

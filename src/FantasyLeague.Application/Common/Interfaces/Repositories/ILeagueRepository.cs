@@ -14,6 +14,7 @@ public interface ILeagueRepository
     Task<League?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<IReadOnlyList<League>> GetDueForDraftAsync(DateTime utcNow, CancellationToken cancellationToken);
     Task<IReadOnlyList<League>> GetDraftingAsync(CancellationToken cancellationToken);
+    Task<bool> RecordDraftFailureAsync(Guid leagueId, int cancellationThreshold, DateTime utcNow, CancellationToken cancellationToken);
     Task AddAsync(League league, CancellationToken cancellationToken);
     void Remove(League league);
     Task SaveChangesAsync(CancellationToken cancellationToken);

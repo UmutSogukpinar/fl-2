@@ -53,9 +53,12 @@ export function DraftPage({ leagueId }: { leagueId: string }) {
   }, [state?.pickDeadlineUtc])
 
   const draftIsOpen = state ? normalizeStatus(state.status) === 'Drafting' : false
+  const draftIsCancelled = state
+    ? normalizeStatus(state.status) === 'DraftCancelled'
+    : false
   useEffect(() => {
-    if (state && !draftIsOpen) navigate(`leagues/${leagueId}`)
-  }, [draftIsOpen, leagueId, navigate, state])
+    if (state && !draftIsOpen && !draftIsCancelled) navigate(`leagues/${leagueId}`)
+  }, [draftIsCancelled, draftIsOpen, leagueId, navigate, state])
 
   const myTeam = members.find((team) => team.ownerId === userId)
   const selectedPlayerIds = useMemo(
@@ -92,7 +95,19 @@ export function DraftPage({ leagueId }: { leagueId: string }) {
   if (!draftIsOpen)
     return (
       <section className="workspace-page">
-        <div className="empty">Draft tamamlandı. Lig detayına yönlendiriliyorsun...</div>
+        {draftIsCancelled ? (
+          <>
+            <div className="api-error" role="alert">
+              Sistemsel bir hata nedeniyle draft beş ardışık denemeden sonra iptal edildi.
+              Lig yöneticisiyle iletişime geçin.
+            </div>
+            <button className="text-button" onClick={() => navigate(`leagues/${leagueId}`)}>
+              Lig detayına dön
+            </button>
+          </>
+        ) : (
+          <div className="empty">Draft tamamlandı. Lig detayına yönlendiriliyorsun...</div>
+        )}
       </section>
     )
 

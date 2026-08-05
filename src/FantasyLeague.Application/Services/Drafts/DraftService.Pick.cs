@@ -40,11 +40,23 @@ public sealed partial class DraftService
             pickedAt,
             cancellationToken);
 
+        ResetFailureCount(league);
+
         if (!await draftRepository.TrySaveChangesAsync(cancellationToken))
         {
+            var cancellationState = await GetCancellationStateAfterFailureAsync(
+                leagueId,
+                pickedAt,
+                cancellationToken);
+
+            if (cancellationState is not null)
+            {
+                return cancellationState;
+            }
+
             throw new ConflictException(
-                "The draft changed while the pick was being submitted. " +
-                "Try again.");
+                "A system error prevented the draft pick. The operation will " +
+                "be retried; the draft is cancelled after five consecutive failures.");
         }
 
         var picks = await draftRepository.GetPicksAsync(
@@ -104,11 +116,11 @@ public sealed partial class DraftService
                 $"NBA player '{request.NbaPlayerId}' was not found.");
         }
 
-        if (await draftRepository.IsPlayerDraftedAsync(
+        if (await draftRepository.IsPlayerUnavailableAsync(
                 leagueId, request.NbaPlayerId, cancellationToken))
         {
             throw new ConflictException(
-                "The selected NBA player has already been drafted.");
+                "The selected NBA player is not available for this draft.");
         }
     }
 }

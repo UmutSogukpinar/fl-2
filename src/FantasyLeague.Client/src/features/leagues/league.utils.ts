@@ -6,6 +6,7 @@ const statuses: LeagueStatus[] = [
   'RegistrationOpen',
   'DraftDelayed',
   'Drafting',
+  'DraftCancelled',
   'Active',
   'Completed',
 ]

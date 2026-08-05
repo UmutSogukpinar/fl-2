@@ -39,6 +39,7 @@ export const texts = {
       RegistrationOpen: 'Kayıt Açık',
       DraftDelayed: 'Draft Ertelendi',
       Drafting: 'Draft Zamanı',
+      DraftCancelled: 'Draft İptal Edildi',
       Active: 'Aktif Sezon',
       Completed: 'Tamamlandı',
     },

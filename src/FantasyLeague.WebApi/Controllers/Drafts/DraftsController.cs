@@ -127,7 +127,12 @@ public sealed class DraftsController(
         CancellationToken cancellationToken)
     {
         var state = await _draftService.MakePickAsync(leagueId, request, cancellationToken);
-        var eventName = state.Status == LeagueStatus.Active ? "DraftCompleted" : "DraftUpdated";
+        var eventName = state.Status switch
+        {
+            LeagueStatus.Active => "DraftCompleted",
+            LeagueStatus.DraftCancelled => "DraftCancelled",
+            _ => "DraftUpdated"
+        };
         await _hubContext.Clients.Group(FantasyLeagueHub.LeagueGroup(leagueId))
             .SendAsync(eventName, state, cancellationToken);
         _logger.LogInformation(

@@ -6,6 +6,7 @@ public enum LeagueStatus
     RegistrationOpen,
     DraftDelayed,
     Drafting,
+    DraftCancelled,
     Active,
     Completed
 }

@@ -14,6 +14,12 @@ public sealed class UserConfiguration
 
         builder.HasKey(user => user.Id);
 
+        builder.HasIndex(user => user.Username)
+            .IsUnique();
+
+        builder.HasIndex(user => user.Email)
+            .IsUnique();
+
         builder.Property(user => user.Username)
             .HasMaxLength(50)
             .IsRequired();

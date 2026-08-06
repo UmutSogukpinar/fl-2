@@ -9,6 +9,7 @@ using FantasyLeague.Application.Services.Leagues;
 using FantasyLeague.Application.Services.NbaPlayers;
 using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Domain.Entities.Auth;
+using FantasyLeague.Domain.Entities.Users;
 using FantasyLeague.Infrastructure.Caching;
 using FantasyLeague.Infrastructure.Context;
 using FantasyLeague.Infrastructure.Database;
@@ -20,6 +21,7 @@ using FantasyLeague.Infrastructure.Repositories.NbaPlayers;
 using FantasyLeague.Infrastructure.Repositories.Users;
 using FantasyLeague.Infrastructure.Security;
 using FantasyLeague.WebApi.ExceptionHandlers;
+using FantasyLeague.WebApi.Authorization;
 using FantasyLeague.WebApi.Hubs;
 using FantasyLeague.WebApi.Jobs.Drafts;
 using FantasyLeague.WebApi.Jobs.Matches;
@@ -144,6 +146,9 @@ builder.Services.AddAuthorization(options =>
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
+    options.AddPolicy(
+        AuthorizationPolicies.AdminOnly,
+        policy => policy.RequireRole(nameof(UserRole.Admin)));
 });
 
 

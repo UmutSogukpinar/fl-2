@@ -4,6 +4,8 @@ using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Application.Services.NbaPlayers;
+using FantasyLeague.WebApi.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FantasyLeague.WebApi.Controllers.NbaPlayers;
@@ -20,17 +22,18 @@ public sealed partial class NbaPlayersController(
     /// <summary>
     /// Synchronizes active NBA players and their statistics from the external provider.
     /// </summary>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>A summary of the synchronization operation.</returns>
     /// <response code="200">The synchronization completed successfully.</response>
     /// <response code="502">The external NBA provider could not be reached.</response>
     [HttpPost("sync")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     [ProducesResponseType<NbaPlayerSyncResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<NbaPlayerSyncResponse>> SyncAsync(
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        var response = await _syncService.SyncActivePlayersAsync(cancellationToken);
+        var response = await _syncService.SyncActivePlayersAsync(cancellation);
 
         LogNbaPlayerSyncCompleted(
             response.Season,
@@ -47,7 +50,7 @@ public sealed partial class NbaPlayersController(
     /// Returns a paginated collection of NBA players.
     /// </summary>
     /// <param name="request">Pagination options.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>A page of NBA players ordered by first and last name.</returns>
     /// <response code="200">The NBA players were retrieved successfully.</response>
     /// <response code="400">The pagination options are invalid.</response>
@@ -60,9 +63,9 @@ public sealed partial class NbaPlayersController(
     [ProducesResponseType<PagedResponse<NbaPlayerBasicResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<NbaPlayerBasicResponse>>> GetAsync(
         [FromQuery] PaginationRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        var response = await _nbaPlayerService.GetAsync(request, cancellationToken);
+        var response = await _nbaPlayerService.GetAsync(request, cancellation);
 
         return Ok(response);
     }

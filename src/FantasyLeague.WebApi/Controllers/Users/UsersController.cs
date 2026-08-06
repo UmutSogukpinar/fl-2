@@ -6,6 +6,7 @@ using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Services.Users;
 using Microsoft.AspNetCore.Authorization;
+using FantasyLeague.WebApi.Authorization;
 
 namespace FantasyLeague.WebApi.Controllers.Users;
 
@@ -21,7 +22,7 @@ public sealed partial class UsersController
     /// <param name="request">
     /// The information required to create the user.
     /// </param>
-    /// <param name="cancellationToken">
+    /// <param name="cancellation">
     ///     Token used to cancel the operation.
     /// </param>
     /// <returns>The newly created user.</returns>
@@ -32,10 +33,10 @@ public sealed partial class UsersController
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<UserResponse>> CreateAsync(
         [FromBody] CreateUserRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var response = await userService.CreateAsync(
-            request, cancellationToken
+            request, cancellation
         );
 
         return CreatedAtAction(
@@ -50,7 +51,7 @@ public sealed partial class UsersController
     /// </summary>
     /// <param name="id">The user's unique identifier.</param>
     /// <param name="request">The updated user information.</param>
-    /// <param name="cancellationToken">
+    /// <param name="cancellation">
     ///     Token used to cancel the operation.
     /// </param>
     /// <returns>The updated user.</returns>
@@ -62,10 +63,10 @@ public sealed partial class UsersController
     public async Task<ActionResult<UserResponse>> UpdateAsync(
         Guid id,
         [FromBody] UpdateUserRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var response = await userService.UpdateAsync(
-            id, request, cancellationToken
+            id, request, cancellation
         );
 
         return Ok(response);
@@ -76,18 +77,19 @@ public sealed partial class UsersController
     /// Deletes a user.
     /// </summary>
     /// <param name="id">The user's unique identifier.</param>
-    /// <param name="cancellationToken">
+    /// <param name="cancellation">
     ///     Token used to cancel the operation.
     /// </param>
     /// <returns>An empty response.</returns>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        await userService.DeleteAsync(id, cancellationToken);
+        await userService.DeleteAsync(id, cancellation);
 
         return NoContent();
     }

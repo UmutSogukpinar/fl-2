@@ -53,6 +53,17 @@ public sealed class DevelopmentDataSeederIntegrationTests(PostgreSqlFixture data
     }
 
     [Fact]
+    public async Task SeedAsync_CreatesAdminAccountForDevelopmentOperations()
+    {
+        await using var context = await SeedAsync();
+
+        var commissioner = await context.Set<User>().SingleAsync(
+            user => user.Email == DevelopmentDataSeeder.CommissionerEmail);
+
+        Assert.Equal(UserRole.Admin, commissioner.Role);
+    }
+
+    [Fact]
     public async Task SeedAsync_CreatesOneTeamForEveryUser()
     {
         await using var context = await SeedAsync();

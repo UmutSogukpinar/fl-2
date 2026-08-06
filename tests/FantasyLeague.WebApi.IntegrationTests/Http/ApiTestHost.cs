@@ -8,6 +8,8 @@ using FantasyLeague.Application.Services.NbaPlayers;
 using FantasyLeague.Application.Services.Users;
 using FantasyLeague.WebApi.Controllers.Auth;
 using FantasyLeague.WebApi.ExceptionHandlers;
+using FantasyLeague.WebApi.Authorization;
+using FantasyLeague.Domain.Entities.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -27,16 +29,19 @@ public sealed class ApiTestHost : IAsyncDisposable
     private ApiTestHost(
         WebApplication application,
         Mock<IUserService> users,
-        Mock<IAuthService> auth)
+        Mock<IAuthService> auth,
+        Mock<INbaPlayerSyncService> nbaSync)
     {
         _application = application;
         Users = users;
         Auth = auth;
+        NbaSync = nbaSync;
     }
 
     public HttpClient Client { get; private set; } = null!;
     public Mock<IUserService> Users { get; }
     public Mock<IAuthService> Auth { get; }
+    public Mock<INbaPlayerSyncService> NbaSync { get; }
 
     public static async Task<ApiTestHost> CreateAsync(Action<ApiTestHost>? configure = null)
     {
@@ -49,13 +54,14 @@ public sealed class ApiTestHost : IAsyncDisposable
 
         var users = new Mock<IUserService>();
         var auth = new Mock<IAuthService>();
+        var nbaSync = new Mock<INbaPlayerSyncService>();
         builder.Services.AddSingleton(users.Object);
         builder.Services.AddSingleton(auth.Object);
         builder.Services.AddSingleton(Mock.Of<IDraftService>());
         builder.Services.AddSingleton(Mock.Of<IFantasyTeamService>());
         builder.Services.AddSingleton(Mock.Of<ILeagueService>());
         builder.Services.AddSingleton(Mock.Of<INbaPlayerService>());
-        builder.Services.AddSingleton(Mock.Of<INbaPlayerSyncService>());
+        builder.Services.AddSingleton(nbaSync.Object);
         builder.Services.AddControllers().AddApplicationPart(typeof(AuthController).Assembly);
         builder.Services.AddProblemDetails();
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -66,6 +72,9 @@ public sealed class ApiTestHost : IAsyncDisposable
         {
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser().Build();
+            options.AddPolicy(
+                AuthorizationPolicies.AdminOnly,
+                policy => policy.RequireRole(nameof(UserRole.Admin)));
         });
 
         var application = builder.Build();
@@ -74,18 +83,27 @@ public sealed class ApiTestHost : IAsyncDisposable
         application.UseAuthorization();
         application.MapControllers();
 
-        var result = new ApiTestHost(application, users, auth);
+        var result = new ApiTestHost(application, users, auth, nbaSync);
         configure?.Invoke(result);
         await application.StartAsync();
         result.Client = application.GetTestClient();
         return result;
     }
 
-    public HttpRequestMessage Request(HttpMethod method, string path, bool authenticated = false)
+    public HttpRequestMessage Request(
+        HttpMethod method,
+        string path,
+        bool authenticated = false,
+        string? role = null)
     {
         var request = new HttpRequestMessage(method, path);
         if (authenticated)
+        {
             request.Headers.Add(TestAuthenticationHandler.Header, "integration-user");
+            request.Headers.Add(
+                TestAuthenticationHandler.RoleHeader,
+                role ?? nameof(UserRole.User));
+        }
         return request;
     }
 
@@ -104,14 +122,19 @@ internal sealed class TestAuthenticationHandler(
 {
     public const string SchemeName = "IntegrationTest";
     public const string Header = "X-Test-Auth";
+    public const string RoleHeader = "X-Test-Role";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.ContainsKey(Header))
             return Task.FromResult(AuthenticateResult.NoResult());
 
+        var role = Request.Headers[RoleHeader].FirstOrDefault() ?? nameof(UserRole.User);
         var identity = new ClaimsIdentity(
-            [new Claim(ClaimTypes.NameIdentifier, "integration-user")], SchemeName);
+            [
+                new Claim(ClaimTypes.NameIdentifier, "integration-user"),
+                new Claim(ClaimTypes.Role, role)
+            ], SchemeName);
         var principal = new ClaimsPrincipal(identity);
         return Task.FromResult(AuthenticateResult.Success(
             new AuthenticationTicket(principal, SchemeName)));

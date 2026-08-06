@@ -24,7 +24,8 @@ public sealed class UserEndpointIntegrationTests
             api.Users.Setup(service => service.GetAsync(
                     It.IsAny<PaginationRequest>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(page));
-        using var request = host.Request(HttpMethod.Get, "/api/users?pageNumber=1&pageSize=10", true);
+        using var request = host.Request(
+            HttpMethod.Get, "/api/users?pageNumber=1&pageSize=10", true, "Admin");
 
         var response = await host.Client.SendAsync(request);
         var body = await response.Content.ReadFromJsonAsync<PagedResponse<UserResponse>>();
@@ -87,7 +88,7 @@ public sealed class UserEndpointIntegrationTests
         await using var host = await ApiTestHost.CreateAsync();
 
         var response = await host.Client.SendAsync(
-            host.Request(HttpMethod.Delete, $"/api/users/{UserId}", true));
+            host.Request(HttpMethod.Delete, $"/api/users/{UserId}", true, "Admin"));
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         host.Users.Verify(service => service.DeleteAsync(
@@ -133,7 +134,8 @@ public sealed class UserEndpointIntegrationTests
     {
         await using var host = await ApiTestHost.CreateAsync();
 
-        var response = await host.Client.SendAsync(host.Request(HttpMethod.Get, path, true));
+        var response = await host.Client.SendAsync(
+            host.Request(HttpMethod.Get, path, true, "Admin"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         host.Users.Verify(service => service.GetAsync(

@@ -18,10 +18,10 @@ public static class DevelopmentDataSeeder
     public static async Task SeedAsync(
         AppDbContext context,
         IPasswordHasher passwordHasher,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         if (await context.Set<User>().AnyAsync(
-                user => user.Email == CommissionerEmail, cancellationToken))
+                user => user.Email == CommissionerEmail, cancellation))
         {
             return;
         }
@@ -34,6 +34,7 @@ public static class DevelopmentDataSeeder
             CreateUser(3, "izmir-owner", "izmir@fantasyleague.local", passwordHasher),
             CreateUser(4, "bursa-owner", "bursa@fantasyleague.local", passwordHasher)
         };
+        users[0].Role = UserRole.Admin;
         var leagueId = Id(100);
         var league = new League
         {
@@ -128,14 +129,14 @@ public static class DevelopmentDataSeeder
             Fixture(leagueId, 3, teams[1], teams[2], now.AddDays(2))
         };
 
-        await context.AddRangeAsync(users, cancellationToken);
-        await context.AddAsync(league, cancellationToken);
-        await context.AddRangeAsync(teams, cancellationToken);
-        await context.AddRangeAsync(players, cancellationToken);
-        await context.AddRangeAsync(rosters, cancellationToken);
-        await context.AddRangeAsync(draftOrder, cancellationToken);
-        await context.AddRangeAsync(fixtures, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.AddRangeAsync(users, cancellation);
+        await context.AddAsync(league, cancellation);
+        await context.AddRangeAsync(teams, cancellation);
+        await context.AddRangeAsync(players, cancellation);
+        await context.AddRangeAsync(rosters, cancellation);
+        await context.AddRangeAsync(draftOrder, cancellation);
+        await context.AddRangeAsync(fixtures, cancellation);
+        await context.SaveChangesAsync(cancellation);
     }
 
     private static User CreateUser(int key, string username, string email, IPasswordHasher hasher) => new()

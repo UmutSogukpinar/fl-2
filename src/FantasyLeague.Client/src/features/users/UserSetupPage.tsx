@@ -24,16 +24,20 @@ export function UserSetupPage() {
     try {
       const email = String(form.get('email'))
       const password = String(form.get('password'))
-      const user = mode === 'sign-in'
-        ? await usersApi.signIn(email, password)
-        : await usersApi.create({
+      let user
+      if (mode === 'sign-in') {
+        user = await usersApi.signIn(email, password)
+      } else {
+        await usersApi.create({
             username: String(form.get('username')),
             email,
             password,
             location: String(form.get('location')),
           })
+        user = await usersApi.signIn(email, password)
+      }
       setUser(user)
-      window.location.replace('/')
+      window.location.hash = '/overview'
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'The request failed.')
     } finally {

@@ -13,6 +13,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useCurrentUser } from '../../app/UserContext'
 
 export type SocketStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
@@ -26,6 +27,7 @@ const HUB_URL = import.meta.env.VITE_HUB_URL ?? '/hubs/fantasy'
 const SocketContext = createContext<SocketContextValue | null>(null)
 
 export function SocketProvider({ children }: { children: ReactNode }) {
+  const { userId } = useCurrentUser()
   const connectionRef = useRef<HubConnection | null>(null)
   const [status, setStatus] = useState<SocketStatus>('connecting')
   const [connectionId, setConnectionId] = useState<string | null>(null)
@@ -58,6 +60,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     let retryTimer: ReturnType<typeof setTimeout> | undefined
 
     const start = async () => {
+      if (!userId) return
       if (connection.state !== HubConnectionState.Disconnected) return
       setStatus('connecting')
       try {
@@ -71,14 +74,14 @@ export function SocketProvider({ children }: { children: ReactNode }) {
     }
 
    
-    retryTimer = setTimeout(() => void start(), 0)
+    if (userId) retryTimer = setTimeout(() => void start(), 0)
 
     return () => {
       active = false
       clearTimeout(retryTimer)
       void connection.stop()
     }
-  }, [connection])
+  }, [connection, userId])
 
   const value = useMemo(
     () => ({ connection, status, connectionId }),

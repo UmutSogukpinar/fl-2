@@ -1,64 +1,59 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { usersApi } from '../features/users/users.api'
 import type { User } from '../features/users/types'
-
-const COOKIE_NAME = 'fantasy_user_id'
-const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-function readUserId() {
-  const cookie = document.cookie
-    .split('; ')
-    .find((value) => value.startsWith(`${COOKIE_NAME}=`))
-  return cookie ? decodeURIComponent(cookie.split('=')[1]) : null
-}
-
-function removeUserCookie() {
-  document.cookie = `${COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`
-}
+import { onAuthExpired } from '../shared/api/client'
 
 type UserContextValue = {
   user: User | null
   userId: string | null
   loading: boolean
   setUser: (user: User) => void
+  signOut: () => Promise<void>
 }
 
 const UserContext = createContext<UserContextValue | null>(null)
+let sessionRestoreRequest: Promise<User> | null = null
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const controller = new AbortController()
-    const userId = readUserId()
+    let active = true
+    sessionRestoreRequest ??= usersApi.refresh().finally(() => {
+      sessionRestoreRequest = null
+    })
 
-    if (!userId || !GUID_PATTERN.test(userId)) {
-      if (userId) removeUserCookie()
-      setLoading(false)
-      return () => controller.abort()
-    }
-
-    usersApi
-      .getById(userId, controller.signal)
-      .then(setCurrentUser)
-      .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === 'AbortError') return
-        removeUserCookie()
-        setCurrentUser(null)
+    sessionRestoreRequest
+      .then((restoredUser) => {
+        if (active) setCurrentUser(restoredUser)
       })
-      .finally(() => setLoading(false))
+      .catch((error: unknown) => {
+        if (active) setCurrentUser(null)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
 
-    return () => controller.abort()
+    return () => {
+      active = false
+    }
   }, [])
 
-  const setUser = (nextUser: User) => {
-    document.cookie = `${COOKIE_NAME}=${encodeURIComponent(nextUser.id)}; Max-Age=31536000; Path=/; SameSite=Lax`
-    setCurrentUser(nextUser)
+  useEffect(() => onAuthExpired(() => setCurrentUser(null)), [])
+
+  const signOut = async () => {
+    try {
+      await usersApi.signOut()
+    } finally {
+      setCurrentUser(null)
+    }
   }
 
   return (
-    <UserContext.Provider value={{ user, userId: user?.id ?? null, loading, setUser }}>
+    <UserContext.Provider
+      value={{ user, userId: user?.id ?? null, loading, setUser: setCurrentUser, signOut }}
+    >
       {children}
     </UserContext.Provider>
   )

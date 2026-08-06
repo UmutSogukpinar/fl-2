@@ -1,3 +1,7 @@
+using FantasyLeague.Domain.Entities.FantasyTeams;
+using FantasyLeague.Domain.Entities.Leagues;
+using FantasyLeague.Domain.Entities.Users;
+
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Normalization;
 using FantasyLeague.Application.Common.Time;

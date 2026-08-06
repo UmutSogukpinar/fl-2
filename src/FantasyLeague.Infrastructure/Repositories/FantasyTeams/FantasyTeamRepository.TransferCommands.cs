@@ -1,3 +1,6 @@
+using FantasyLeague.Domain.Entities.FantasyTeams;
+using FantasyLeague.Domain.Entities.Transfers;
+
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Domain.Enums;

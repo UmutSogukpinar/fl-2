@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Users;
+
 using Microsoft.EntityFrameworkCore;
 
 namespace FantasyLeague.Infrastructure.Repositories.Users;

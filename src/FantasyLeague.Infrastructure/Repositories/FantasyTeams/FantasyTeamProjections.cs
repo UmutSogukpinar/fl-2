@@ -1,9 +1,11 @@
+using FantasyLeague.Domain.Entities.FantasyTeams;
+
 using System.Linq.Expressions;
 
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Domain.Entities;
 
-namespace FantasyLeague.Infrastructure.Repositories.Projections;
+namespace FantasyLeague.Infrastructure.Repositories.FantasyTeams;
 
 internal static class FantasyTeamProjections
 {

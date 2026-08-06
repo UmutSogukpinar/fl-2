@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Leagues;
+
 namespace FantasyLeague.Application.Services.Leagues;
 
 using FantasyLeague.Application.Models;

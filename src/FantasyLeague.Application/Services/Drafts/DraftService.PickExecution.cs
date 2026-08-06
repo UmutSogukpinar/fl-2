@@ -1,3 +1,6 @@
+using FantasyLeague.Domain.Entities.Drafts;
+using FantasyLeague.Domain.Entities.FantasyTeams;
+
 namespace FantasyLeague.Application.Services.Drafts;
 
 public sealed partial class DraftService

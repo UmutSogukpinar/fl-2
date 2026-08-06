@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Players;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

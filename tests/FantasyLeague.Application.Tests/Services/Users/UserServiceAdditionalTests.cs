@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Users;
+
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Interfaces.Security;

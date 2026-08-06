@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Users;
+
 namespace FantasyLeague.Application.Tests.Services.Users;
 
 using Moq;

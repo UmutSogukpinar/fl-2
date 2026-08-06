@@ -1,3 +1,7 @@
+using FantasyLeague.Domain.Entities.Drafts;
+using FantasyLeague.Domain.Entities.FantasyTeams;
+using FantasyLeague.Domain.Entities.Leagues;
+
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Domain.Entities;
@@ -5,7 +9,7 @@ using FantasyLeague.Domain.Enums;
 using FantasyLeague.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 
-namespace FantasyLeague.Infrastructure.Repositories;
+namespace FantasyLeague.Infrastructure.Repositories.Leagues;
 
 public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetupRepository
 {

@@ -1,10 +1,11 @@
+using FantasyLeague.Domain.Entities.FantasyTeams;
+
 using Microsoft.EntityFrameworkCore;
 
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Infrastructure.Context;
-using FantasyLeague.Infrastructure.Repositories.Projections;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Application.Common.Pagination;
 using FantasyLeague.Application.DTOs.Requests.Common;

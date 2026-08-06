@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Leagues;
+
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Domain.Entities;
 using FantasyLeague.Domain.Enums;

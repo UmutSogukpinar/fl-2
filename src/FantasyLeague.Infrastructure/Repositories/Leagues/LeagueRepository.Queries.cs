@@ -1,11 +1,12 @@
+using FantasyLeague.Domain.Entities.Leagues;
+
 using FantasyLeague.Application.Common.Pagination;
 using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Domain.Enums;
-using FantasyLeague.Infrastructure.Repositories.Projections;
 using Microsoft.EntityFrameworkCore;
 
-namespace FantasyLeague.Infrastructure.Repositories;
+namespace FantasyLeague.Infrastructure.Repositories.Leagues;
 
 public sealed partial class LeagueRepository
 {

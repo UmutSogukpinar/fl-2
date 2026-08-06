@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Players;
+
 using System.Linq.Expressions;
 
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;

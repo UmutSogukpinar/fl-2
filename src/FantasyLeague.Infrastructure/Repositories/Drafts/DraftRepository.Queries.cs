@@ -1,7 +1,11 @@
+using FantasyLeague.Domain.Entities.Drafts;
+using FantasyLeague.Domain.Entities.FantasyTeams;
+using FantasyLeague.Domain.Entities.Players;
+
 using FantasyLeague.Application.DTOs.Responses.Drafts;
 using Microsoft.EntityFrameworkCore;
 
-namespace FantasyLeague.Infrastructure.Repositories;
+namespace FantasyLeague.Infrastructure.Repositories.Drafts;
 
 public sealed partial class DraftRepository
 {

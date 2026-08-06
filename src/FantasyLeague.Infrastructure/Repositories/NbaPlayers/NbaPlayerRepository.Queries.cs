@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Players;
+
 using FantasyLeague.Application.DTOs.Responses.NbaPlayers;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Domain.Entities;

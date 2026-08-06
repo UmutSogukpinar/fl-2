@@ -1,3 +1,6 @@
+using FantasyLeague.Domain.Entities.Players;
+using FantasyLeague.Domain.Entities.Transfers;
+
 using FantasyLeague.Application.DTOs.Responses.FantasyTeams;
 using FantasyLeague.Domain.Entities;
 using Microsoft.EntityFrameworkCore;

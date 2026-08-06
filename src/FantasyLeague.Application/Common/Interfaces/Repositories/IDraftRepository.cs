@@ -1,3 +1,6 @@
+using FantasyLeague.Domain.Entities.Drafts;
+using FantasyLeague.Domain.Entities.FantasyTeams;
+
 using FantasyLeague.Application.DTOs.Responses.Drafts;
 using FantasyLeague.Domain.Entities;
 

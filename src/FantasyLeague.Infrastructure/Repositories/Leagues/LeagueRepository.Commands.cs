@@ -1,4 +1,6 @@
-namespace FantasyLeague.Infrastructure.Repositories;
+using FantasyLeague.Domain.Entities.Leagues;
+
+namespace FantasyLeague.Infrastructure.Repositories.Leagues;
 
 using FantasyLeague.Domain.Enums;
 using Microsoft.EntityFrameworkCore;

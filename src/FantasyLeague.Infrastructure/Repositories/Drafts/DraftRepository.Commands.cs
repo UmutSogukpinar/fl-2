@@ -1,6 +1,8 @@
+using FantasyLeague.Domain.Entities.FantasyTeams;
+
 using Microsoft.EntityFrameworkCore;
 
-namespace FantasyLeague.Infrastructure.Repositories;
+namespace FantasyLeague.Infrastructure.Repositories.Drafts;
 
 public sealed partial class DraftRepository
 {

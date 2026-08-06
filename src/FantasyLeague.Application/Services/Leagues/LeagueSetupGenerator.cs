@@ -1,3 +1,6 @@
+using FantasyLeague.Domain.Entities.Drafts;
+using FantasyLeague.Domain.Entities.Leagues;
+
 using System.Security.Cryptography;
 using FantasyLeague.Domain.Entities;
 

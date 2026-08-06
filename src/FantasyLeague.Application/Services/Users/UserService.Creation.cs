@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Users;
+
 using FantasyLeague.Application.Common.Normalization;
 using FantasyLeague.Application.Common.Validation;
 using FantasyLeague.Application.DTOs.Requests.Users;

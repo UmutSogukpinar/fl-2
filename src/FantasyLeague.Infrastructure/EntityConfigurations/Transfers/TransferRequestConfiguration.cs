@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Transfers;
+
 using FantasyLeague.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

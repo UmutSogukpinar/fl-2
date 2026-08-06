@@ -1,3 +1,5 @@
+using FantasyLeague.Domain.Entities.Players;
+
 using FantasyLeague.Application.Common.Interfaces.ExternalServices;
 using FantasyLeague.Application.Common.Interfaces.Caching;
 using FantasyLeague.Application.Common.Interfaces.Repositories;

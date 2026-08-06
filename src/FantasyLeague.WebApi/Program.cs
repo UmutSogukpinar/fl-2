@@ -11,6 +11,7 @@ using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Domain.Entities.Auth;
 using FantasyLeague.Infrastructure.Caching;
 using FantasyLeague.Infrastructure.Context;
+using FantasyLeague.Infrastructure.Database;
 using FantasyLeague.Infrastructure.ExternalServices.NbaApi;
 using FantasyLeague.Infrastructure.Repositories.Drafts;
 using FantasyLeague.Infrastructure.Repositories.FantasyTeams;
@@ -159,6 +160,16 @@ builder.Services.AddHangfire(configuration => configuration
 builder.Services.AddHangfireServer();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await context.Database.MigrateAsync();
+    await DevelopmentDataSeeder.SeedAsync(
+        context,
+        scope.ServiceProvider.GetRequiredService<IPasswordHasher>());
+}
 
 app.UseExceptionHandler();
 app.UseMiddleware<RequestLoggingMiddleware>();

@@ -246,6 +246,36 @@ public class UserServiceTests
         });
     }
 
+    [Fact]
+    public async Task CreateAsync_WhenUsernameExceedsMaximumLength_ThrowsBadRequestException()
+    {
+        var request = new CreateUserRequest(
+            new string('u', 51),
+            "user@example.com",
+            "password"
+        );
+
+        var exception = await Assert.ThrowsAsync<BadRequestException>(
+            () => _service.CreateAsync(request));
+
+        Assert.Equal("Username cannot exceed 50 characters.", exception.Message);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenEmailExceedsMaximumLength_ThrowsBadRequestException()
+    {
+        var request = new CreateUserRequest(
+            "valid-user",
+            $"{new string('a', 243)}@example.com",
+            "password"
+        );
+
+        var exception = await Assert.ThrowsAsync<BadRequestException>(
+            () => _service.CreateAsync(request));
+
+        Assert.Equal("Email cannot exceed 254 characters.", exception.Message);
+    }
+
     // ====================== Delete User Tests ======================
 
     // Case: Does Delete User

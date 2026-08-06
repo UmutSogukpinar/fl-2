@@ -27,6 +27,7 @@ public sealed class UserConfiguration
             .IsRequired();
 
         builder.Property(user => user.Email)
+            .HasMaxLength(254)
             .IsRequired();
 
         builder.Property(user => user.TimeZoneId)

@@ -75,17 +75,17 @@ export function UserSetupPage() {
 
         <form onSubmit={submit}>
           {mode === 'create' && (
-            <label>Kullanıcı adı<input name="username" required minLength={3} maxLength={50} /></label>
+            <label>Kullanıcı adı<input name="username" required minLength={4} maxLength={50} /></label>
           )}
           {mode === 'sign-in' ? (
             <label>
               E-posta veya kullanıcı adı
-              <input name="identifier" type="text" autoComplete="username" required />
+              <input name="identifier" type="text" autoComplete="username" maxLength={254} required />
             </label>
           ) : (
             <label>
               E-posta
-              <input name="email" type="email" autoComplete="email" required />
+              <input name="email" type="email" autoComplete="email" maxLength={254} required />
             </label>
           )}
           <label>Şifre<input name="password" type="password" required minLength={8} /></label>

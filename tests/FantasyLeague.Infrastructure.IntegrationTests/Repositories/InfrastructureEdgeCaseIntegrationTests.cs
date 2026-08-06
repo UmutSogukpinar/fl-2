@@ -63,6 +63,20 @@ public sealed class InfrastructureEdgeCaseIntegrationTests(PostgreSqlFixture dat
     }
 
     [Fact]
+    public async Task UserSchema_WhenEmailExceedsMaximumLength_RejectsValue()
+    {
+        await using var context = database.CreateContext();
+        context.Add(new FantasyLeague.Domain.Entities.Users.User
+        {
+            Username = "long-email-user",
+            Email = $"{new string('a', 244)}@example.com",
+            Password = "hash"
+        });
+
+        await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+    }
+
+    [Fact]
     public async Task NbaPlayerSchema_WhenNbaIdDuplicated_RejectsSecondPlayer()
     {
         await using var context = database.CreateContext();

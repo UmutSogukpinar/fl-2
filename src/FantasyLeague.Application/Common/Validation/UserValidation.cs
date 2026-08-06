@@ -113,9 +113,16 @@ internal static class UserValidation
     {
         if (string.IsNullOrWhiteSpace(email)) return;
 
+        const int MaxEmailLength = 254;
         const char AtSymbol = '@';
         const char DotSymbol = '.';
 
+        if (email.Length > MaxEmailLength)
+        {
+            throw new BadRequestException(
+                $"Email cannot exceed {MaxEmailLength} characters."
+            );
+        }
 
         var atIndex = email.IndexOf(AtSymbol);
         if (atIndex <= 0 || atIndex == email.Length - 1)
@@ -167,12 +174,20 @@ internal static class UserValidation
         if (string.IsNullOrWhiteSpace(username)) return;
 
         const int MinUsernameLength = 4;
+        const int MaxUsernameLength = 50;
 
         if (username.Length < MinUsernameLength)
         {
             throw new BadRequestException(
                 $"Username must be at least " +
                 $"{MinUsernameLength} characters long."
+            );
+        }
+
+        if (username.Length > MaxUsernameLength)
+        {
+            throw new BadRequestException(
+                $"Username cannot exceed {MaxUsernameLength} characters."
             );
         }
     }

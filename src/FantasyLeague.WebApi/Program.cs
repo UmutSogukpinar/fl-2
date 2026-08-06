@@ -27,6 +27,7 @@ using FantasyLeague.WebApi.Middleware;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -47,6 +48,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
@@ -110,6 +112,7 @@ builder.Services
                 ValidateIssuer = true,
                 ValidIssuer = tokenOptions.Issuer,
 
+                // Check audience
                 ValidateAudience = true,
                 ValidAudience = tokenOptions.Audience,
 
@@ -124,9 +127,23 @@ builder.Services
 
                 ClockSkew = TimeSpan.Zero
             };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                context.Token = context.Request.Cookies["access_token"];
+                return Task.CompletedTask;
+            }
+        };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -149,7 +166,7 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
     app.UseHangfireDashboard("/hangfire");
 }
 
@@ -173,12 +190,14 @@ recurringJobs.AddOrUpdate<NbaPlayerSyncJob>(
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<FantasyLeagueHub>("/hubs/fantasy");
 
-app.UseRouting();
-app.MapGet("/health", () => "Fantasy League API is running!");
+app.MapGet("/health", () => "Fantasy League API is running!")
+    .AllowAnonymous();
 
 app.Run();

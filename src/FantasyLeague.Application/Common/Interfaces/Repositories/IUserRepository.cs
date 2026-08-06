@@ -1,4 +1,5 @@
 using FantasyLeague.Domain.Entities.Users;
+using FantasyLeague.Domain.Entities.Auth;
 
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Domain.Entities;
@@ -13,8 +14,10 @@ public interface IUserRepository
     Task<User?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken);
     Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken);
+    Task<RefreshToken?> GetRefreshTokenAsync(string tokenHash, CancellationToken cancellationToken);
     Task<bool> ExistsAsync(string username, string email, Guid? excludedUserId, CancellationToken cancellationToken);
     User Add(User user);
+    void AddRefreshToken(RefreshToken refreshToken);
     void Remove(User user);
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

@@ -14,7 +14,8 @@ public sealed class JwtService(
 
     public string GenerateToken(
         string userName,
-        IEnumerable<string> roles)
+        IEnumerable<string> roles,
+        string jwtId)
     {
         var secretBytes = Encoding.UTF8.GetBytes(
             _options.Secret);
@@ -38,7 +39,7 @@ public sealed class JwtService(
 
             new(
                 JwtRegisteredClaimNames.Jti,
-                Guid.NewGuid().ToString())
+                jwtId)
         };
 
         claims.AddRange(

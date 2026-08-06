@@ -3,12 +3,14 @@ using FantasyLeague.Domain.Entities.Users;
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Interfaces.Security;
+using FantasyLeague.Application.Common.Token;
 using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Requests.Users;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Services.Auth;
 using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Domain.Entities;
+using FantasyLeague.Domain.Entities.Auth;
 using Moq;
 
 namespace FantasyLeague.Application.Tests.Services.Users;
@@ -19,10 +21,14 @@ public sealed class UserServiceAdditionalTests
     private readonly Mock<IPasswordHasher> _passwordHasher = new();
     private readonly Mock<IJwtService> _jwtService = new();
     private readonly UserService _service;
+    private readonly AuthService _authService;
 
     public UserServiceAdditionalTests()
     {
         _service = new UserService(
+            _repository.Object,
+            _passwordHasher.Object);
+        _authService = new AuthService(
             _repository.Object,
             _passwordHasher.Object,
             _jwtService.Object);
@@ -121,7 +127,7 @@ public sealed class UserServiceAdditionalTests
             .Setup(hasher => hasher.Verify(request.Password, user.Password))
             .Returns(true);
 
-        var response = await _service.SignInAsync(request);
+        var response = await _authService.SignInAsync(request);
 
         Assert.Equal(user.Id, response.user.Id);
         Assert.Equal(user.Email, response.user.Email);
@@ -144,7 +150,7 @@ public sealed class UserServiceAdditionalTests
             .Setup(hasher => hasher.Verify(request.Password, user.Password))
             .Returns(true);
 
-        var response = await _service.SignInAsync(request);
+        var response = await _authService.SignInAsync(request);
 
         Assert.Equal(user.Id, response.user.Id);
         Assert.NotEmpty(response.refreshToken);
@@ -152,6 +158,189 @@ public sealed class UserServiceAdditionalTests
             "user", It.IsAny<CancellationToken>()), Times.Once);
         _repository.Verify(repository => repository.GetByEmailAsync(
             It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_WithActiveToken_RotatesRefreshToken()
+    {
+        var user = CreateUser();
+        const string rawRefreshToken = "active-refresh-token";
+        var storedToken = new RefreshToken
+        {
+            Token = rawRefreshToken.HashToken(),
+            JwtId = Guid.NewGuid().ToString(),
+            ExpiryDate = DateTime.UtcNow.AddDays(1),
+            Status = TokenStatus.Active,
+            UserId = user.Id
+        };
+        RefreshToken? addedToken = null;
+
+        _repository
+            .Setup(repository => repository.GetRefreshTokenAsync(
+                storedToken.Token,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(storedToken);
+        _repository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                user.Id,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _repository
+            .Setup(repository => repository.AddRefreshToken(
+                It.IsAny<RefreshToken>()))
+            .Callback<RefreshToken>(token => addedToken = token);
+        _jwtService
+            .Setup(service => service.GenerateToken(
+                user.Username,
+                It.IsAny<IEnumerable<string>>(),
+                It.IsAny<string>()))
+            .Returns("new-access-token");
+
+        var result = await _authService.RefreshAsync(rawRefreshToken);
+
+        Assert.Equal(user.Id, result.user.Id);
+        Assert.Equal("new-access-token", result.accessToken);
+        Assert.NotEqual(rawRefreshToken, result.refreshToken);
+        Assert.Equal(TokenStatus.Inactive, storedToken.Status);
+        Assert.NotNull(storedToken.RevokeDate);
+        Assert.NotNull(addedToken);
+        Assert.Equal(result.refreshToken.HashToken(), addedToken.Token);
+        Assert.Equal(TokenStatus.Active, addedToken.Status);
+        _repository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_WithUnknownToken_ThrowsUnauthorized()
+    {
+        _repository
+            .Setup(repository => repository.GetRefreshTokenAsync(
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((RefreshToken?)null);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            _authService.RefreshAsync("unknown-refresh-token"));
+
+        _repository.Verify(repository => repository.AddRefreshToken(
+            It.IsAny<RefreshToken>()), Times.Never);
+        _repository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_WithMissingToken_DoesNotQueryRepository()
+    {
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            _authService.RefreshAsync(" "));
+
+        _repository.Verify(repository => repository.GetRefreshTokenAsync(
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(TokenStatus.Inactive, 1)]
+    [InlineData(TokenStatus.Banned, 1)]
+    [InlineData(TokenStatus.Active, -1)]
+    public async Task RefreshAsync_WithUnusableToken_DoesNotRotateToken(
+        TokenStatus status,
+        int expiryOffsetDays)
+    {
+        const string rawRefreshToken = "unusable-refresh-token";
+        var storedToken = new RefreshToken
+        {
+            Token = rawRefreshToken.HashToken(),
+            JwtId = Guid.NewGuid().ToString(),
+            ExpiryDate = DateTime.UtcNow.AddDays(expiryOffsetDays),
+            Status = status,
+            UserId = Guid.NewGuid()
+        };
+        _repository
+            .Setup(repository => repository.GetRefreshTokenAsync(
+                storedToken.Token,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(storedToken);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            _authService.RefreshAsync(rawRefreshToken));
+
+        _repository.Verify(repository => repository.GetTrackedByIdAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _repository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_WhenUserNoLongerExists_DoesNotRotateToken()
+    {
+        const string rawRefreshToken = "orphaned-refresh-token";
+        var storedToken = new RefreshToken
+        {
+            Token = rawRefreshToken.HashToken(),
+            JwtId = Guid.NewGuid().ToString(),
+            ExpiryDate = DateTime.UtcNow.AddDays(1),
+            Status = TokenStatus.Active,
+            UserId = Guid.NewGuid()
+        };
+        _repository
+            .Setup(repository => repository.GetRefreshTokenAsync(
+                storedToken.Token,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(storedToken);
+        _repository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                storedToken.UserId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User?)null);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            _authService.RefreshAsync(rawRefreshToken));
+
+        Assert.Equal(TokenStatus.Active, storedToken.Status);
+        _repository.Verify(repository => repository.AddRefreshToken(
+            It.IsAny<RefreshToken>()), Times.Never);
+        _repository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SignOutAsync_WithActiveToken_RevokesToken()
+    {
+        const string rawRefreshToken = "sign-out-refresh-token";
+        var storedToken = new RefreshToken
+        {
+            Token = rawRefreshToken.HashToken(),
+            JwtId = Guid.NewGuid().ToString(),
+            ExpiryDate = DateTime.UtcNow.AddDays(1),
+            Status = TokenStatus.Active,
+            UserId = Guid.NewGuid()
+        };
+        _repository
+            .Setup(repository => repository.GetRefreshTokenAsync(
+                storedToken.Token,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(storedToken);
+
+        await _authService.SignOutAsync(rawRefreshToken);
+
+        Assert.Equal(TokenStatus.Inactive, storedToken.Status);
+        Assert.NotNull(storedToken.RevokeDate);
+        _repository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SignOutAsync_WithMissingToken_DoesNotQueryRepository()
+    {
+        await _authService.SignOutAsync(string.Empty);
+
+        _repository.Verify(repository => repository.GetRefreshTokenAsync(
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+        _repository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // Case: Create when With Null Request
@@ -178,7 +367,7 @@ public sealed class UserServiceAdditionalTests
         var request = new SignInRequest("invalid@", "password123");
 
         await Assert.ThrowsAsync<BadRequestException>(() =>
-            _service.SignInAsync(request));
+            _authService.SignInAsync(request));
 
         _repository.Verify(repository => repository.GetByEmailAsync(
             It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -196,7 +385,8 @@ public sealed class UserServiceAdditionalTests
                 request.Identifier, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
-        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request));
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            _authService.SignInAsync(request));
 
         _passwordHasher.Verify(
             hasher => hasher.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -218,7 +408,8 @@ public sealed class UserServiceAdditionalTests
             .Setup(hasher => hasher.Verify(request.Password, user.Password))
             .Returns(false);
 
-        await Assert.ThrowsAsync<UnauthorizedException>(() => _service.SignInAsync(request));
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            _authService.SignInAsync(request));
     }
 
     private static User CreateUser() => new()

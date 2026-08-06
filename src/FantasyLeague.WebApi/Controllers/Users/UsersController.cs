@@ -5,11 +5,13 @@ using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Responses.Common;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Services.Users;
+using Microsoft.AspNetCore.Authorization;
 
 namespace FantasyLeague.WebApi.Controllers.Users;
 
 [ApiController]
 [Route("api/users")]
+[Authorize]
 public sealed partial class UsersController
     (IUserService userService) : ControllerBase
 {
@@ -24,6 +26,7 @@ public sealed partial class UsersController
     /// </param>
     /// <returns>The newly created user.</returns>
     [HttpPost]
+    [AllowAnonymous]
     [ProducesResponseType<UserResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]

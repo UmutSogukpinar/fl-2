@@ -1,4 +1,5 @@
 using FantasyLeague.Domain.Entities.Users;
+using FantasyLeague.Domain.Entities.Auth;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,11 @@ public sealed partial class UserRepository
     public void Remove(User user)
     {
         dbContext.Set<User>().Remove(user);
+    }
+
+    public void AddRefreshToken(RefreshToken refreshToken)
+    {
+        dbContext.Set<RefreshToken>().Add(refreshToken);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken)

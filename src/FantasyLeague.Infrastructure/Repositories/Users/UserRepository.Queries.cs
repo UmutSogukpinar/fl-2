@@ -1,4 +1,5 @@
 using FantasyLeague.Domain.Entities.Users;
+using FantasyLeague.Domain.Entities.Auth;
 
 using FantasyLeague.Application.Common.Pagination;
 using FantasyLeague.Application.DTOs.Requests.Common;
@@ -61,6 +62,16 @@ public sealed partial class UserRepository
             .AsNoTracking()
             .SingleOrDefaultAsync(
                 user => user.Username.ToLower() == username,
+                cancellation);
+    }
+
+    public Task<RefreshToken?> GetRefreshTokenAsync(
+        string tokenHash,
+        CancellationToken cancellation)
+    {
+        return dbContext.Set<RefreshToken>()
+            .SingleOrDefaultAsync(
+                token => token.Token == tokenHash,
                 cancellation);
     }
 

@@ -8,7 +8,8 @@ public interface IJwtService
 {
     string GenerateToken(
         string userName,
-        IEnumerable<string> roles
+        IEnumerable<string> roles,
+        string jwtId
     );
 
     bool VerifyToken(string token);

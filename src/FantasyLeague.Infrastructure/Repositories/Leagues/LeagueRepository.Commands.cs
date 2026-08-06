@@ -46,7 +46,6 @@ public sealed partial class LeagueRepository
             league.Status = LeagueStatus.DraftCancelled;
         }
 
-        await dbContext.SaveChangesAsync(cancellation);
         return league.Status == LeagueStatus.DraftCancelled;
     }
 }

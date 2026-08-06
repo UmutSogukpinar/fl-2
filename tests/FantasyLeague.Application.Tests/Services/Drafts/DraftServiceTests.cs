@@ -340,6 +340,8 @@ public sealed class DraftServiceTests
         Assert.Equal(LeagueStatus.DraftCancelled, state.Status);
         _leagueRepository.Verify(repository => repository.RecordDraftFailureAsync(
             league.Id, 5, utcNow, It.IsAny<CancellationToken>()), Times.Once);
+        _leagueRepository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private void SetupTrackedLeague(League league) =>

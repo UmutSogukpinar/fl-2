@@ -22,6 +22,7 @@ public sealed partial class DraftService
             DraftFailureCancellationThreshold,
             failedAt,
             cancellation);
+        await leagueRepository.SaveChangesAsync(cancellation);
 
         if (!cancelled)
         {

@@ -25,7 +25,6 @@ public sealed partial class FantasyTeamRepository
             initiatingTeamId, counterpartyTeamId,
             offeredPlayerIds, requestedPlayerIds);
         _dbContext.Set<TransferRequest>().Add(request);
-        await _dbContext.SaveChangesAsync(cancellation);
         return request.Id;
     }
 
@@ -103,14 +102,9 @@ public sealed partial class FantasyTeamRepository
         var currentPlayers = await GetTransferredRosterPlayersAsync(
             request, selection, cancellation);
 
-        await using var transaction =
-            await _dbContext.Database.BeginTransactionAsync(cancellation);
         RemoveTransferredPlayers(currentPlayers);
-        await _dbContext.SaveChangesAsync(cancellation);
         AddTransferredPlayers(request, selection, leagueId);
         MarkApproved(request);
-        await _dbContext.SaveChangesAsync(cancellation);
-        await transaction.CommitAsync(cancellation);
     }
 
     private Task<Guid> GetLeagueIdAsync(

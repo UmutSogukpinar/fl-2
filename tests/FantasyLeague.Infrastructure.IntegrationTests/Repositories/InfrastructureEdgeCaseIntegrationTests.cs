@@ -224,6 +224,44 @@ public sealed class InfrastructureEdgeCaseIntegrationTests(PostgreSqlFixture dat
     }
 
     [Fact]
+    public async Task FantasyTeamRepository_ApproveTransfer_WithSingleServiceCommit_SwapsRosters()
+    {
+        await using var context = database.CreateContext();
+        var (_, owner, league) = await IntegrationTestData.AddLeagueAsync(context);
+        league.Settings.RosterSize = 1;
+        var owner2 = IntegrationTestData.CreateUser("transfer-commit-owner");
+        var first = Team("Transfer First", league.Id, owner.Id);
+        var second = Team("Transfer Second", league.Id, owner2.Id);
+        var firstPlayer = IntegrationTestData.CreatePlayer(6010, "FirstTrade");
+        var secondPlayer = IntegrationTestData.CreatePlayer(6011, "SecondTrade");
+        context.AddRange(
+            owner2, first, second, firstPlayer, secondPlayer,
+            Roster(first, league.Id, firstPlayer.Id),
+            Roster(second, league.Id, secondPlayer.Id));
+        await context.SaveChangesAsync();
+        var repository = new FantasyTeamRepository(context);
+        var transferId = await repository.CreateTransferAsync(
+            first.Id, second.Id, [firstPlayer.Id], [secondPlayer.Id],
+            CancellationToken.None);
+        await repository.SaveChangesAsync(CancellationToken.None);
+
+        await repository.ApproveTransferAsync(
+            transferId, second.Id, CancellationToken.None);
+        await repository.SaveChangesAsync(CancellationToken.None);
+        context.ChangeTracker.Clear();
+
+        var firstRoster = await context.Set<FantasyTeamPlayer>()
+            .Where(player => player.FantasyTeamId == first.Id)
+            .Select(player => player.NbaPlayerId).ToArrayAsync();
+        var secondRoster = await context.Set<FantasyTeamPlayer>()
+            .Where(player => player.FantasyTeamId == second.Id)
+            .Select(player => player.NbaPlayerId).ToArrayAsync();
+
+        Assert.Equal(secondPlayer.Id, Assert.Single(firstRoster));
+        Assert.Equal(firstPlayer.Id, Assert.Single(secondRoster));
+    }
+
+    [Fact]
     public async Task DraftRepository_WhenNoPlayersExist_ReturnsNoAvailablePlayer()
     {
         await using var context = database.CreateContext();

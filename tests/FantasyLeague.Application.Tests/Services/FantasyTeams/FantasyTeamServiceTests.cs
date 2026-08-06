@@ -348,6 +348,8 @@ public sealed class FantasyTeamServiceTests
                 teamId, null, playerId, cancellation), Times.Once);
         _teamRepository.Verify(repository => repository.ReleaseAPlayerAsync(
             teamId, playerId, cancellation), Times.Once);
+        _teamRepository.Verify(repository => repository.SaveChangesAsync(
+            cancellation), Times.Once);
     }
 
     // Case: Release APlayer when Release Would Drop Roster Below Half
@@ -553,6 +555,8 @@ public sealed class FantasyTeamServiceTests
             request.OfferedPlayerIds,
             request.RequestedPlayerIds,
             It.IsAny<CancellationToken>()), Times.Once);
+        _teamRepository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // Case: Create Transfer when Teams Are Same
@@ -615,6 +619,8 @@ public sealed class FantasyTeamServiceTests
 
         _teamRepository.Verify(repository => repository.ApproveTransferAsync(
             transferId, approvingTeamId, It.IsAny<CancellationToken>()), Times.Once);
+        _teamRepository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // Case: Approve Transfer when With Empty Approving Team Id

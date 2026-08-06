@@ -85,7 +85,6 @@ public sealed partial class FantasyTeamRepository
         }
 
         _dbContext.Set<FantasyTeamPlayer>().Remove(player);
-        await _dbContext.SaveChangesAsync(cancellation);
     }
 
     public async Task AddPlayerFromPoolAsync(
@@ -102,7 +101,6 @@ public sealed partial class FantasyTeamRepository
                 NbaPlayerId = playerId
             },
             cancellation);
-        await _dbContext.SaveChangesAsync(cancellation);
     }
 
     private Task<Guid> GetTeamLeagueIdAsync(

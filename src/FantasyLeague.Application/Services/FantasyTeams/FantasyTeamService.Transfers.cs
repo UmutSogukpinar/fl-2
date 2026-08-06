@@ -59,23 +59,26 @@ public sealed partial class FantasyTeamService
         CheckConflictForFantasyTeamIdAndNbaPlayerId(
             conflict, initiatingTeamId, request.CounterpartyTeamId);
 
-        return await _teamRepository.CreateTransferAsync(
+        var transferId = await _teamRepository.CreateTransferAsync(
             initiatingTeamId,
             request.CounterpartyTeamId,
             request.OfferedPlayerIds,
             request.RequestedPlayerIds,
             cancellation);
+        await _teamRepository.SaveChangesAsync(cancellation);
+        return transferId;
     }
 
-    public Task ApproveTransferAsync(
+    public async Task ApproveTransferAsync(
         Guid transferId, Guid approvingTeamId,
         CancellationToken cancellation = default)
     {
         TransferValidation.ValidateApproveTransferRequest(
             transferId, approvingTeamId);
 
-        return _teamRepository.ApproveTransferAsync(
+        await _teamRepository.ApproveTransferAsync(
             transferId, approvingTeamId, cancellation);
+        await _teamRepository.SaveChangesAsync(cancellation);
     }
 
     public async Task ReleaseAPlayerAsync(
@@ -113,6 +116,7 @@ public sealed partial class FantasyTeamService
         await _teamRepository.ReleaseAPlayerAsync(
                 id, playerId, cancellation
             );
+        await _teamRepository.SaveChangesAsync(cancellation);
     }
 
     public async Task AddPlayerFromPoolAsync(
@@ -146,6 +150,7 @@ public sealed partial class FantasyTeamService
 
         await _teamRepository.AddPlayerFromPoolAsync(
             teamId, playerId, cancellation);
+        await _teamRepository.SaveChangesAsync(cancellation);
     }
 
     // ==================== Validations ====================

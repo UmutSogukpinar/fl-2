@@ -987,6 +987,150 @@ header {
   text-align: center !important;
   color: #8792a8 !important;
 }
+.player-cards-message {
+  display: grid;
+  place-items: center;
+  border: 1px solid #232b3b;
+  border-radius: 14px;
+  background: #111824;
+}
+.player-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 14px;
+}
+.player-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 13px;
+  padding: 18px;
+  border: 1px solid #253044;
+  border-radius: 13px;
+  color: #f3f5f8;
+  background: linear-gradient(145deg, #151e2d, #101722);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+.player-card:hover,
+.player-card:focus-visible {
+  border-color: #ff6548;
+  outline: none;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 22%);
+}
+.player-card-avatar,
+.player-details-avatar {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  color: var(--orange);
+  background: rgb(255 101 72 / 10%);
+}
+.player-card-copy {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+.player-card-copy strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-card-copy small {
+  color: #8491a6;
+}
+.player-details-modal {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 26px;
+  border: 1px solid #2a3445;
+  border-radius: 18px;
+  background: #111824;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.55);
+}
+.player-details-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #242e3e;
+}
+.player-details-head > div > span {
+  color: var(--orange);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+.player-details-head h2 {
+  margin: 4px 0;
+  font-size: 24px;
+}
+.player-details-head p {
+  margin: 0;
+  color: #8491a6;
+  font-size: 13px;
+}
+.player-details-head > button {
+  display: grid;
+  place-items: center;
+  padding: 7px;
+  border: 0;
+  color: #98a4b7;
+  background: transparent;
+  cursor: pointer;
+}
+.player-physical-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 20px 0 12px;
+}
+.player-physical-details span,
+.player-stat-grid div {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid #253044;
+  border-radius: 10px;
+  background: #0d1520;
+}
+.player-physical-details small,
+.player-stat-grid small {
+  color: #77859a;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.player-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.player-stat-grid strong {
+  font-size: 19px;
+}
+.player-details-state {
+  display: grid;
+  min-height: 150px;
+  place-items: center;
+  color: #8792a8;
+}
+@media (max-width: 640px) {
+  .player-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .player-details-modal {
+    padding: 20px;
+  }
+}
 .pagination {
   display: flex;
   align-items: center;
@@ -1361,6 +1505,23 @@ header {
 .transfer-roster label > span { display: grid; gap: 3px; }
 .transfer-roster small { color: #8296ae; }
 .transfer-roster input { accent-color: #ff6548; }
+.team-roster-list { min-height: 0; }
+.release-player-button {
+  padding: 8px 11px;
+  border: 1px solid rgb(239 83 80 / 40%);
+  border-radius: 7px;
+  color: #ffaaa1;
+  background: rgb(239 83 80 / 10%);
+  cursor: pointer;
+}
+.release-player-button:hover:not(:disabled) {
+  border-color: #ef5350;
+  background: rgb(239 83 80 / 18%);
+}
+.release-player-button:disabled {
+  opacity: .45;
+  cursor: default;
+}
 .transfer-summary { display: flex; align-items: center; gap: 16px; color: #9cb1c9; }
 .transfer-summary b { color: #ff765d; font-size: 22px; }
 .transfer-summary button { margin-left: auto; }

@@ -38,6 +38,10 @@ export const transfersApi = {
     apiClient<void>(`/fantasy-teams/${teamId}/players/${playerId}`, {
       method: 'POST',
     }),
+  release: (teamId: string, playerId: string) =>
+    apiClient<void>(`/fantasy-teams/${teamId}?playerId=${playerId}`, {
+      method: 'PATCH',
+    }),
   list: (teamId: string, signal?: AbortSignal) =>
     apiClient<Transfer[]>(`/fantasy-teams/${teamId}/transfers`, { signal }),
   create: (

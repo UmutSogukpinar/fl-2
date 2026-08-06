@@ -1,8 +1,13 @@
 import { apiClient } from '../../shared/api/client'
 import type { PagedResponse } from '../../shared/types/api'
-import type { NbaPlayer } from './types'
+import type { NbaPlayer, NbaPlayerDetails } from './types'
 
 export const playersApi = {
+  details: (id: string, season = 2024, signal?: AbortSignal) =>
+    apiClient<NbaPlayerDetails>(
+      `/nba-players/${id}?season=${season}&size=Extended`,
+      { signal },
+    ),
   list: (pageNumber: number, pageSize: number, signal?: AbortSignal) =>
     apiClient<PagedResponse<NbaPlayer>>(
       `/nba-players?pageNumber=${pageNumber}&pageSize=${pageSize}`,

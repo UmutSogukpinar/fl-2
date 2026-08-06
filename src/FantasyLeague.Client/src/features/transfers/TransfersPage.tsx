@@ -23,6 +23,8 @@ export function TransfersPage({ leagueId }: { leagueId?: string }) {
   const [submitting, setSubmitting] = useState(false)
   const [approving, setApproving] = useState<string | null>(null)
   const [addingPlayer, setAddingPlayer] = useState<string | null>(null)
+  const [releasingPlayer, setReleasingPlayer] = useState<string | null>(null)
+  const [rosterSize, setRosterSize] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const myTeam = useMemo(() => teams.find((team) => team.ownerId === userId), [teams, userId])
@@ -31,8 +33,14 @@ export function TransfersPage({ leagueId }: { leagueId?: string }) {
   useEffect(() => {
     if (!leagueId) return
     const controller = new AbortController()
-    leaguesApi.members(leagueId, controller.signal)
-      .then(({ items }) => setTeams(items))
+    Promise.all([
+      leaguesApi.members(leagueId, controller.signal),
+      leaguesApi.getById(leagueId, controller.signal),
+    ])
+      .then(([{ items }, league]) => {
+        setTeams(items)
+        setRosterSize(league.rosterSize)
+      })
       .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : 'Takımlar yüklenemedi.'))
       .finally(() => setLoading(false))
     return () => controller.abort()
@@ -121,6 +129,10 @@ export function TransfersPage({ leagueId }: { leagueId?: string }) {
 
   async function addPlayerFromPool(playerId: string) {
     if (!myTeam) return
+    if (rosterSize !== null && myRoster.length >= rosterSize) {
+      setError(`Kadro dolu. En fazla ${rosterSize} oyuncu ekleyebilirsin.`)
+      return
+    }
     setAddingPlayer(playerId)
     setError(null)
     try {
@@ -136,6 +148,29 @@ export function TransfersPage({ leagueId }: { leagueId?: string }) {
       setError(requestError instanceof Error ? requestError.message : 'Oyuncu kadroya eklenemedi.')
     } finally {
       setAddingPlayer(null)
+    }
+  }
+
+  async function releasePlayer(player: RosterPlayer) {
+    if (!myTeam) return
+    if (!window.confirm(`${player.firstName} ${player.lastName} kadrodan bırakılsın mı?`)) return
+
+    setReleasingPlayer(player.id)
+    setError(null)
+    try {
+      await transfersApi.release(myTeam.id, player.id)
+      const [roster, pool] = await Promise.all([
+        transfersApi.roster(myTeam.id),
+        transfersApi.playerPool(myTeam.id, poolPage, PLAYER_POOL_PAGE_SIZE),
+      ])
+      setMyRoster(roster)
+      setPlayerPool(pool.items)
+      setPoolTotalPages(pool.totalPages)
+      setOffered((selected) => selected.filter((id) => id !== player.id))
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Oyuncu kadrodan bırakılamadı.')
+    } finally {
+      setReleasingPlayer(null)
     }
   }
 
@@ -159,8 +194,40 @@ export function TransfersPage({ leagueId }: { leagueId?: string }) {
         <div className="transfer-summary"><span>{offered.length} oyuncu veriyorsun</span><b>⇄</b><span>{requested.length} oyuncu alıyorsun</span><button className="create" disabled={submitting || !counterpartyId || !offered.length || !requested.length} onClick={createTransfer}>{submitting ? 'Gönderiliyor...' : 'Teklifi gönder'}</button></div>
       </article>
       <article className="detail-panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Kadrom</h2>
+            <p>{myRoster.length}{rosterSize !== null ? ` / ${rosterSize}` : ''} oyuncu</p>
+          </div>
+        </div>
+        <div className="transfer-roster team-roster-list">
+          {myRoster.map((player) => (
+            <div className="member-row" key={player.id}>
+              <span>
+                <strong>{player.firstName} {player.lastName}</strong>
+                <small>{player.nbaTeam ?? 'FA'} · {player.position ?? '-'}</small>
+              </span>
+              <button
+                className="release-player-button"
+                type="button"
+                disabled={releasingPlayer !== null}
+                onClick={() => releasePlayer(player)}
+              >
+                {releasingPlayer === player.id ? 'Bırakılıyor...' : 'Oyuncuyu bırak'}
+              </button>
+            </div>
+          ))}
+          {!myRoster.length && <p>Kadroda oyuncu bulunmuyor.</p>}
+        </div>
+      </article>
+      <article className="detail-panel">
         <div className="panel-heading"><div><h2>Oyuncu havuzu</h2><p>Bu ligde hiçbir takıma bağlı olmayan oyuncular.</p></div></div>
-        <PlayerPool players={playerPool} addingPlayer={addingPlayer} onAdd={addPlayerFromPool} />
+        <PlayerPool
+          players={playerPool}
+          addingPlayer={addingPlayer}
+          rosterFull={rosterSize !== null && myRoster.length >= rosterSize}
+          onAdd={addPlayerFromPool}
+        />
         <div className="pagination"><button disabled={poolPage === 1} onClick={() => setPoolPage((page) => page - 1)}>Önceki</button><span>{poolPage} / {poolTotalPages || 1}</span><button disabled={poolPage >= poolTotalPages} onClick={() => setPoolPage((page) => page + 1)}>Sonraki</button></div>
       </article>
       <article className="detail-panel"><h2>Transfer teklifleri</h2>{transfers.map((transfer) => {
@@ -173,8 +240,8 @@ export function TransfersPage({ leagueId }: { leagueId?: string }) {
   )
 }
 
-function PlayerPool({ players, addingPlayer, onAdd }: { players: RosterPlayer[]; addingPlayer: string | null; onAdd: (id: string) => void }) {
-  return <div className="transfer-roster">{players.map((player) => <div className="member-row" key={player.id}><span><strong>{player.firstName} {player.lastName}</strong><small>{player.nbaTeam ?? 'FA'} · {player.position ?? '-'}</small></span><button className="create" disabled={addingPlayer !== null} onClick={() => onAdd(player.id)}>{addingPlayer === player.id ? 'Ekleniyor...' : 'Kadroya ekle'}</button></div>)}{!players.length && <p>Havuzda uygun oyuncu bulunmuyor.</p>}</div>
+function PlayerPool({ players, addingPlayer, rosterFull, onAdd }: { players: RosterPlayer[]; addingPlayer: string | null; rosterFull: boolean; onAdd: (id: string) => void }) {
+  return <div className="transfer-roster">{rosterFull && <p className="form-warning">Kadro dolu. Yeni oyuncu eklemek için önce bir oyuncu bırakmalısın.</p>}{players.map((player) => <div className="member-row" key={player.id}><span><strong>{player.firstName} {player.lastName}</strong><small>{player.nbaTeam ?? 'FA'} · {player.position ?? '-'}</small></span><button className="create" disabled={addingPlayer !== null || rosterFull} onClick={() => onAdd(player.id)}>{addingPlayer === player.id ? 'Ekleniyor...' : rosterFull ? 'Kadro dolu' : 'Kadroya ekle'}</button></div>)}{!players.length && <p>Havuzda uygun oyuncu bulunmuyor.</p>}</div>
 }
 
 function Roster({ title, players, selected, onToggle, emptyText = 'Kadro boş.' }: { title: string; players: RosterPlayer[]; selected: string[]; onToggle: (id: string) => void; emptyText?: string }) {

@@ -12,6 +12,8 @@ public class RefreshToken
 
     public DateTime ExpiryDate { get; set; }
 
+    public DateTime? RevokeDate { get; set; }
+
     public TokenStatus Status { get; set; }
 
     public required Guid UserId { get; set; }

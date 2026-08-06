@@ -2,11 +2,13 @@ using FantasyLeague.Application.Common.Interfaces.Caching;
 using FantasyLeague.Application.Common.Interfaces.ExternalServices;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Interfaces.Security;
+using FantasyLeague.Application.Services.Auth;
 using FantasyLeague.Application.Services.Drafts;
 using FantasyLeague.Application.Services.FantasyTeams;
 using FantasyLeague.Application.Services.Leagues;
 using FantasyLeague.Application.Services.NbaPlayers;
 using FantasyLeague.Application.Services.Users;
+using FantasyLeague.Domain.Entities.Auth;
 using FantasyLeague.Infrastructure.Caching;
 using FantasyLeague.Infrastructure.Context;
 using FantasyLeague.Infrastructure.ExternalServices.NbaApi;
@@ -24,7 +26,10 @@ using FantasyLeague.WebApi.Jobs.NbaPlayers;
 using FantasyLeague.WebApi.Middleware;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +47,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<INbaPlayerSyncService, NbaPlayerSyncService>();
@@ -76,6 +82,52 @@ var connectionString = $"Host={dbSettings["Host"]};" +
                        $"Username={dbSettings["Username"]};" +
                        $"Password={dbSettings["Password"]};";
 
+var jwtSection = builder.Configuration
+    .GetRequiredSection("JwtTokenOptions");
+
+var tokenOptions = jwtSection.Get<JwtTokenOptions>()
+    ?? throw new InvalidOperationException(
+        "JwtTokenOptions configuration is missing."
+    );
+
+builder.Services.Configure<JwtTokenOptions>(jwtSection);
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme =
+            JwtBearerDefaults.AuthenticationScheme;
+
+        options.DefaultChallengeScheme =
+            JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                // Check issuer
+                ValidateIssuer = true,
+                ValidIssuer = tokenOptions.Issuer,
+
+                ValidateAudience = true,
+                ValidAudience = tokenOptions.Audience,
+
+                // Check life time of token
+                ValidateLifetime = true,
+
+                // Check signature
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(tokenOptions.Secret)
+                ),
+
+                ClockSkew = TimeSpan.Zero
+            };
+    });
+
+builder.Services.AddAuthorization();
+
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -83,7 +135,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddHangfire(configuration => configuration
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+    .UsePostgreSqlStorage(
+        options => options.UseNpgsqlConnection(connectionString))
+    );
 
 builder.Services.AddHangfireServer();
 

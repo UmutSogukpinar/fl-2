@@ -1,35 +1,26 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace FantasyLeague.Infrastructure.Migrations
-{
-    /// <inheritdoc />
-    public partial class UpdateRefreshTokenUserIdColumn : Migration
-    {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AlterColumn<Guid>(
-                name: "UserId",
-                table: "refresh_tokens",
-                type: "uuid",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "text");
-        }
+namespace FantasyLeague.Infrastructure.Migrations;
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AlterColumn<string>(
-                name: "UserId",
-                table: "refresh_tokens",
-                type: "text",
-                nullable: false,
-                oldClrType: typeof(Guid),
-                oldType: "uuid");
-        }
+public partial class UpdateRefreshTokenUserIdColumn : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql("""
+            ALTER TABLE refresh_tokens
+            ALTER COLUMN "UserId" TYPE uuid
+            USING "UserId"::uuid;
+            """);
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.Sql("""
+            ALTER TABLE refresh_tokens
+            ALTER COLUMN "UserId" TYPE text
+            USING "UserId"::text;
+            """);
     }
 }

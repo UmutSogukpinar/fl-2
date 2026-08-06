@@ -10,6 +10,7 @@ using FantasyLeague.Application.Common.Interfaces.Repositories;
 using FantasyLeague.Application.Common.Interfaces.Security;
 using FantasyLeague.Application.DTOs.Requests.Users;
 using FantasyLeague.Application.DTOs.Responses.Users;
+using FantasyLeague.Application.Services.Auth;
 using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Domain.Entities;
 
@@ -17,13 +18,18 @@ public class UserServiceTests
 {
     private readonly Mock<IPasswordHasher> _passwordHasherMock;
     private readonly Mock<IUserRepository> _repositoryMock;
+    private readonly Mock<IJwtService> _jwtServiceMock;
     private readonly UserService _service;
 
     public UserServiceTests()
     {
         _passwordHasherMock = new Mock<IPasswordHasher>();
         _repositoryMock = new Mock<IUserRepository>();
-        _service = new UserService(_repositoryMock.Object, _passwordHasherMock.Object);
+        _jwtServiceMock = new Mock<IJwtService>();
+        _service = new UserService(
+            _repositoryMock.Object,
+            _passwordHasherMock.Object,
+            _jwtServiceMock.Object);
     }
 
     // ====================== Get User Tests ======================

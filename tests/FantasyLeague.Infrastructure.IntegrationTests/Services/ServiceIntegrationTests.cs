@@ -6,6 +6,7 @@ using FantasyLeague.Application.Services.Drafts;
 using FantasyLeague.Application.Services.FantasyTeams;
 using FantasyLeague.Application.Services.Leagues;
 using FantasyLeague.Application.Services.NbaPlayers;
+using FantasyLeague.Application.Services.Auth;
 using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Domain.Entities.FantasyTeams;
 using FantasyLeague.Domain.Entities.Players;
@@ -38,7 +39,10 @@ public sealed class ServiceIntegrationTests(PostgreSqlFixture database) : IAsync
         var user = IntegrationTestData.CreateUser("service-user");
         context.Add(user);
         await context.SaveChangesAsync();
-        var service = new UserService(new UserRepository(context), new TestPasswordHasher());
+        var service = new UserService(
+            new UserRepository(context),
+            new TestPasswordHasher(),
+            new TestJwtService());
 
         var response = await service.GetByIdAsync(user.Id);
 
@@ -161,6 +165,15 @@ public sealed class ServiceIntegrationTests(PostgreSqlFixture database) : IAsync
 
         public bool Verify(string password, string passwordHash) =>
             passwordHash == Hash(password);
+    }
+
+    private sealed class TestJwtService : IJwtService
+    {
+        public string GenerateToken(
+            string userName,
+            IEnumerable<string> roles) => $"token:{userName}";
+
+        public bool VerifyToken(string token) => token.StartsWith("token:");
     }
 
     private sealed class TestCacheService : ICacheService

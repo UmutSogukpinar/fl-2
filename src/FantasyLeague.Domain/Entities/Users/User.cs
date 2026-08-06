@@ -16,4 +16,6 @@ public class User
 
     public DateTime? UpdatedAt { get; set; }
 
+    public UserRole Role { get; set; } = UserRole.User;
+
 }

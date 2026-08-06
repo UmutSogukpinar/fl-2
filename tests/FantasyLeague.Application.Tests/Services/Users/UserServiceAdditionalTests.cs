@@ -6,6 +6,7 @@ using FantasyLeague.Application.Common.Interfaces.Security;
 using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Requests.Users;
 using FantasyLeague.Application.DTOs.Responses.Users;
+using FantasyLeague.Application.Services.Auth;
 using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Domain.Entities;
 using Moq;
@@ -16,11 +17,15 @@ public sealed class UserServiceAdditionalTests
 {
     private readonly Mock<IUserRepository> _repository = new();
     private readonly Mock<IPasswordHasher> _passwordHasher = new();
+    private readonly Mock<IJwtService> _jwtService = new();
     private readonly UserService _service;
 
     public UserServiceAdditionalTests()
     {
-        _service = new UserService(_repository.Object, _passwordHasher.Object);
+        _service = new UserService(
+            _repository.Object,
+            _passwordHasher.Object,
+            _jwtService.Object);
     }
 
     // Case: Get
@@ -118,8 +123,9 @@ public sealed class UserServiceAdditionalTests
 
         var response = await _service.SignInAsync(request);
 
-        Assert.Equal(user.Id, response.Id);
-        Assert.Equal(user.Email, response.Email);
+        Assert.Equal(user.Id, response.user.Id);
+        Assert.Equal(user.Email, response.user.Email);
+        Assert.NotEmpty(response.refreshToken);
     }
 
     // Case: Sign In with username
@@ -140,7 +146,8 @@ public sealed class UserServiceAdditionalTests
 
         var response = await _service.SignInAsync(request);
 
-        Assert.Equal(user.Id, response.Id);
+        Assert.Equal(user.Id, response.user.Id);
+        Assert.NotEmpty(response.refreshToken);
         _repository.Verify(repository => repository.GetByUsernameAsync(
             "user", It.IsAny<CancellationToken>()), Times.Once);
         _repository.Verify(repository => repository.GetByEmailAsync(

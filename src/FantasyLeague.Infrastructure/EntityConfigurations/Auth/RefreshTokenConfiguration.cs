@@ -19,5 +19,6 @@ public sealed class RefreshTokenConfiguration
         builder.Property(token => token.ExpiryDate).IsRequired();
         builder.Property(token => token.Status).IsRequired();
         builder.Property(token => token.UserId).IsRequired();
+        builder.Property(token => token.RevokeDate).IsRequired(false);
     }
 }

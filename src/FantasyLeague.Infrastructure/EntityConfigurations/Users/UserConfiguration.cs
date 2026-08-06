@@ -33,5 +33,9 @@ public sealed class UserConfiguration
             .HasMaxLength(100)
             .HasDefaultValue("UTC")
             .IsRequired();
+
+        builder.Property(user => user.Role)
+            .HasDefaultValue(UserRole.User)
+            .IsRequired();
     }
 }

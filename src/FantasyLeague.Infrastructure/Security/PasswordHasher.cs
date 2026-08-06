@@ -18,22 +18,34 @@ public sealed class PasswordHasher : IPasswordHasher
             salt,
             Iterations,
             HashAlgorithmName.SHA256,
-            HashSize);
+            HashSize
+        );
 
         return $"{Iterations}.{Convert.ToBase64String(salt)}.{Convert.ToBase64String(hash)}";
     }
 
-    public bool Verify(string password, string passwordHash)
+    public bool Verify(string password, string actualPassword)
     {
-        var parts = passwordHash.Split('.');
-        if (parts.Length != 3 || !int.TryParse(parts[0], out var iterations)) return false;
+        var parts = actualPassword.Split('.');
+        if (parts.Length != 3 ||
+            !int.TryParse(parts[0], out var iterations)
+        )
+        {
+            return false;
+        }
 
         try
         {
             var salt = Convert.FromBase64String(parts[1]);
             var expectedHash = Convert.FromBase64String(parts[2]);
             var actualHash = Rfc2898DeriveBytes.Pbkdf2(
-                password, salt, iterations, HashAlgorithmName.SHA256, expectedHash.Length);
+                password,
+                salt,
+                iterations,
+                HashAlgorithmName.SHA256,
+                expectedHash.Length
+            );
+
             return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
         }
         catch (FormatException)

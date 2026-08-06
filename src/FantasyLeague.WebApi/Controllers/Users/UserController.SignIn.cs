@@ -1,6 +1,4 @@
-﻿using FantasyLeague.Application.DTOs.Requests.Common;
-using FantasyLeague.Application.DTOs.Requests.Users;
-using FantasyLeague.Application.DTOs.Responses.Common;
+﻿using FantasyLeague.Application.DTOs.Requests.Users;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,11 +27,43 @@ public sealed partial class UsersController
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserResponse>> SignInAsync(
         [FromBody] SignInRequest request,
-        CancellationToken cancellationToken
+        CancellationToken cancellation = default
     )
     {
-        return Ok(await userService.SignInAsync(
-                    request, cancellationToken)
-            );
+        var (result, accessToken, refreshToken) = await
+            userService.SignInAsync(request, cancellation);
+
+        SetCookies(accessToken, refreshToken);
+
+        return Ok(result);
+    }
+
+    private void SetCookies(
+        string accessToken,
+        string refreshToken
+    )
+    {
+        // TODO: Remove magic values for cookie expiration times
+        // and move them to configuration.
+
+        Response.Cookies.Append(
+            "access_token", accessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                SameSite = SameSiteMode.Strict,
+                Secure = true,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(15)
+            }
+        );
+
+        Response.Cookies.Append(
+            "refresh_token", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                SameSite = SameSiteMode.Strict,
+                Secure = true,
+                Expires = DateTimeOffset.UtcNow.AddDays(1)
+            }
+        );
     }
 }

@@ -22,12 +22,12 @@ export function UserSetupPage() {
     setError(null)
 
     try {
-      const email = String(form.get('email'))
       const password = String(form.get('password'))
       let user
       if (mode === 'sign-in') {
-        user = await usersApi.signIn(email, password)
+        user = await usersApi.signIn(String(form.get('identifier')), password)
       } else {
+        const email = String(form.get('email'))
         await usersApi.create({
             username: String(form.get('username')),
             email,
@@ -77,7 +77,17 @@ export function UserSetupPage() {
           {mode === 'create' && (
             <label>Kullanıcı adı<input name="username" required minLength={3} maxLength={50} /></label>
           )}
-          <label>E-posta<input name="email" type="email" required /></label>
+          {mode === 'sign-in' ? (
+            <label>
+              E-posta veya kullanıcı adı
+              <input name="identifier" type="text" autoComplete="username" required />
+            </label>
+          ) : (
+            <label>
+              E-posta
+              <input name="email" type="email" autoComplete="email" required />
+            </label>
+          )}
           <label>Şifre<input name="password" type="password" required minLength={8} /></label>
           {mode === 'create' && (
             <label>Konum<input name="location" defaultValue="Istanbul" required /></label>

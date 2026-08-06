@@ -11,10 +11,10 @@ export interface CreateUserRequest {
 export const usersApi = {
   getById: (id: string, signal?: AbortSignal) =>
     apiClient<User>(`/users/${id}`, { signal }),
-  signIn: (email: string, password: string) =>
+  signIn: (identifier: string, password: string) =>
     apiClient<User>('/auth/sign-in', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier, password }),
       skipAuthRefresh: true,
     }),
   create: (request: CreateUserRequest) =>

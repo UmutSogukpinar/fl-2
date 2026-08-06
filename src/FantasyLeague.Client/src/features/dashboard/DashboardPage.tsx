@@ -9,9 +9,16 @@ import { Stats } from './Stats'
 export function DashboardPage() {
   const { texts } = useApp()
   const { leagues, loading, error } = useLeagues()
-  const active = useMemo(
-    () => leagues.filter((x) => normalizeStatus(x.status) === 'Active').length,
+  const visibleLeagues = useMemo(
+    () => leagues.filter((league) => {
+      const status = normalizeStatus(league.status)
+      return status !== 'Completed' && status !== 'DraftDelayed'
+    }),
     [leagues],
+  )
+  const active = useMemo(
+    () => visibleLeagues.filter((league) => normalizeStatus(league.status) === 'Active').length,
+    [visibleLeagues],
   )
   return (
     <>
@@ -22,8 +29,8 @@ export function DashboardPage() {
         </div>
       )}
       <Hero />
-      <Stats total={leagues.length} active={active} />
-      <LeagueSection leagues={leagues} loading={loading} />
+      <Stats total={visibleLeagues.length} active={active} />
+      <LeagueSection leagues={visibleLeagues} loading={loading} />
     </>
   )
 }

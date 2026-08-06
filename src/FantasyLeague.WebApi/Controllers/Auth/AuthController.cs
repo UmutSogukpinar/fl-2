@@ -16,11 +16,11 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserResponse>> SignInAsync(
         [FromBody] SignInRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         var (user, accessToken, refreshToken) = await authService.SignInAsync(
             request,
-            cancellationToken);
+            cancellation);
 
         SetCookies(accessToken, refreshToken);
         return Ok(user);
@@ -30,11 +30,11 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<UserResponse>> RefreshAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         var (user, accessToken, refreshToken) = await authService.RefreshAsync(
             Request.Cookies["refresh_token"] ?? string.Empty,
-            cancellationToken);
+            cancellation);
 
         SetCookies(accessToken, refreshToken);
         return Ok(user);
@@ -43,11 +43,11 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("sign-out")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> SignOutAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         await authService.SignOutAsync(
             Request.Cookies["refresh_token"] ?? string.Empty,
-            cancellationToken);
+            cancellation);
 
         Response.Cookies.Delete("access_token", new CookieOptions { Path = "/" });
         Response.Cookies.Delete("refresh_token", new CookieOptions { Path = "/" });

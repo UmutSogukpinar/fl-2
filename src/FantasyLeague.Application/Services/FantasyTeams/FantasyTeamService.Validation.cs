@@ -48,10 +48,10 @@ public sealed partial class FantasyTeamService
 
     private async Task EnsureRegistrationIsOpenAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         if (await _leagueSetupRepository.DraftOrderExistsAsync(
-                leagueId, cancellationToken))
+                leagueId, cancellation))
         {
             throw new ConflictException(
                 "League membership cannot change after " +

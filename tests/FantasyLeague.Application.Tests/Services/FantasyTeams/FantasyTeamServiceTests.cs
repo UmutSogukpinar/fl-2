@@ -330,24 +330,24 @@ public sealed class FantasyTeamServiceTests
         var teamId = Guid.NewGuid();
         var playerId = Guid.NewGuid();
         using var cancellationSource = new CancellationTokenSource();
-        var cancellationToken = cancellationSource.Token;
+        var cancellation = cancellationSource.Token;
         _teamRepository
             .Setup(repository =>
                 repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
-                    teamId, null, playerId, cancellationToken))
+                    teamId, null, playerId, cancellation))
             .ReturnsAsync(TradeValidationResult.None);
         _teamRepository
             .Setup(repository => repository.ReleaseAPlayerAsync(
-                teamId, playerId, cancellationToken))
+                teamId, playerId, cancellation))
             .Returns(Task.CompletedTask);
         await _service.ReleaseAPlayerAsync(
-            teamId, playerId, cancellationToken);
+            teamId, playerId, cancellation);
 
         _teamRepository.Verify(repository =>
             repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
-                teamId, null, playerId, cancellationToken), Times.Once);
+                teamId, null, playerId, cancellation), Times.Once);
         _teamRepository.Verify(repository => repository.ReleaseAPlayerAsync(
-            teamId, playerId, cancellationToken), Times.Once);
+            teamId, playerId, cancellation), Times.Once);
     }
 
     // Case: Release APlayer when Release Would Drop Roster Below Half
@@ -444,18 +444,18 @@ public sealed class FantasyTeamServiceTests
         var playerId = Guid.NewGuid();
         using var cancellationSource = new CancellationTokenSource();
         cancellationSource.Cancel();
-        var cancellationToken = cancellationSource.Token;
+        var cancellation = cancellationSource.Token;
         _teamRepository
             .Setup(repository =>
                 repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
-                    teamId, null, playerId, cancellationToken))
-            .ThrowsAsync(new OperationCanceledException(cancellationToken));
+                    teamId, null, playerId, cancellation))
+            .ThrowsAsync(new OperationCanceledException(cancellation));
 
         var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => _service.ReleaseAPlayerAsync(
-                teamId, playerId, cancellationToken));
+                teamId, playerId, cancellation));
 
-        Assert.Equal(cancellationToken, exception.CancellationToken);
+        Assert.Equal(cancellation, exception.CancellationToken);
         _teamRepository.Verify(repository => repository.ReleaseAPlayerAsync(
             It.IsAny<Guid>(),
             It.IsAny<Guid>(),
@@ -503,22 +503,22 @@ public sealed class FantasyTeamServiceTests
         var playerId = Guid.NewGuid();
         using var cancellationSource = new CancellationTokenSource();
         cancellationSource.Cancel();
-        var cancellationToken = cancellationSource.Token;
+        var cancellation = cancellationSource.Token;
         _teamRepository
             .Setup(repository =>
                 repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
-                    teamId, null, playerId, cancellationToken))
+                    teamId, null, playerId, cancellation))
             .ReturnsAsync(TradeValidationResult.None);
         _teamRepository
             .Setup(repository => repository.ReleaseAPlayerAsync(
-                teamId, playerId, cancellationToken))
-            .ThrowsAsync(new OperationCanceledException(cancellationToken));
+                teamId, playerId, cancellation))
+            .ThrowsAsync(new OperationCanceledException(cancellation));
 
         var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(
             () => _service.ReleaseAPlayerAsync(
-                teamId, playerId, cancellationToken));
+                teamId, playerId, cancellation));
 
-        Assert.Equal(cancellationToken, exception.CancellationToken);
+        Assert.Equal(cancellation, exception.CancellationToken);
     }
 
     // Case: Create Transfer when With Valid Request

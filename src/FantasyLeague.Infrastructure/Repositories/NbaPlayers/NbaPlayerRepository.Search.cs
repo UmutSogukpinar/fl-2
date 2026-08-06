@@ -17,15 +17,15 @@ public sealed partial class NbaPlayerRepository
         int TotalCount)> GetPagedNbaPlayersByNameAsync(
         PaginationRequest pagination,
         GetNbaPlayersRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var query = CreateFilteredSearchQuery(request);
-        var totalCount = await query.CountAsync(cancellationToken);
+        var totalCount = await query.CountAsync(cancellation);
         var pagedQuery = ApplySearchPagination(query, pagination);
         var items = await ProjectSearchResultsAsync(
             pagedQuery,
             request,
-            cancellationToken);
+            cancellation);
 
         return (items, totalCount);
     }
@@ -72,19 +72,19 @@ public sealed partial class NbaPlayerRepository
         ProjectSearchResultsAsync(
             IQueryable<NbaPlayer> query,
             GetNbaPlayersRequest request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellation)
     {
         return request.Size switch
         {
             PlayerResponseSize.Basic => await query.ToBasic()
-                .ToArrayAsync(cancellationToken),
+                .ToArrayAsync(cancellation),
 
             PlayerResponseSize.Detailed => await query.ToDetailed()
-                .ToArrayAsync(cancellationToken),
+                .ToArrayAsync(cancellation),
 
             PlayerResponseSize.Extended => await query
                 .ToExtended(request.Season)
-                .ToArrayAsync(cancellationToken),
+                .ToArrayAsync(cancellation),
 
             _ => throw new ArgumentOutOfRangeException(
                 nameof(request.Size),

@@ -8,13 +8,13 @@ public sealed partial class UserService
         string username,
         string email,
         Guid? excludedUserId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         if (await _userRepository.ExistsAsync(
                 username,
                 email,
                 excludedUserId,
-                cancellationToken))
+                cancellation))
         {
             throw new ConflictException(
                 "The username or email is already in use.");

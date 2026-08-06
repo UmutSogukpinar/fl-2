@@ -22,22 +22,22 @@ public sealed partial class LeaguesController(
     [ProducesResponseType<IReadOnlyList<LeagueStandingResponse>>(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<LeagueStandingResponse>>> GetStandingsAsync(
         Guid id,
-        CancellationToken cancellationToken) =>
-        Ok(await leagueService.GetStandingsAsync(id, cancellationToken));
+        CancellationToken cancellation) =>
+        Ok(await leagueService.GetStandingsAsync(id, cancellation));
 
     [HttpGet("{id:guid}/match-stats")]
     [ProducesResponseType<MatchStats>(StatusCodes.Status200OK)]
     public async Task<ActionResult<MatchStats>> GetMatchStatsAsync(
         Guid id, [FromQuery] Guid homeTeamId, [FromQuery] Guid awayTeamId,
-        CancellationToken cancellationToken) =>
-        Ok(await leagueService.GetMatchStatsAsync(id, homeTeamId, awayTeamId, cancellationToken));
+        CancellationToken cancellation) =>
+        Ok(await leagueService.GetMatchStatsAsync(id, homeTeamId, awayTeamId, cancellation));
 
 
     /// <summary>
     /// Returns the generated fixtures for a league, ordered by week.
     /// </summary>
     /// <param name="id">The league's unique identifier.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>The league's home-and-away fixtures.</returns>
     /// <response code="200">The fixtures were retrieved successfully.</response>
     /// <response code="404">The specified league was not found.</response>
@@ -58,7 +58,7 @@ public sealed partial class LeaguesController(
     /// Returns the generated snake draft order for a league.
     /// </summary>
     /// <param name="id">The league's unique identifier.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>All draft positions ordered by overall pick.</returns>
     /// <response code="200">The draft order was retrieved successfully.</response>
     /// <response code="404">The specified league was not found.</response>
@@ -79,7 +79,7 @@ public sealed partial class LeaguesController(
     /// Returns a paginated collection of leagues.
     /// </summary>
     /// <param name="request">Pagination options.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>A paginated collection of leagues.</returns>
     /// <response code="200">The leagues were retrieved successfully.</response>
     [HttpGet]
@@ -98,7 +98,7 @@ public sealed partial class LeaguesController(
     /// Returns a league by identifier.
     /// </summary>
     /// <param name="id">The league's unique identifier.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>The requested league.</returns>
     /// <response code="200">The league was retrieved successfully.</response>
     /// <response code="404">The specified league was not found.</response>
@@ -119,7 +119,7 @@ public sealed partial class LeaguesController(
     /// </summary>
     /// <param name="leagueId">The league's unique identifier.</param>
     /// <param name="request">Pagination options.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>A paginated collection of league members.</returns>
     /// <response code="200">The league members were retrieved successfully.</response>
     /// <response code="404">The specified league was not found.</response>
@@ -144,7 +144,7 @@ public sealed partial class LeaguesController(
     /// <param name="leagueId">The league's unique identifier.</param>
     /// <param name="request">The team name and owner used 
     /// to create the membership.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>The fantasy team created for the league member.</returns>
     /// <response code="201">The member was added successfully.</response>
     /// <response code="400">The request data is invalid.</response>
@@ -180,7 +180,7 @@ public sealed partial class LeaguesController(
     /// Joins a league by its join code and creates a fantasy team for the member.
     /// </summary>
     /// <param name="request">The join code, team name, and owner information.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>The fantasy team created for the new league member.</returns>
     /// <response code="201">The league was joined successfully.</response>
     /// <response code="400">The request data or join code is invalid.</response>
@@ -219,7 +219,7 @@ public sealed partial class LeaguesController(
     /// </summary>
     /// <param name="leagueId">The league's unique identifier.</param>
     /// <param name="teamId">The fantasy team's unique identifier.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>An empty response.</returns>
     /// <response code="204">The member was removed successfully.</response>
     /// <response code="404">The league or fantasy team membership was not found.</response>
@@ -229,12 +229,12 @@ public sealed partial class LeaguesController(
     public async Task<IActionResult> RemoveMemberAsync(
         Guid leagueId,
         Guid teamId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         await fantasyTeamService.RemoveLeagueMemberAsync(
             leagueId,
             teamId,
-            cancellationToken
+            cancellation
         );
 
         LogRemoveTeam(teamId, leagueId);
@@ -247,7 +247,7 @@ public sealed partial class LeaguesController(
     /// Creates a new league.
     /// </summary>
     /// <param name="request">The information required to create the league.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>The newly created league.</returns>
     /// <response code="201">The league was created successfully.</response>
     /// <response code="400">The request data is invalid.</response>
@@ -279,7 +279,7 @@ public sealed partial class LeaguesController(
     /// </summary>
     /// <param name="id">The league's unique identifier.</param>
     /// <param name="request">The updated league information.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>The updated league.</returns>
     /// <response code="200">The league was updated successfully.</response>
     /// <response code="400">The request data is invalid.</response>
@@ -293,9 +293,9 @@ public sealed partial class LeaguesController(
     public async Task<ActionResult<LeagueResponse>> UpdateAsync(
         Guid id,
         [FromBody] UpdateLeagueRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        var response = await leagueService.UpdateAsync(id, request, cancellationToken);
+        var response = await leagueService.UpdateAsync(id, request, cancellation);
 
         LogUpdateLeague(response.Id);
 
@@ -307,7 +307,7 @@ public sealed partial class LeaguesController(
     /// Deletes a league by identifier.
     /// </summary>
     /// <param name="id">The league's unique identifier.</param>
-    /// <param name="cancellationToken">Token used to cancel the operation.</param>
+    /// <param name="cancellation">Token used to cancel the operation.</param>
     /// <returns>An empty response.</returns>
     /// <response code="204">The league was deleted successfully.</response>
     /// <response code="404">The specified league was not found.</response>
@@ -317,9 +317,9 @@ public sealed partial class LeaguesController(
     public async Task<IActionResult> DeleteAsync(
         Guid id,
         [FromQuery] Guid commissionerId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        await leagueService.DeleteAsync(id, commissionerId, cancellationToken);
+        await leagueService.DeleteAsync(id, commissionerId, cancellation);
         LogDeleteLeague(id, commissionerId);
         return NoContent();
     }

@@ -59,7 +59,7 @@ public sealed partial class LeagueRepository
     }
 
     public async Task<IReadOnlyList<League>> GetDueForDraftAsync(
-        DateTime utcNow, CancellationToken cancellationToken)
+        DateTime utcNow, CancellationToken cancellation)
     {
         return await dbContext.Set<League>()
             .Include(league => league.Settings)
@@ -68,15 +68,15 @@ public sealed partial class LeagueRepository
             .Where(league => league.Status != LeagueStatus.DraftCancelled)
             .Where(league => league.Status != LeagueStatus.Active)
             .Where(league => league.Status != LeagueStatus.Completed)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellation);
     }
 
     public async Task<IReadOnlyList<League>> GetDraftingAsync(
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return await dbContext.Set<League>()
             .Include(league => league.Settings)
             .Where(league => league.Status == LeagueStatus.Drafting)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellation);
     }
 }

@@ -2,8 +2,8 @@ namespace FantasyLeague.Application.Common.Interfaces.ExternalServices;
 
 public interface INbaPlayersApiClient
 {
-    Task<IReadOnlyCollection<ExternalNbaPlayer>> GetActivePlayersAsync(int season, CancellationToken cancellationToken);
-    Task<IReadOnlyCollection<ExternalPlayerGameStats>> GetPlayerStatisticsAsync(int season, CancellationToken cancellationToken);
+    Task<IReadOnlyCollection<ExternalNbaPlayer>> GetActivePlayersAsync(int season, CancellationToken cancellation);
+    Task<IReadOnlyCollection<ExternalPlayerGameStats>> GetPlayerStatisticsAsync(int season, CancellationToken cancellation);
 }
 
 public sealed record ExternalNbaPlayer(

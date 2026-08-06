@@ -13,33 +13,33 @@ namespace FantasyLeague.Infrastructure.Repositories.Leagues;
 
 public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetupRepository
 {
-    public Task<bool> DraftOrderExistsAsync(Guid leagueId, CancellationToken cancellationToken)
+    public Task<bool> DraftOrderExistsAsync(Guid leagueId, CancellationToken cancellation)
     {
         return dbContext.Set<DraftPickOrder>()
         .AnyAsync(
             pick => pick.LeagueId == leagueId,
-            cancellationToken
+            cancellation
         );
     }
 
     public Task AddDraftOrderAsync(
         IReadOnlyCollection<DraftPickOrder> draftOrder,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return dbContext.Set<DraftPickOrder>()
-            .AddRangeAsync(draftOrder, cancellationToken);
+            .AddRangeAsync(draftOrder, cancellation);
     }
 
     public Task AddFixturesAsync(
         IReadOnlyCollection<LeagueFixture> fixtures,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return dbContext.Set<LeagueFixture>()
-            .AddRangeAsync(fixtures, cancellationToken);
+            .AddRangeAsync(fixtures, cancellation);
     }
 
     public async Task<IReadOnlyList<LeagueFixture>> GetDueFixturesAsync(
-        DateTime utcNow, CancellationToken cancellationToken)
+        DateTime utcNow, CancellationToken cancellation)
     {
         return await dbContext.Set<LeagueFixture>()
                         .Where(fixture => fixture.GameTime <= utcNow)
@@ -50,28 +50,28 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
                              fixture.AwayScore == 0))
                         .OrderBy(fixture => fixture.GameTime)
                         .ThenBy(fixture => fixture.Id)
-                        .ToListAsync(cancellationToken);
+                        .ToListAsync(cancellation);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    public Task SaveChangesAsync(CancellationToken cancellation)
     {
-        return dbContext.SaveChangesAsync(cancellationToken);
+        return dbContext.SaveChangesAsync(cancellation);
     }
 
     public Task<bool> HasUnfinishedFixturesAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return dbContext.Set<LeagueFixture>().AnyAsync(
             fixture => fixture.LeagueId == leagueId
                 && fixture.Status != MatchStatus.Completed
                 && fixture.Status != MatchStatus.Cancelled,
-            cancellationToken);
+            cancellation);
     }
 
     public async Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return await dbContext.Set<LeagueFixture>()
             .AsNoTracking()
@@ -94,12 +94,12 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
                 item.fixture.AwayScore,
                 item.fixture.GameTime,
                 item.fixture.Status.ToString()))
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellation);
     }
 
     public async Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return await dbContext.Set<DraftPickOrder>()
             .AsNoTracking()
@@ -115,17 +115,17 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
                 item.pick.Round,
                 item.pick.PositionInRound,
                 item.pick.OverallPick))
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellation);
     }
 
     public async Task<IReadOnlyList<LeagueStandingResponse>> GetStandingsAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var teams = await dbContext.Set<FantasyTeam>().AsNoTracking()
             .Where(team => team.LeagueId == leagueId)
             .Select(team => new { team.Id, team.Name })
-            .ToArrayAsync(cancellationToken);
+            .ToArrayAsync(cancellation);
 
         var fixtures = await dbContext.Set<LeagueFixture>().AsNoTracking()
             .Where(fixture => fixture.LeagueId == leagueId
@@ -138,7 +138,7 @@ public sealed class LeagueSetupRepository(AppDbContext dbContext) : ILeagueSetup
                 HomeScore = fixture.HomeScore!.Value,
                 AwayScore = fixture.AwayScore!.Value
             })
-            .ToArrayAsync(cancellationToken);
+            .ToArrayAsync(cancellation);
 
         var rows = teams.Select(team =>
         {

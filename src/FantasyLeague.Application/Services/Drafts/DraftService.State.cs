@@ -10,13 +10,13 @@ public sealed partial class DraftService
 {
     public async Task<DraftStateResponse> GetStateAsync(
         Guid leagueId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         var league = await leagueRepository.GetResponseByIdAsync(
-            leagueId, cancellationToken)
+            leagueId, cancellation)
             ?? throw new NotFoundException($"League '{leagueId}' was not found.");
         var picks = await draftRepository.GetPicksAsync(
-            leagueId, cancellationToken);
+            leagueId, cancellation);
 
         return CreateState(leagueId, league.Status, league.UpdatedAt, picks);
     }

@@ -17,14 +17,14 @@ public sealed partial class LeagueService
 {
     public async Task<LeagueResponse> CreateAsync(
         CreateLeagueRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         request = request.NormalizeCreateLeagueRequest();
         request.ValidateCreateLeagueRequest();
 
         var commissioner = await _userRepository.GetResponseByIdAsync(
             request.CommissionerId,
-            cancellationToken)
+            cancellation)
             ?? throw new NotFoundException(
                 $"User '{request.CommissionerId}' was not found.");
 
@@ -45,7 +45,7 @@ public sealed partial class LeagueService
         await PersistLeagueAsync(
             league,
             commissionerTeam,
-            cancellationToken
+            cancellation
         );
 
         return league.ToResponse();
@@ -68,10 +68,10 @@ public sealed partial class LeagueService
     private async Task PersistLeagueAsync(
         League league,
         FantasyTeam commissionerTeam,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        await _leagueRepository.AddAsync(league, cancellationToken);
-        await _teamRepository.AddAsync(commissionerTeam, cancellationToken);
-        await _leagueRepository.SaveChangesAsync(cancellationToken);
+        await _leagueRepository.AddAsync(league, cancellation);
+        await _teamRepository.AddAsync(commissionerTeam, cancellation);
+        await _leagueRepository.SaveChangesAsync(cancellation);
     }
 }

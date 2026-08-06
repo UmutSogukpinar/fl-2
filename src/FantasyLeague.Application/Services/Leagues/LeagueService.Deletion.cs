@@ -11,15 +11,15 @@ public sealed partial class LeagueService
     public async Task DeleteAsync(
         Guid id,
         Guid commissionerId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
-        var league = await GetTrackedLeagueOrThrowAsync(id, cancellationToken);
+        var league = await GetTrackedLeagueOrThrowAsync(id, cancellation);
 
         EnsureCommissionerCanDelete(league, commissionerId);
         EnsureLeagueCanBeDeleted(league);
 
         _leagueRepository.Remove(league);
-        await _leagueRepository.SaveChangesAsync(cancellationToken);
+        await _leagueRepository.SaveChangesAsync(cancellation);
     }
 
     private static void EnsureCommissionerCanDelete(

@@ -8,15 +8,15 @@ public sealed partial class DraftService
 {
     public async Task<IReadOnlyList<DraftStateResponse>> AutoPickExpiredAsync(
         DateTime utcNow,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
-        var leagues = await leagueRepository.GetDraftingAsync(cancellationToken);
+        var leagues = await leagueRepository.GetDraftingAsync(cancellation);
         var updatedStates = new List<DraftStateResponse>();
 
         foreach (var league in leagues)
         {
             var state = await TryAutoPickAsync(
-                league, utcNow, cancellationToken);
+                league, utcNow, cancellation);
             if (state is not null)
             {
                 updatedStates.Add(state);
@@ -29,10 +29,10 @@ public sealed partial class DraftService
     private async Task<DraftStateResponse?> TryAutoPickAsync(
         League league,
         DateTime utcNow,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var picks = await draftRepository.GetPicksAsync(
-            league.Id, cancellationToken);
+            league.Id, cancellation);
         var currentPick = picks.FirstOrDefault(
             pick => !pick.NbaPlayerId.HasValue);
         var deadlineUtc = GetPickDeadlineUtc(
@@ -44,9 +44,9 @@ public sealed partial class DraftService
         }
 
         var trackedPick = await draftRepository.GetCurrentTrackedPickAsync(
-            league.Id, cancellationToken);
+            league.Id, cancellation);
         var nbaPlayerId = await draftRepository.GetFirstAvailablePlayerIdAsync(
-            league.Id, cancellationToken);
+            league.Id, cancellation);
         if (trackedPick is null ||
             trackedPick.Id != currentPick.Id ||
             nbaPlayerId is null)
@@ -59,26 +59,26 @@ public sealed partial class DraftService
             trackedPick,
             nbaPlayerId.Value,
             utcNow,
-            cancellationToken);
+            cancellation);
         await CompleteDraftIfFinalPickAsync(
             league,
             trackedPick,
             picks,
             utcNow,
-            cancellationToken);
+            cancellation);
 
         ResetFailureCount(league);
 
-        if (!await draftRepository.TrySaveChangesAsync(cancellationToken))
+        if (!await draftRepository.TrySaveChangesAsync(cancellation))
         {
             return await GetCancellationStateAfterFailureAsync(
                 league.Id,
                 utcNow,
-                cancellationToken);
+                cancellation);
         }
 
         var updatedPicks = await draftRepository.GetPicksAsync(
-            league.Id, cancellationToken);
+            league.Id, cancellation);
         return CreateState(
             league.Id, league.Status, league.UpdatedAt, updatedPicks);
     }

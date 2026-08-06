@@ -15,16 +15,16 @@ public sealed partial class NbaPlayerRepository
         int TotalCount)>
     GetPagedAsync(
         PaginationRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var query = _dbContext.Set<NbaPlayer>().AsNoTracking();
-        var totalCount = await query.CountAsync(cancellationToken);
+        var totalCount = await query.CountAsync(cancellation);
         var items = await query
             .OrderBy(player => player.FirstName)
             .ThenBy(player => player.LastName)
             .ApplyPagination(request)
             .ToBasic()
-            .ToArrayAsync(cancellationToken);
+            .ToArrayAsync(cancellation);
 
         return (items, totalCount);
     }
@@ -33,24 +33,24 @@ public sealed partial class NbaPlayerRepository
         Guid id,
         int season,
         PlayerResponseSize size,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     )
     {
         return size switch
         {
             PlayerResponseSize.Basic => await GetBasicAsync(
                                             id,
-                                            cancellationToken
+                                            cancellation
                                         ),
 
             PlayerResponseSize.Detailed => await GetDetailedAsync(
                                                 id,
-                                                cancellationToken),
+                                                cancellation),
 
             PlayerResponseSize.Extended => await GetExtendedAsync(
                                                 id,
                                                 season,
-                                                cancellationToken
+                                                cancellation
                                            ),
 
             _ => throw new ArgumentOutOfRangeException(

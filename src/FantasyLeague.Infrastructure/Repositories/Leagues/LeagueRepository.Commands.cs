@@ -7,10 +7,10 @@ using Microsoft.EntityFrameworkCore;
 
 public sealed partial class LeagueRepository
 {
-    public Task AddAsync(League league, CancellationToken cancellationToken)
+    public Task AddAsync(League league, CancellationToken cancellation)
     {
         return dbContext.Set<League>()
-            .AddAsync(league, cancellationToken)
+            .AddAsync(league, cancellation)
             .AsTask();
     }
 
@@ -19,19 +19,19 @@ public sealed partial class LeagueRepository
         dbContext.Set<League>().Remove(league);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    public Task SaveChangesAsync(CancellationToken cancellation)
     {
-        return dbContext.SaveChangesAsync(cancellationToken);
+        return dbContext.SaveChangesAsync(cancellation);
     }
 
     public async Task<bool> RecordDraftFailureAsync(
         Guid leagueId,
         int cancellationThreshold,
         DateTime utcNow,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var league = await dbContext.Set<League>()
-            .SingleOrDefaultAsync(item => item.Id == leagueId, cancellationToken);
+            .SingleOrDefaultAsync(item => item.Id == leagueId, cancellation);
 
         if (league is null || league.Status != LeagueStatus.Drafting)
         {
@@ -46,7 +46,7 @@ public sealed partial class LeagueRepository
             league.Status = LeagueStatus.DraftCancelled;
         }
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(cancellation);
         return league.Status == LeagueStatus.DraftCancelled;
     }
 }

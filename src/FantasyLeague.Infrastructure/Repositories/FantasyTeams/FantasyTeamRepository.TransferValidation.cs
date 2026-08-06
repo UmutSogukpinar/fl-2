@@ -131,14 +131,14 @@ public sealed partial class FantasyTeamRepository
         Guid? homeId = null,
         Guid? awayId = null,
         Guid? playerId = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         var existingTeamIds = await GetExistingTeamIdsAsync(
-            homeId, awayId, cancellationToken);
+            homeId, awayId, cancellation);
         var result = GetMissingTeamFlags(homeId, awayId, existingTeamIds);
 
         if (playerId.HasValue &&
-            !await PlayerExistsAsync(playerId.Value, cancellationToken))
+            !await PlayerExistsAsync(playerId.Value, cancellation))
             result |= TradeValidationResult.PlayerNotFound;
 
         return result;

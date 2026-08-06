@@ -11,10 +11,10 @@ public sealed partial class DraftService
 {
     public async Task<IReadOnlyList<DraftStateResponse>> StartDueDraftsAsync(
         DateTime utcNow,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         var leagues = await leagueRepository.GetDueForDraftAsync(
-            utcNow, cancellationToken);
+            utcNow, cancellation);
         if (leagues.Count == 0)
         {
             return [];
@@ -24,7 +24,7 @@ public sealed partial class DraftService
         foreach (var league in leagues)
         {
             var teamIds = await teamRepository.GetIdsByLeagueIdAsync(
-                league.Id, cancellationToken);
+                league.Id, cancellation);
             if (teamIds.Count < MinimumTeamCount)
             {
                 DelayDraft(league, utcNow);
@@ -32,14 +32,14 @@ public sealed partial class DraftService
             }
 
             await EnsureDraftOrderExistsAsync(
-                league, teamIds, cancellationToken);
+                league, teamIds, cancellation);
             league.Status = LeagueStatus.Drafting;
             league.UpdatedAt = utcNow;
             startedLeagues.Add(league);
         }
 
-        await leagueRepository.SaveChangesAsync(cancellationToken);
-        return await CreateStatesAsync(startedLeagues, cancellationToken);
+        await leagueRepository.SaveChangesAsync(cancellation);
+        return await CreateStatesAsync(startedLeagues, cancellation);
     }
 
     private static void DelayDraft(League league, DateTime utcNow)
@@ -56,10 +56,10 @@ public sealed partial class DraftService
     private async Task EnsureDraftOrderExistsAsync(
         League league,
         IReadOnlyCollection<Guid> teamIds,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         if (await leagueSetupRepository.DraftOrderExistsAsync(
-                league.Id, cancellationToken))
+                league.Id, cancellation))
         {
             return;
         }
@@ -72,18 +72,18 @@ public sealed partial class DraftService
         );
 
         await leagueSetupRepository.AddDraftOrderAsync(
-            draftOrder, cancellationToken);
+            draftOrder, cancellation);
     }
 
     private async Task<IReadOnlyList<DraftStateResponse>> CreateStatesAsync(
         IReadOnlyCollection<League> leagues,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var states = new List<DraftStateResponse>(leagues.Count);
         foreach (var league in leagues)
         {
             var picks = await draftRepository.GetPicksAsync(
-                league.Id, cancellationToken);
+                league.Id, cancellation);
             states.Add(CreateState(
                 league.Id, league.Status, league.UpdatedAt, picks));
         }

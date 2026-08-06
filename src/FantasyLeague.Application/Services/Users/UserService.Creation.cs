@@ -12,7 +12,7 @@ public sealed partial class UserService
 {
     public async Task<UserResponse> CreateAsync(
         CreateUserRequest req,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         req = req.NormalizeCreateUserRequest();
         req.ValidateCreateUserRequest();
@@ -21,12 +21,12 @@ public sealed partial class UserService
             req.Username,
             req.Email,
             null,
-            cancellationToken);
+            cancellation);
 
         var user = req.ToEntity(_passwordHasher.Hash(req.Password));
 
         _userRepository.Add(user);
-        await _userRepository.SaveChangesAsync(cancellationToken);
+        await _userRepository.SaveChangesAsync(cancellation);
 
         return user.ToResponse();
     }

@@ -41,11 +41,11 @@ public sealed partial class FantasyTeamService(
 
     public async Task<FantasyTeamResponse> GetByIdAsync(
         Guid id,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         var result = await _teamRepository.GetResponseByIdAsync(
             id,
-            cancellationToken
+            cancellation
         ) ?? throw new NotFoundException(
                 $"Fantasy team '{id}' was not found."
             );

@@ -8,11 +8,11 @@ public sealed class NbaPlayerSyncJob(
     ILogger<NbaPlayerSyncJob> logger)
 {
     [DisableConcurrentExecution(timeoutInSeconds: 3600)]
-    public async Task ExecuteAsync(CancellationToken cancellationToken)
+    public async Task ExecuteAsync(CancellationToken cancellation)
     {
         try
         {
-            var result = await syncService.SyncActivePlayersAsync(cancellationToken);
+            var result = await syncService.SyncActivePlayersAsync(cancellation);
             logger.LogInformation(
                 "NBA player synchronization completed. " +
                 "Processed: {ProcessedCount}, Created: {CreatedCount}, Updated: {UpdatedCount}, " +

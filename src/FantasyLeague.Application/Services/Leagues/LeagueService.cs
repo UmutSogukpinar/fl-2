@@ -19,21 +19,21 @@ public sealed partial class LeagueService(
 {
     private async Task<LeagueResponse> GetLeagueOrThrowAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return await _leagueRepository.GetResponseByIdAsync(
             id,
-            cancellationToken)
+            cancellation)
             ?? throw new NotFoundException($"League '{id}' was not found.");
     }
 
     private async Task<League> GetTrackedLeagueOrThrowAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return await _leagueRepository.GetTrackedByIdAsync(
             id,
-            cancellationToken)
+            cancellation)
             ?? throw new NotFoundException($"League '{id}' was not found.");
     }
 }

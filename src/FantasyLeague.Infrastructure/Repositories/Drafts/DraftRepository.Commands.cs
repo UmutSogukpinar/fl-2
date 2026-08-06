@@ -8,19 +8,19 @@ public sealed partial class DraftRepository
 {
     public Task AddRosterPlayerAsync(
         FantasyTeamPlayer player,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return dbContext.Set<FantasyTeamPlayer>()
-            .AddAsync(player, cancellationToken)
+            .AddAsync(player, cancellation)
             .AsTask();
     }
 
     public async Task<bool> TrySaveChangesAsync(
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         try
         {
-            await dbContext.SaveChangesAsync(cancellationToken);
+            await dbContext.SaveChangesAsync(cancellation);
             return true;
         }
         catch (DbUpdateException)

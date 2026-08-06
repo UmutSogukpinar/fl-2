@@ -10,7 +10,7 @@ public sealed partial class DraftService
         DraftPickOrder pick,
         Guid nbaPlayerId,
         DateTime pickedAt,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         pick.NbaPlayerId = nbaPlayerId;
         pick.PickedAt = pickedAt;
@@ -25,6 +25,6 @@ public sealed partial class DraftService
 
         await draftRepository.AddRosterPlayerAsync(
             rosterPlayer,
-            cancellationToken);
+            cancellation);
     }
 }

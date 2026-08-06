@@ -15,14 +15,14 @@ public sealed partial class DraftService
         DraftPickOrder currentPick,
         IReadOnlyList<DraftPickResponse> picks,
         DateTime pickedAt,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         if (currentPick.OverallPick != picks.Count)
         {
             return;
         }
 
-        await CreateFixturesAsync(league.Id, picks, pickedAt, cancellationToken);
+        await CreateFixturesAsync(league.Id, picks, pickedAt, cancellation);
         league.Status = LeagueStatus.Active;
         league.UpdatedAt = pickedAt;
     }
@@ -31,7 +31,7 @@ public sealed partial class DraftService
         Guid leagueId,
         IReadOnlyList<DraftPickResponse> picks,
         DateTime draftCompletedAt,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var teamOrder = picks
             .Where(pick => pick.Round == 1)
@@ -42,7 +42,7 @@ public sealed partial class DraftService
             leagueId, teamOrder, draftCompletedAt, TimeSpan.FromMinutes(5));
 
         return leagueSetupRepository.AddFixturesAsync(
-            fixtures, cancellationToken
+            fixtures, cancellation
         );
     }
 }

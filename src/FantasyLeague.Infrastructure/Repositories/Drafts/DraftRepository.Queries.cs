@@ -11,7 +11,7 @@ public sealed partial class DraftRepository
 {
     public async Task<IReadOnlyList<DraftPickResponse>> GetPicksAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return await (
             from pick in dbContext.Set<DraftPickOrder>().AsNoTracking()
@@ -31,30 +31,30 @@ public sealed partial class DraftRepository
                 pick.NbaPlayerId,
                 player == null ? null : player.FirstName + " " + player.LastName,
                 pick.PickedAt))
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellation);
     }
 
     public Task<DraftPickOrder?> GetCurrentTrackedPickAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return dbContext.Set<DraftPickOrder>()
             .Where(pick => pick.LeagueId == leagueId)
             .Where(pick => pick.NbaPlayerId == null)
             .OrderBy(pick => pick.OverallPick)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellation);
     }
 
     public async Task<bool> IsPlayerUnavailableAsync(
         Guid leagueId,
         Guid nbaPlayerId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var isDrafted = await dbContext.Set<DraftPickOrder>()
             .Where(pick => pick.LeagueId == leagueId)
             .AnyAsync(
                 pick => pick.NbaPlayerId == nbaPlayerId,
-                cancellationToken);
+                cancellation);
 
         if (isDrafted)
         {
@@ -65,7 +65,7 @@ public sealed partial class DraftRepository
             .Where(player => player.LeagueId == leagueId)
             .AnyAsync(
                 player => player.NbaPlayerId == nbaPlayerId,
-                cancellationToken);
+                cancellation);
     }
 
     public Task<bool> NbaPlayerExistsAsync(
@@ -97,12 +97,12 @@ public sealed partial class DraftRepository
     public Task<FantasyTeam?> GetTeamAsync(
         Guid leagueId,
         Guid teamId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return dbContext.Set<FantasyTeam>()
             .Where(team => team.LeagueId == leagueId)
             .SingleOrDefaultAsync(
                 team => team.Id == teamId,
-                cancellationToken);
+                cancellation);
     }
 }

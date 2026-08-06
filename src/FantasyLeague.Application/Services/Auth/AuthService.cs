@@ -20,7 +20,7 @@ public sealed class AuthService(
     public async Task<(UserResponse user, string accessToken, string refreshToken)>
         SignInAsync(
             SignInRequest request,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellation = default)
     {
         request = request.NormalizeSignInRequest();
         request.ValidateSignInRequest();
@@ -31,7 +31,7 @@ public sealed class AuthService(
             identifierType,
             identifierValue,
             identifierTypeName,
-            cancellationToken);
+            cancellation);
 
         if (!passwordHasher.Verify(request.Password, user.Password))
         {
@@ -49,7 +49,7 @@ public sealed class AuthService(
             refreshToken,
             jwtId,
             user.Id));
-        await userRepository.SaveChangesAsync(cancellationToken);
+        await userRepository.SaveChangesAsync(cancellation);
 
         return (user.ToResponse(), accessToken, refreshToken);
     }
@@ -57,7 +57,7 @@ public sealed class AuthService(
     public async Task<(UserResponse user, string accessToken, string refreshToken)>
         RefreshAsync(
             string refreshToken,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellation = default)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
         {
@@ -65,18 +65,19 @@ public sealed class AuthService(
         }
 
         var storedToken = await userRepository.GetRefreshTokenAsync(
-            refreshToken.HashToken(), cancellationToken);
+            refreshToken.HashToken(), cancellation);
 
         if (storedToken is null
             || storedToken.Status != TokenStatus.Active
             || storedToken.ExpiryDate <= DateTime.UtcNow)
         {
-            throw new UnauthorizedException("Refresh token is invalid or expired.");
+            throw new UnauthorizedException(
+                "Refresh token is invalid or expired.");
         }
 
         var user = await userRepository.GetTrackedByIdAsync(
             storedToken.UserId,
-            cancellationToken)
+            cancellation)
             ?? throw new UnauthorizedException(
                 "Refresh token user no longer exists.");
 
@@ -93,24 +94,24 @@ public sealed class AuthService(
             newRefreshToken,
             newJwtId,
             user.Id));
-        await userRepository.SaveChangesAsync(cancellationToken);
+        await userRepository.SaveChangesAsync(cancellation);
 
         return (user.ToResponse(), accessToken, newRefreshToken);
     }
 
     public async Task SignOutAsync(
         string refreshToken,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         if (string.IsNullOrWhiteSpace(refreshToken)) return;
 
         var storedToken = await userRepository.GetRefreshTokenAsync(
-            refreshToken.HashToken(), cancellationToken);
+            refreshToken.HashToken(), cancellation);
 
         if (storedToken is null || storedToken.Status != TokenStatus.Active) return;
 
         Revoke(storedToken);
-        await userRepository.SaveChangesAsync(cancellationToken);
+        await userRepository.SaveChangesAsync(cancellation);
     }
 
     private static RefreshToken CreateRefreshToken(
@@ -152,18 +153,18 @@ public sealed class AuthService(
         SignInIdentifierType identifierType,
         string identifierValue,
         string identifierTypeName,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return identifierType switch
         {
             SignInIdentifierType.Username =>
                 await userRepository.GetByUsernameAsync(
                     identifierValue,
-                    cancellationToken),
+                    cancellation),
             SignInIdentifierType.Email =>
                 await userRepository.GetByEmailAsync(
                     identifierValue,
-                    cancellationToken),
+                    cancellation),
             _ => throw new BadRequestException(
                 "The identifier must be a valid username or email.")
         } ?? throw new UnauthorizedException(

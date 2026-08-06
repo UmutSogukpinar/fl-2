@@ -11,7 +11,7 @@ public sealed partial class LeagueService
         Guid leagueId,
         Guid homeTeamId,
         Guid awayTeamId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         if (homeTeamId == awayTeamId)
         {
@@ -21,16 +21,16 @@ public sealed partial class LeagueService
         }
 
         var league = await _leagueRepository.GetResponseByIdAsync(
-            leagueId, cancellationToken)
+            leagueId, cancellation)
             ?? throw new NotFoundException(
                     $"League '{leagueId}' was not found."
                 );
 
         await EnsureTeamBelongsToLeagueAsync(
-            homeTeamId, leagueId, "Home", cancellationToken
+            homeTeamId, leagueId, "Home", cancellation
         );
         await EnsureTeamBelongsToLeagueAsync(
-            awayTeamId, leagueId, "Away", cancellationToken
+            awayTeamId, leagueId, "Away", cancellation
         );
 
         return await _playerRepository.GetMatchStatsByTeamIdsAsync(
@@ -38,7 +38,7 @@ public sealed partial class LeagueService
             homeTeamId,
             awayTeamId,
             league.Season,
-            cancellationToken
+            cancellation
         );
     }
 
@@ -46,10 +46,10 @@ public sealed partial class LeagueService
         Guid teamId,
         Guid leagueId,
         string role,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var team = await _teamRepository.GetResponseByIdAsync(
-            teamId, cancellationToken);
+            teamId, cancellation);
 
         if (team is null || team.LeagueId != leagueId)
         {

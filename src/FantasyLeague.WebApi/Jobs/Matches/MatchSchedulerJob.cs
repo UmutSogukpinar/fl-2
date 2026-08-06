@@ -8,13 +8,13 @@ public sealed class MatchSchedulerJob(
     ILogger<MatchSchedulerJob> logger)
 {
     [DisableConcurrentExecution(timeoutInSeconds: 120)]
-    public async Task ExecuteAsync(CancellationToken cancellationToken)
+    public async Task ExecuteAsync(CancellationToken cancellation)
     {
         try
         {
             var count = await leagueService.ProcessDueFixturesAsync(
                 DateTime.UtcNow,
-                cancellationToken);
+                cancellation);
 
             if (count > 0)
             {

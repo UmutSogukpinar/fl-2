@@ -436,7 +436,7 @@ public sealed class LeagueServiceTests
         var homeTeamId = Guid.NewGuid();
         var awayTeamId = Guid.NewGuid();
         using var cancellationSource = new CancellationTokenSource();
-        var cancellationToken = cancellationSource.Token;
+        var cancellation = cancellationSource.Token;
         var expected = new MatchStats(
             TeamMatchStats.Empty(homeTeamId, league.Season),
             TeamMatchStats.Empty(awayTeamId, league.Season));
@@ -450,14 +450,14 @@ public sealed class LeagueServiceTests
                 homeTeamId,
                 awayTeamId,
                 league.Season,
-                cancellationToken))
+                cancellation))
             .ReturnsAsync(expected);
 
         await _service.GetMatchStatsAsync(
             league.Id,
             homeTeamId,
             awayTeamId,
-            cancellationToken);
+            cancellation);
 
         _nbaPlayerRepository.Verify(repository =>
             repository.GetMatchStatsByTeamIdsAsync(
@@ -465,7 +465,7 @@ public sealed class LeagueServiceTests
                 homeTeamId,
                 awayTeamId,
                 league.Season,
-                cancellationToken),
+                cancellation),
             Times.Once);
     }
 

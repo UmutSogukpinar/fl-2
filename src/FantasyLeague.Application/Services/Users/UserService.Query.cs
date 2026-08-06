@@ -13,23 +13,23 @@ public sealed partial class UserService
 {
     public async Task<PagedResponse<UserResponse>> GetAsync(
         PaginationRequest req,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         req.ValidatePaginationRequest();
 
         var (items, totalCount) = await _userRepository.GetPagedAsync(
             req,
-            cancellationToken);
+            cancellation);
 
         return Pagination.CreateResponse(items, totalCount, req);
     }
 
     public async Task<UserResponse> GetByIdAsync(
         Guid id,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         return await _userRepository.GetResponseByIdAsync(
-            id, cancellationToken)
+            id, cancellation)
             ?? throw new NotFoundException(
                 $"User '{id}' was not found.");
     }

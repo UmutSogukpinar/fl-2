@@ -38,43 +38,43 @@ public sealed partial class FantasyTeamRepository(
 
     public Task<FantasyTeamResponse?> GetResponseByIdAsync(
         Guid id,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     )
     {
         return _dbContext.Set<FantasyTeam>()
             .AsNoTracking()
             .Where(team => team.Id == id)
             .Select(FantasyTeamProjections.Response)
-            .SingleOrDefaultAsync(cancellationToken);
+            .SingleOrDefaultAsync(cancellation);
     }
 
     public Task<FantasyTeam?> GetTrackedByIdAsync(
         Guid id,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     )
     {
         return _dbContext.Set<FantasyTeam>()
-            .SingleOrDefaultAsync(team => team.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(team => team.Id == id, cancellation);
     }
 
     public Task<int> CountByLeagueIdAsync(
         Guid leagueId,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     )
     {
         return _dbContext.Set<FantasyTeam>()
-            .CountAsync(team => team.LeagueId == leagueId, cancellationToken);
+            .CountAsync(team => team.LeagueId == leagueId, cancellation);
     }
 
     public async Task<IReadOnlyList<Guid>> GetIdsByLeagueIdAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return await _dbContext.Set<FantasyTeam>()
             .AsNoTracking()
             .Where(team => team.LeagueId == leagueId)
             .Select(team => team.Id)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellation);
     }
 
     public async Task<FastasyTeamConflictResult> ExistsAsync(
@@ -116,10 +116,10 @@ public sealed partial class FantasyTeamRepository(
         return result;
     }
 
-    public Task AddAsync(FantasyTeam team, CancellationToken cancellationToken)
+    public Task AddAsync(FantasyTeam team, CancellationToken cancellation)
     {
         return _dbContext.Set<FantasyTeam>()
-            .AddAsync(team, cancellationToken).AsTask();
+            .AddAsync(team, cancellation).AsTask();
     }
 
     public void Remove(FantasyTeam team)
@@ -127,8 +127,8 @@ public sealed partial class FantasyTeamRepository(
         _dbContext.Set<FantasyTeam>().Remove(team);
     }
 
-    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    public async Task SaveChangesAsync(CancellationToken cancellation)
     {
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellation);
     }
 }

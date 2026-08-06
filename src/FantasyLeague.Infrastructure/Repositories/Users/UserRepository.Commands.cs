@@ -23,8 +23,8 @@ public sealed partial class UserRepository
         dbContext.Set<RefreshToken>().Add(refreshToken);
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken)
+    public Task SaveChangesAsync(CancellationToken cancellation)
     {
-        return dbContext.SaveChangesAsync(cancellationToken);
+        return dbContext.SaveChangesAsync(cancellation);
     }
 }

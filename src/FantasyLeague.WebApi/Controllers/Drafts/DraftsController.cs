@@ -22,7 +22,7 @@ public sealed class DraftsController(
     /// <param name="leagueId">
     /// The league's unique identifier.
     /// </param>
-    /// <param name="cancellationToken">
+    /// <param name="cancellation">
     /// Token used to cancel the operation.
     /// </param>
     /// <returns>
@@ -39,11 +39,11 @@ public sealed class DraftsController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DraftStateResponse>> GetStateAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return Ok(await _draftService.GetStateAsync(
             leagueId,
-            cancellationToken)
+            cancellation)
         );
     }
 
@@ -55,7 +55,7 @@ public sealed class DraftsController(
     /// <param name="request">The commissioner identity used
     /// to authorize the operation.
     /// </param>
-    /// <param name="cancellationToken">Token used
+    /// <param name="cancellation">Token used
     /// to cancel the operation.</param>
     /// <returns>The final state of the closed league draft.</returns>
     /// <response code="200">
@@ -74,13 +74,13 @@ public sealed class DraftsController(
     public async Task<ActionResult<DraftStateResponse>> CloseDelayedLeagueAsync(
         Guid leagueId,
         [FromBody] CloseDelayedLeagueRequest request,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     )
     {
         var state = await _draftService.CloseDelayedLeagueAsync(
-            leagueId, request.CommissionerId, cancellationToken);
+            leagueId, request.CommissionerId, cancellation);
         await _hubContext.Clients.Group(FantasyLeagueHub.LeagueGroup(leagueId))
-            .SendAsync("LeagueClosed", state, cancellationToken);
+            .SendAsync("LeagueClosed", state, cancellation);
         _logger.LogInformation(
             "Delayed league {LeagueId} was closed by commissioner {CommissionerId}.",
             leagueId,
@@ -99,7 +99,7 @@ public sealed class DraftsController(
     /// <param name="request">
     /// The team, owner, and NBA player selection.
     /// </param>
-    /// <param name="cancellationToken">
+    /// <param name="cancellation">
     /// Token used to cancel the operation.
     /// </param>
     /// <returns>The updated draft state and next available pick.</returns>
@@ -124,9 +124,9 @@ public sealed class DraftsController(
     public async Task<ActionResult<DraftStateResponse>> MakePickAsync(
         Guid leagueId,
         [FromBody] MakeDraftPickRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
-        var state = await _draftService.MakePickAsync(leagueId, request, cancellationToken);
+        var state = await _draftService.MakePickAsync(leagueId, request, cancellation);
         var eventName = state.Status switch
         {
             LeagueStatus.Active => "DraftCompleted",
@@ -134,7 +134,7 @@ public sealed class DraftsController(
             _ => "DraftUpdated"
         };
         await _hubContext.Clients.Group(FantasyLeagueHub.LeagueGroup(leagueId))
-            .SendAsync(eventName, state, cancellationToken);
+            .SendAsync(eventName, state, cancellation);
         _logger.LogInformation(
             "Draft pick {CompletedPicks}/{TotalPicks} completed in league {LeagueId} by team {TeamId} for NBA player {NbaPlayerId}.",
             state.CompletedPicks, state.TotalPicks, leagueId, request.TeamId, request.NbaPlayerId);

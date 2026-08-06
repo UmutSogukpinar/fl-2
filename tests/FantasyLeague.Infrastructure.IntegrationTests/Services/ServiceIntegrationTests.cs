@@ -171,7 +171,7 @@ public sealed class ServiceIntegrationTests(PostgreSqlFixture database) : IAsync
             string key,
             Func<CancellationToken, Task<T>> factory,
             TimeSpan expiration,
-            CancellationToken cancellationToken = default) => factory(cancellationToken);
+            CancellationToken cancellation = default) => factory(cancellation);
 
         public void Remove(string key)
         {
@@ -182,12 +182,12 @@ public sealed class ServiceIntegrationTests(PostgreSqlFixture database) : IAsync
     {
         public Task<IReadOnlyCollection<ExternalNbaPlayer>> GetActivePlayersAsync(
             int season,
-            CancellationToken cancellationToken) => Task.FromResult<IReadOnlyCollection<ExternalNbaPlayer>>(
+            CancellationToken cancellation) => Task.FromResult<IReadOnlyCollection<ExternalNbaPlayer>>(
             [new(3001, "Sync", "Player", null, "G", 1, 190, 85)]);
 
         public Task<IReadOnlyCollection<ExternalPlayerGameStats>> GetPlayerStatisticsAsync(
             int season,
-            CancellationToken cancellationToken) => Task.FromResult<IReadOnlyCollection<ExternalPlayerGameStats>>(
+            CancellationToken cancellation) => Task.FromResult<IReadOnlyCollection<ExternalPlayerGameStats>>(
             [new(3001, 1, "SYN", "G", 30, 20, 5, 6, 1, 0, 2, 8, 16, 2, 5, 2, 2)]);
     }
 }

@@ -12,24 +12,24 @@ public sealed class DraftSchedulerJob(
     ILogger<DraftSchedulerJob> logger)
 {
     [DisableConcurrentExecution(timeoutInSeconds: 120)]
-    public async Task ExecuteAsync(CancellationToken cancellationToken)
+    public async Task ExecuteAsync(CancellationToken cancellation)
     {
         try
         {
             var states = await draftService.StartDueDraftsAsync(
-                DateTime.UtcNow, cancellationToken);
+                DateTime.UtcNow, cancellation);
 
             foreach (var state in states)
             {
                 await hubContext.Clients
                     .Group(FantasyLeagueHub.LeagueGroup(state.LeagueId))
-                    .SendAsync("DraftStarted", state, cancellationToken);
+                    .SendAsync("DraftStarted", state, cancellation);
                 logger.LogInformation(
                     "Draft started automatically for league {LeagueId}.", state.LeagueId);
             }
 
             var autoPickedStates = await draftService.AutoPickExpiredAsync(
-                DateTime.UtcNow, cancellationToken);
+                DateTime.UtcNow, cancellation);
             foreach (var state in autoPickedStates)
             {
                 var eventName = state.Status switch
@@ -40,7 +40,7 @@ public sealed class DraftSchedulerJob(
                 };
                 await hubContext.Clients
                     .Group(FantasyLeagueHub.LeagueGroup(state.LeagueId))
-                    .SendAsync(eventName, state, cancellationToken);
+                    .SendAsync(eventName, state, cancellation);
                 if (state.Status == LeagueStatus.DraftCancelled)
                 {
                     logger.LogError(

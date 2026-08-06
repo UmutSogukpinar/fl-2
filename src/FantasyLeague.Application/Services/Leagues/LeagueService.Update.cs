@@ -16,7 +16,7 @@ public sealed partial class LeagueService
     public async Task<LeagueResponse> UpdateAsync(
         Guid id,
         UpdateLeagueRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         request = request.NormalizeUpdateLeagueRequest();
         request.ValidateUpdateLeagueRequest();
@@ -24,12 +24,12 @@ public sealed partial class LeagueService
         await EnsureMaxTeamsCanBeUpdatedAsync(
             id,
             request.MaxTeams,
-            cancellationToken);
+            cancellation);
 
-        var league = await GetTrackedLeagueOrThrowAsync(id, cancellationToken);
+        var league = await GetTrackedLeagueOrThrowAsync(id, cancellation);
         var commissioner = await _userRepository.GetResponseByIdAsync(
             league.CommissionerId,
-            cancellationToken)
+            cancellation)
             ?? throw new NotFoundException(
                 $"User '{league.CommissionerId}' was not found.");
 
@@ -39,7 +39,7 @@ public sealed partial class LeagueService
         draftDateUtc!.Value.ValidateFutureDraftDate();
 
         request.MapTo(league, draftDateUtc, commissioner.TimeZoneId);
-        await _leagueRepository.SaveChangesAsync(cancellationToken);
+        await _leagueRepository.SaveChangesAsync(cancellation);
 
         return league.ToResponse();
     }
@@ -47,11 +47,11 @@ public sealed partial class LeagueService
     private async Task EnsureMaxTeamsCanBeUpdatedAsync(
         Guid leagueId,
         int maxTeams,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var currentTeamCount = await _teamRepository.CountByLeagueIdAsync(
             leagueId,
-            cancellationToken);
+            cancellation);
 
         if (maxTeams < currentTeamCount)
         {

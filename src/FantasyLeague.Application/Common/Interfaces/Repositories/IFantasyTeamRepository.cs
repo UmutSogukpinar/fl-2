@@ -9,28 +9,28 @@ namespace FantasyLeague.Application.Common.Interfaces.Repositories;
 
 public interface IFantasyTeamRepository
 {
-    Task<(IReadOnlyCollection<FantasyTeamResponse> Items, int TotalCount)> GetPagedByLeagueIdAsync(Guid leagueId, PaginationRequest request, CancellationToken cancellationToken);
-    Task<FantasyTeamResponse?> GetResponseByIdAsync(Guid id, CancellationToken cancellationToken);
-    Task<FantasyTeam?> GetTrackedByIdAsync(Guid id, CancellationToken cancellationToken);
-    Task<int> CountByLeagueIdAsync(Guid leagueId, CancellationToken cancellationToken);
+    Task<(IReadOnlyCollection<FantasyTeamResponse> Items, int TotalCount)> GetPagedByLeagueIdAsync(Guid leagueId, PaginationRequest request, CancellationToken cancellation);
+    Task<FantasyTeamResponse?> GetResponseByIdAsync(Guid id, CancellationToken cancellation);
+    Task<FantasyTeam?> GetTrackedByIdAsync(Guid id, CancellationToken cancellation);
+    Task<int> CountByLeagueIdAsync(Guid leagueId, CancellationToken cancellation);
     Task<IReadOnlyList<Guid>> GetIdsByLeagueIdAsync(
         Guid leagueId,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     );
     Task<FastasyTeamConflictResult> ExistsAsync(
         Guid leagueId,
         Guid ownerId,
         string name,
         Guid? excludedTeamId,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     );
     Task AddAsync(
         FantasyTeam team,
-        CancellationToken cancellationToken
+        CancellationToken cancellation
     );
 
     void Remove(FantasyTeam team);
-    Task SaveChangesAsync(CancellationToken cancellationToken);
+    Task SaveChangesAsync(CancellationToken cancellation);
 
     Task ReleaseAPlayerAsync(
         Guid id, Guid playerId,

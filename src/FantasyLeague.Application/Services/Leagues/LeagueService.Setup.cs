@@ -6,33 +6,33 @@ public sealed partial class LeagueService
 {
     public async Task<IReadOnlyList<LeagueStandingResponse>> GetStandingsAsync(
         Guid id,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
-        await GetLeagueOrThrowAsync(id, cancellationToken);
-        return await _leagueSetupRepository.GetStandingsAsync(id, cancellationToken);
+        await GetLeagueOrThrowAsync(id, cancellation);
+        return await _leagueSetupRepository.GetStandingsAsync(id, cancellation);
     }
 
     public async Task<IReadOnlyList<LeagueFixtureResponse>> GetFixturesAsync(
         Guid id,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
-        _ = await GetLeagueOrThrowAsync(id, cancellationToken);
+        _ = await GetLeagueOrThrowAsync(id, cancellation);
 
         return await _leagueSetupRepository.GetFixturesAsync(
             id,
-            cancellationToken
+            cancellation
         );
     }
 
     public async Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(
         Guid id,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
-        _ = await GetLeagueOrThrowAsync(id, cancellationToken);
+        _ = await GetLeagueOrThrowAsync(id, cancellation);
 
         return await _leagueSetupRepository.GetDraftOrderAsync(
             id,
-            cancellationToken
+            cancellation
         );
     }
 }

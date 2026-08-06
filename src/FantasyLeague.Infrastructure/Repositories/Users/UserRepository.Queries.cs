@@ -28,13 +28,13 @@ public sealed partial class UserRepository
 
     public Task<UserResponse?> GetResponseByIdAsync(
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return dbContext.Set<User>()
             .AsNoTracking()
             .Where(user => user.Id == id)
             .Select(UserProjections.Response)
-            .SingleOrDefaultAsync(cancellationToken);
+            .SingleOrDefaultAsync(cancellation);
     }
 
     public Task<User?> GetTrackedByIdAsync(

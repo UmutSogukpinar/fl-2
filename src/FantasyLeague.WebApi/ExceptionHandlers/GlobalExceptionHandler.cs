@@ -12,7 +12,7 @@ public sealed class GlobalExceptionHandler(
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var exceptionDetails = GetExceptionDetails(exception);
         LogException(httpContext, exception, exceptionDetails.StatusCode);

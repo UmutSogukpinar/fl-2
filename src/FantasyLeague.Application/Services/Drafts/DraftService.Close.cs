@@ -12,10 +12,10 @@ public sealed partial class DraftService
     public async Task<DraftStateResponse> CloseDelayedLeagueAsync(
         Guid leagueId,
         Guid commissionerId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         var league = await leagueRepository.GetTrackedByIdAsync(
-            leagueId, cancellationToken)
+            leagueId, cancellation)
             ?? throw new NotFoundException($"League '{leagueId}' was not found.");
 
         EnsureCommissionerCanClose(league, commissionerId);
@@ -23,10 +23,10 @@ public sealed partial class DraftService
 
         league.Status = LeagueStatus.Completed;
         league.UpdatedAt = DateTime.UtcNow;
-        await leagueRepository.SaveChangesAsync(cancellationToken);
+        await leagueRepository.SaveChangesAsync(cancellation);
 
         var picks = await draftRepository.GetPicksAsync(
-            leagueId, cancellationToken);
+            leagueId, cancellation);
         return CreateState(leagueId, league.Status, league.UpdatedAt, picks);
     }
 

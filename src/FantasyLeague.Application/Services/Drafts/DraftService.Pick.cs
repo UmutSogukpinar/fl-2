@@ -15,16 +15,16 @@ public sealed partial class DraftService
     public async Task<DraftStateResponse> MakePickAsync(
         Guid leagueId,
         MakeDraftPickRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         request.ValidateMakeDraftPickRequest();
 
         var league = await GetActiveDraftLeagueAsync(
-            leagueId, cancellationToken);
+            leagueId, cancellation);
         var currentPick = await GetCurrentPickAsync(
-            leagueId, cancellationToken);
+            leagueId, cancellation);
         await ValidatePickAsync(
-            leagueId, currentPick, request, cancellationToken);
+            leagueId, currentPick, request, cancellation);
 
         var pickedAt = DateTime.UtcNow;
         await ApplyPickAsync(
@@ -32,25 +32,25 @@ public sealed partial class DraftService
             currentPick,
             request.NbaPlayerId,
             pickedAt,
-            cancellationToken);
+            cancellation);
 
         var picksBeforeSave = await draftRepository.GetPicksAsync(
-            leagueId, cancellationToken);
+            leagueId, cancellation);
         await CompleteDraftIfFinalPickAsync(
             league,
             currentPick,
             picksBeforeSave,
             pickedAt,
-            cancellationToken);
+            cancellation);
 
         ResetFailureCount(league);
 
-        if (!await draftRepository.TrySaveChangesAsync(cancellationToken))
+        if (!await draftRepository.TrySaveChangesAsync(cancellation))
         {
             var cancellationState = await GetCancellationStateAfterFailureAsync(
                 leagueId,
                 pickedAt,
-                cancellationToken);
+                cancellation);
 
             if (cancellationState is not null)
             {
@@ -63,16 +63,16 @@ public sealed partial class DraftService
         }
 
         var picks = await draftRepository.GetPicksAsync(
-            leagueId, cancellationToken);
+            leagueId, cancellation);
         return CreateState(leagueId, league.Status, league.UpdatedAt, picks);
     }
 
     private async Task<League> GetActiveDraftLeagueAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var league = await leagueRepository.GetTrackedByIdAsync(
-            leagueId, cancellationToken)
+            leagueId, cancellation)
             ?? throw new NotFoundException($"League '{leagueId}' was not found.");
         if (league.Status != LeagueStatus.Drafting)
         {
@@ -84,10 +84,10 @@ public sealed partial class DraftService
 
     private async Task<DraftPickOrder> GetCurrentPickAsync(
         Guid leagueId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         return await draftRepository.GetCurrentTrackedPickAsync(
-            leagueId, cancellationToken)
+            leagueId, cancellation)
             ?? throw new ConflictException("The draft has no remaining picks.");
     }
 
@@ -95,7 +95,7 @@ public sealed partial class DraftService
         Guid leagueId,
         DraftPickOrder currentPick,
         MakeDraftPickRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         if (currentPick.TeamId != request.TeamId)
         {
@@ -103,7 +103,7 @@ public sealed partial class DraftService
         }
 
         var team = await draftRepository.GetTeamAsync(
-            leagueId, request.TeamId, cancellationToken)
+            leagueId, request.TeamId, cancellation)
             ?? throw new NotFoundException(
                 $"Fantasy team '{request.TeamId}' was not found.");
         if (team.OwnerId != request.OwnerId)
@@ -113,14 +113,14 @@ public sealed partial class DraftService
         }
 
         if (!await draftRepository.NbaPlayerExistsAsync(
-                request.NbaPlayerId, cancellationToken))
+                request.NbaPlayerId, cancellation))
         {
             throw new NotFoundException(
                 $"NBA player '{request.NbaPlayerId}' was not found.");
         }
 
         if (await draftRepository.IsPlayerUnavailableAsync(
-                leagueId, request.NbaPlayerId, cancellationToken))
+                leagueId, request.NbaPlayerId, cancellation))
         {
             throw new ConflictException(
                 "The selected NBA player is not available for this draft.");

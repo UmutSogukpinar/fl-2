@@ -23,14 +23,14 @@ internal sealed class ApiSportsRequestClient
 
     public async Task<IReadOnlyCollection<T>> GetResponseAsync<T>(
         string path,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         EnsureApiKeyExists();
 
         for (var attempt = 1; attempt <= MaximumAttempts; attempt++)
         {
-            await WaitForRequestSlotAsync(cancellationToken);
-            var payload = await SendAsync<T>(path, cancellationToken);
+            await WaitForRequestSlotAsync(cancellation);
+            var payload = await SendAsync<T>(path, cancellation);
             if (!ApiSportsErrorParser.HasErrors(payload.Errors))
             {
                 return payload.Response
@@ -40,7 +40,7 @@ internal sealed class ApiSportsRequestClient
             var message = ApiSportsErrorParser.GetMessage(payload.Errors);
             if (attempt < MaximumAttempts && ApiSportsErrorParser.IsRateLimitError(message))
             {
-                await Task.Delay(RateLimitRetryDelay, cancellationToken);
+                await Task.Delay(RateLimitRetryDelay, cancellation);
                 continue;
             }
 
@@ -52,14 +52,14 @@ internal sealed class ApiSportsRequestClient
 
     private async Task<ApiResponse<T>> SendAsync<T>(
         string path,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, path);
         request.Headers.TryAddWithoutValidation("x-apisports-key", _options.ApiKey);
 
         try
         {
-            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            using var response = await _httpClient.SendAsync(request, cancellation);
             if (!response.IsSuccessStatusCode)
             {
                 throw new ExternalServiceException(
@@ -67,7 +67,7 @@ internal sealed class ApiSportsRequestClient
             }
 
             return await response.Content.ReadFromJsonAsync<ApiResponse<T>>(
-                       cancellationToken: cancellationToken)
+                       cancellationToken: cancellation)
                    ?? throw new ExternalServiceException("API-SPORTS returned an empty response.");
         }
         catch (ExternalServiceException)
@@ -84,13 +84,13 @@ internal sealed class ApiSportsRequestClient
         }
     }
 
-    private async Task WaitForRequestSlotAsync(CancellationToken cancellationToken)
+    private async Task WaitForRequestSlotAsync(CancellationToken cancellation)
     {
-        await _requestGate.WaitAsync(cancellationToken);
+        await _requestGate.WaitAsync(cancellation);
         try
         {
             var delay = _nextRequestAt - DateTimeOffset.UtcNow;
-            if (delay > TimeSpan.Zero) await Task.Delay(delay, cancellationToken);
+            if (delay > TimeSpan.Zero) await Task.Delay(delay, cancellation);
             _nextRequestAt = DateTimeOffset.UtcNow.Add(RequestInterval);
         }
         finally

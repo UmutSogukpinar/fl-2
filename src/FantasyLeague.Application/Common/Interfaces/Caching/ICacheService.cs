@@ -6,7 +6,7 @@ public interface ICacheService
         string key,
         Func<CancellationToken, Task<T>> factory,
         TimeSpan expiration,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellation = default);
 
     void Remove(string key);
 }

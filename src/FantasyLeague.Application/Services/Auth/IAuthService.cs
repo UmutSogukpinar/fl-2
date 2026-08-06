@@ -7,13 +7,13 @@ public interface IAuthService
 {
     Task<(UserResponse user, string accessToken, string refreshToken)> SignInAsync(
         SignInRequest request,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellation = default);
 
     Task<(UserResponse user, string accessToken, string refreshToken)> RefreshAsync(
         string refreshToken,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellation = default);
 
     Task SignOutAsync(
         string refreshToken,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellation = default);
 }

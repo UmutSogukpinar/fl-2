@@ -17,19 +17,19 @@ public sealed class NbaPlayerSyncService(
     private const int Season = 2024;
 
     public async Task<NbaPlayerSyncResponse> SyncActivePlayersAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
-        var sourcePlayers = await apiClient.GetActivePlayersAsync(Season, cancellationToken);
-        var gameStats = await apiClient.GetPlayerStatisticsAsync(Season, cancellationToken);
+        var sourcePlayers = await apiClient.GetActivePlayersAsync(Season, cancellation);
+        var gameStats = await apiClient.GetPlayerStatisticsAsync(Season, cancellation);
         sourcePlayers = AddTeamInformation(sourcePlayers, gameStats);
 
-        var playerResult = await UpsertPlayersAsync(sourcePlayers, cancellationToken);
+        var playerResult = await UpsertPlayersAsync(sourcePlayers, cancellation);
         var statisticsCount = await UpsertStatisticsAsync(
             playerResult.PlayersByNbaId,
             gameStats,
-            cancellationToken);
+            cancellation);
 
-        await playerRepository.SaveChangesAsync(cancellationToken);
+        await playerRepository.SaveChangesAsync(cancellation);
         foreach (var player in playerResult.PlayersByNbaId.Values)
         {
             cacheService.Remove(CacheKeys.NbaPlayerBasic(player.Id));
@@ -68,10 +68,10 @@ public sealed class NbaPlayerSyncService(
 
     private async Task<PlayerUpsertResult> UpsertPlayersAsync(
         IReadOnlyCollection<ExternalNbaPlayer> sourcePlayers,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var nbaIds = sourcePlayers.Select(player => player.NbaId).ToArray();
-        var existingPlayers = await playerRepository.GetByNbaIdsAsync(nbaIds, cancellationToken);
+        var existingPlayers = await playerRepository.GetByNbaIdsAsync(nbaIds, cancellation);
         var playersByNbaId = existingPlayers.ToDictionary();
         var newPlayers = new List<NbaPlayer>();
         var updatedCount = 0;
@@ -90,7 +90,7 @@ public sealed class NbaPlayerSyncService(
             playersByNbaId.Add(source.NbaId, newPlayer);
         }
 
-        await playerRepository.AddRangeAsync(newPlayers, cancellationToken);
+        await playerRepository.AddRangeAsync(newPlayers, cancellation);
 
         return new PlayerUpsertResult(
             playersByNbaId,
@@ -101,7 +101,7 @@ public sealed class NbaPlayerSyncService(
     private async Task<int> UpsertStatisticsAsync(
         IReadOnlyDictionary<int, NbaPlayer> playersByNbaId,
         IReadOnlyCollection<ExternalPlayerGameStats> gameStats,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var groupedStats = gameStats
             .Where(stats => playersByNbaId.ContainsKey(stats.NbaPlayerId))
@@ -114,7 +114,7 @@ public sealed class NbaPlayerSyncService(
         var existingStats = await playerRepository.GetPlayerStatsAsync(
             playerIds,
             Season,
-            cancellationToken);
+            cancellation);
         var newStats = new List<PlayerStats>();
 
         foreach (var group in groupedStats)
@@ -131,7 +131,7 @@ public sealed class NbaPlayerSyncService(
             newStats.Add(aggregate);
         }
 
-        await playerRepository.AddStatsRangeAsync(newStats, cancellationToken);
+        await playerRepository.AddStatsRangeAsync(newStats, cancellation);
         return groupedStats.Length;
     }
 

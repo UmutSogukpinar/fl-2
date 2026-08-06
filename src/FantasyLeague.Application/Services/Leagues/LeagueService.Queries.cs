@@ -12,22 +12,22 @@ public sealed partial class LeagueService
     public async Task<PagedResponse<LeagueResponse>> GetAsync(
         PaginationRequest request,
         LeagueStatus? status = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
         request.ValidatePaginationRequest();
 
         var (items, totalCount) = await _leagueRepository.GetPagedAsync(
             request,
             status,
-            cancellationToken);
+            cancellation);
 
         return items.CreateResponse(totalCount, request);
     }
 
     public Task<LeagueResponse> GetByIdAsync(
         Guid id,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellation = default)
     {
-        return GetLeagueOrThrowAsync(id, cancellationToken);
+        return GetLeagueOrThrowAsync(id, cancellation);
     }
 }

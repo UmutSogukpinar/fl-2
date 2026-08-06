@@ -37,7 +37,7 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService)
     /// <param name="leagueId">
     /// The unique identifier of the league whose fantasy teams will be retrieved.
     /// </param>
-    /// <param name="cancellationToken">
+    /// <param name="cancellation">
     /// A token used to cancel the operation when the HTTP request is aborted.
     /// </param>
     /// <returns>
@@ -79,7 +79,7 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService)
     /// <param name="id">
     /// The unique identifier of the fantasy team to retrieve.
     /// </param>
-    /// <param name="cancellationToken">
+    /// <param name="cancellation">
     /// A token used to cancel the operation when the HTTP request is aborted.
     /// </param>
     /// <returns>
@@ -122,7 +122,7 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService)
     /// <param name="request">
     /// The updated information for the fantasy team.
     /// </param>
-    /// <param name="cancellationToken">
+    /// <param name="cancellation">
     /// A token used to cancel the operation when the HTTP request is aborted.
     /// </param>
     /// <returns>
@@ -173,7 +173,7 @@ public sealed class FantasyTeamsController(IFantasyTeamService teamService)
     /// <param name="id">
     /// The unique identifier of the fantasy team to delete.
     /// </param>
-    /// <param name="cancellationToken">
+    /// <param name="cancellation">
     /// A token used to cancel the operation when the HTTP request is aborted.
     /// </param>
     /// <returns>

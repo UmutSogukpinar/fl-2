@@ -15,13 +15,13 @@ public sealed partial class DraftService
     private async Task<DraftStateResponse?> GetCancellationStateAfterFailureAsync(
         Guid leagueId,
         DateTime failedAt,
-        CancellationToken cancellationToken)
+        CancellationToken cancellation)
     {
         var cancelled = await leagueRepository.RecordDraftFailureAsync(
             leagueId,
             DraftFailureCancellationThreshold,
             failedAt,
-            cancellationToken);
+            cancellation);
 
         if (!cancelled)
         {
@@ -30,7 +30,7 @@ public sealed partial class DraftService
 
         var picks = await draftRepository.GetPicksAsync(
             leagueId,
-            cancellationToken);
+            cancellation);
 
         return CreateState(
             leagueId,

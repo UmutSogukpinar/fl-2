@@ -8,13 +8,13 @@ namespace FantasyLeague.Application.Services.FantasyTeams;
 
 public interface IFantasyTeamService
 {
-    Task<PagedResponse<FantasyTeamResponse>> GetByLeagueIdAsync(Guid leagueId, PaginationRequest request, CancellationToken cancellationToken = default);
-    Task<FantasyTeamResponse> AddLeagueMemberAsync(Guid leagueId, AddLeagueMemberRequest request, CancellationToken cancellationToken = default);
-    Task<FantasyTeamResponse> JoinLeagueAsync(JoinLeagueRequest request, CancellationToken cancellationToken = default);
-    Task RemoveLeagueMemberAsync(Guid leagueId, Guid teamId, CancellationToken cancellationToken = default);
-    Task<FantasyTeamResponse> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<FantasyTeamResponse> UpdateAsync(Guid id, UpdateFantasyTeamRequest request, CancellationToken cancellationToken = default);
-    Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<PagedResponse<FantasyTeamResponse>> GetByLeagueIdAsync(Guid leagueId, PaginationRequest request, CancellationToken cancellation = default);
+    Task<FantasyTeamResponse> AddLeagueMemberAsync(Guid leagueId, AddLeagueMemberRequest request, CancellationToken cancellation = default);
+    Task<FantasyTeamResponse> JoinLeagueAsync(JoinLeagueRequest request, CancellationToken cancellation = default);
+    Task RemoveLeagueMemberAsync(Guid leagueId, Guid teamId, CancellationToken cancellation = default);
+    Task<FantasyTeamResponse> GetByIdAsync(Guid id, CancellationToken cancellation = default);
+    Task<FantasyTeamResponse> UpdateAsync(Guid id, UpdateFantasyTeamRequest request, CancellationToken cancellation = default);
+    Task DeleteAsync(Guid id, CancellationToken cancellation = default);
 
     Task ReleaseAPlayerAsync(
         Guid id, Guid playerId,

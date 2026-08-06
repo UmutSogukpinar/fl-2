@@ -8,12 +8,12 @@ namespace FantasyLeague.Application.Common.Interfaces.Repositories;
 
 public interface IDraftRepository
 {
-    Task<IReadOnlyList<DraftPickResponse>> GetPicksAsync(Guid leagueId, CancellationToken cancellationToken);
-    Task<DraftPickOrder?> GetCurrentTrackedPickAsync(Guid leagueId, CancellationToken cancellationToken);
-    Task<bool> IsPlayerUnavailableAsync(Guid leagueId, Guid nbaPlayerId, CancellationToken cancellationToken);
-    Task<bool> NbaPlayerExistsAsync(Guid nbaPlayerId, CancellationToken cancellationToken);
-    Task<Guid?> GetFirstAvailablePlayerIdAsync(Guid leagueId, CancellationToken cancellationToken);
-    Task<FantasyTeam?> GetTeamAsync(Guid leagueId, Guid teamId, CancellationToken cancellationToken);
-    Task AddRosterPlayerAsync(FantasyTeamPlayer player, CancellationToken cancellationToken);
-    Task<bool> TrySaveChangesAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<DraftPickResponse>> GetPicksAsync(Guid leagueId, CancellationToken cancellation);
+    Task<DraftPickOrder?> GetCurrentTrackedPickAsync(Guid leagueId, CancellationToken cancellation);
+    Task<bool> IsPlayerUnavailableAsync(Guid leagueId, Guid nbaPlayerId, CancellationToken cancellation);
+    Task<bool> NbaPlayerExistsAsync(Guid nbaPlayerId, CancellationToken cancellation);
+    Task<Guid?> GetFirstAvailablePlayerIdAsync(Guid leagueId, CancellationToken cancellation);
+    Task<FantasyTeam?> GetTeamAsync(Guid leagueId, Guid teamId, CancellationToken cancellation);
+    Task AddRosterPlayerAsync(FantasyTeamPlayer player, CancellationToken cancellation);
+    Task<bool> TrySaveChangesAsync(CancellationToken cancellation);
 }

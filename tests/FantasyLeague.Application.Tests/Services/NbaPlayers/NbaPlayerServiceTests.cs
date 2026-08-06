@@ -206,7 +206,7 @@ public sealed class NbaPlayerServiceTests
                 string _,
                 Func<CancellationToken, Task<IPlayerResponse>> factory,
                 TimeSpan _,
-                CancellationToken cancellationToken) => factory(cancellationToken));
+                CancellationToken cancellation) => factory(cancellation));
     }
 
     private static NbaPlayerBasicResponse CreateBasicResponse() => new(

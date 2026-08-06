@@ -33,4 +33,5 @@ public sealed partial class UserService
             ?? throw new NotFoundException(
                 $"User '{id}' was not found.");
     }
+
 }

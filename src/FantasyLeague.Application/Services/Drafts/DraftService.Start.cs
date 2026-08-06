@@ -68,7 +68,9 @@ public sealed partial class DraftService
         var draftOrder = LeagueSetupGenerator.CreateSnakeDraftOrder(
             league.Id,
             randomOrder,
-            league.Settings.RosterSize);
+            league.Settings.RosterSize
+        );
+
         await leagueSetupRepository.AddDraftOrderAsync(
             draftOrder, cancellationToken);
     }

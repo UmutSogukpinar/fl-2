@@ -20,7 +20,8 @@ public sealed partial class LeagueService
 
         return await _leagueSetupRepository.GetFixturesAsync(
             id,
-            cancellationToken);
+            cancellationToken
+        );
     }
 
     public async Task<IReadOnlyList<DraftPickOrderResponse>> GetDraftOrderAsync(
@@ -31,6 +32,7 @@ public sealed partial class LeagueService
 
         return await _leagueSetupRepository.GetDraftOrderAsync(
             id,
-            cancellationToken);
+            cancellationToken
+        );
     }
 }

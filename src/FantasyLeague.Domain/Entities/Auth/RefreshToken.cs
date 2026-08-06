@@ -14,6 +14,6 @@ public class RefreshToken
 
     public TokenStatus Status { get; set; }
 
-    public required string UserId { get; set; }
+    public required Guid UserId { get; set; }
 
 }

@@ -19,11 +19,22 @@ export class ApiError extends Error {
 }
 
 async function request(path: string, options?: RequestInit) {
-  return fetch(`${API_URL}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-  })
+  if (options?.signal?.aborted) {
+    throw new DOMException('The request was aborted.', 'AbortError')
+  }
+
+  try {
+    return await fetch(`${API_URL}${path}`, {
+      ...options,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...options?.headers },
+    })
+  } catch (error) {
+    if (options?.signal?.aborted) {
+      throw new DOMException('The request was aborted.', 'AbortError')
+    }
+    throw error
+  }
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -66,7 +77,8 @@ export async function apiClient<T>(
     try {
       await refreshSession()
       response = await request(path, requestOptions)
-    } catch {
+    } catch (error) {
+      if (requestOptions.signal?.aborted) throw error
       window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT))
     }
   }

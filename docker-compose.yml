@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+
+    image: fantasy_league_backend:1.0
+
+    environment:
+      ApiSports__ApiKey: ${API_SPORTS_KEY:?API_SPORTS_KEY must be set in .env}
+
+    ports:
+      - "5129:8080"
+    restart: unless-stopped
+    networks:
+      - fantasy_league_network
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+
+    image: fantasy_league_web:1.0
+
+    ports:
+      - "0.0.0.0:80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - fantasy_league_network
+
+networks:
+  fantasy_league_network:
+    name: fantasy_league_network
+    driver: bridge

@@ -38,14 +38,6 @@ namespace FantasyLeague.WebApi.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static WebApplicationBuilder ConfigureLogging(this WebApplicationBuilder builder)
-    {
-        builder.Logging.ClearProviders();
-        builder.Logging.AddConsole();
-        builder.Logging.AddDebug();
-        return builder;
-    }
-
     public static IServiceCollection AddWebApiServices(
         this IServiceCollection services,
         IConfiguration configuration)

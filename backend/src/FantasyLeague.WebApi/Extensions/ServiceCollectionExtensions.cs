@@ -12,6 +12,7 @@ using FantasyLeague.Application.Services.Users;
 using FantasyLeague.Domain.Entities.Auth;
 using FantasyLeague.Domain.Entities.Users;
 using FantasyLeague.Infrastructure.Caching;
+using FantasyLeague.Infrastructure.Configuration;
 using FantasyLeague.Infrastructure.Context;
 using FantasyLeague.Infrastructure.ExternalServices.NbaApi;
 using FantasyLeague.Infrastructure.Repositories.Drafts;
@@ -76,8 +77,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<MatchSchedulerJob>();
         services.AddScoped<NbaPlayerSyncJob>();
 
-        services.Configure<ApiSportsOptions>(
-            configuration.GetSection(ApiSportsOptions.SectionName));
+        services.AddValidatedOptions<ApiSportsOptions>(
+            configuration,
+            ApiSportsOptions.SectionName);
         services.AddHttpClient<INbaPlayersApiClient, ApiSportsClient>((serviceProvider, client) =>
         {
             var options = serviceProvider.GetRequiredService<IOptions<ApiSportsOptions>>().Value;
@@ -92,9 +94,9 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var jwtSection = configuration.GetRequiredSection("JwtTokenOptions");
-        var tokenOptions = jwtSection.Get<JwtTokenOptions>()
-            ?? throw new InvalidOperationException("JwtTokenOptions configuration is missing.");
+        const string jwtSectionName = "JwtTokenOptions";
+        var jwtSection = configuration.GetRequiredSection(jwtSectionName);
+        var tokenOptions = configuration.GetRequiredOptions<JwtTokenOptions>(jwtSectionName);
 
         services.Configure<JwtTokenOptions>(jwtSection);
         services
@@ -144,7 +146,13 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.BuildPostgreSqlConnectionString();
+        services.AddValidatedOptions<DbSettingsOptions>(
+            configuration,
+            DbSettingsOptions.SectionName);
+
+        var dbSettings = configuration.GetRequiredOptions<DbSettingsOptions>(
+            DbSettingsOptions.SectionName);
+        var connectionString = dbSettings.ToConnectionString();
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddHangfire(configuration => configuration
@@ -154,15 +162,5 @@ public static class ServiceCollectionExtensions
         services.AddHangfireServer();
 
         return services;
-    }
-
-    private static string BuildPostgreSqlConnectionString(this IConfiguration configuration)
-    {
-        var settings = configuration.GetRequiredSection("DbSettings");
-        return $"Host={settings["Host"]};" +
-               $"Port={settings["Port"]};" +
-               $"Database={settings["Database"]};" +
-               $"Username={settings["Username"]};" +
-               $"Password={settings["Password"]};";
     }
 }

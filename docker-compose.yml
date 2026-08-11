@@ -1,5 +1,8 @@
 services:
+
+  # ==== Backend Service ====
   backend:
+
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -12,10 +15,15 @@ services:
     ports:
       - "5129:8080"
     restart: unless-stopped
+
     networks:
       - fantasy_league_network
 
+
+  # ==== Web Service ====
+
   web:
+
     build:
       context: ./web
       dockerfile: Dockerfile
@@ -24,13 +32,57 @@ services:
 
     ports:
       - "0.0.0.0:80:80"
+
     depends_on:
       - backend
+
     restart: unless-stopped
+
     networks:
       - fantasy_league_network
+
+  # ========================= Stat Services =========================
+
+  # ==== Loki Service ====
+
+  loki:
+
+      build:
+        context: ./observability/loki
+        dockerfile: Dockerfile
+
+      container_name: loki
+
+      volumes:
+        - loki-data:/loki
+
+      networks:
+        - fantasy_league_network
+
+      restart: unless-stopped
+
+      healthcheck:
+        test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+
+
+
+# =========== Network Configuration ===========
 
 networks:
   fantasy_league_network:
     name: fantasy_league_network
     driver: bridge
+
+
+# =========== Volume Configuration ===========
+
+volumes:
+  loki-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "C:/logs/"

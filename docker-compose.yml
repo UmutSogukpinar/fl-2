@@ -8,7 +8,6 @@ services:
       dockerfile: Dockerfile
 
     pull_policy: never
-
     image: fantasy_league_backend:1.0
 
     container_name: fl_backend
@@ -34,8 +33,9 @@ services:
       dockerfile: Dockerfile
 
     pull_policy: never
-
     image: fantasy_league_web:1.0
+
+    container_name: fl_web
 
     ports:
       - "0.0.0.0:80:80"
@@ -59,7 +59,6 @@ services:
       dockerfile: Dockerfile
 
     pull_policy: never
-
     image: fantasy_league_alloy:1.0
 
     container_name: fl_alloy
@@ -72,11 +71,44 @@ services:
         condition: service_healthy
       jaeger:
         condition: service_healthy
+      prometheus:
+        condition: service_healthy
 
     networks:
       - fantasy_league_network
 
     restart: unless-stopped
+
+  # ======== Prometheus Service ========
+
+  prometheus:
+
+    build:
+      context: ./observability/prometheus
+      dockerfile: Dockerfile
+
+    pull_policy: never
+    image: fantasy_league_prometheus
+
+    container_name: fl_prometheus
+
+    volumes:
+      - prometheus-data:/prometheus
+
+    ports:
+      - "9090:9090"
+
+    networks:
+      - fantasy_league_network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ======== Loki Service ========
 
@@ -87,7 +119,6 @@ services:
       dockerfile: Dockerfile
 
     pull_policy: never
-
     image: fantasy_league_loki:1.0
 
     container_name: fl_loki
@@ -116,7 +147,6 @@ services:
       dockerfile: Dockerfile
 
     pull_policy: never
-
     image: fantasy_league_jaeger:1.0
 
     container_name: fl_jaeger
@@ -159,3 +189,10 @@ volumes:
       type: none
       o: bind
       device: "C:/fantasy_league/alloy/"
+
+  prometheus-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "C:/fantasy_league/metrics/"

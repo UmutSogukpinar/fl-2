@@ -1,16 +1,19 @@
 services:
 
-  # ==== Backend Service ====
-  backend:
+  # ========================= Backend Services =========================
+
+  # ========== Main Service ==========
+
+  main-api:
 
     build:
-      context: ./backend
+      context: .services/main-api
       dockerfile: Dockerfile
 
     pull_policy: never
-    image: fantasy_league_backend:1.0
+    image: fantasy_league_main_api:1.0
 
-    container_name: fl_backend
+    container_name: fl_main_api
 
     environment:
       ApiSports__ApiKey: ${API_SPORTS_KEY:?API_SPORTS_KEY must be set in .env}
@@ -22,6 +25,18 @@ services:
 
     networks:
       - fantasy_league_network
+
+
+  # ========== Notification Service ==========
+
+  notification-service:
+
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+
+    pull_policy: never
+    image: fantasy_league_notification_service:1.0
 
 
   # ==== Web Service ====
@@ -41,14 +56,14 @@ services:
       - "0.0.0.0:80:80"
 
     depends_on:
-      - backend
+      - main-api
 
     restart: unless-stopped
 
     networks:
       - fantasy_league_network
 
-  # ========================= Stat Services =========================
+  # ========================= Observation Services =========================
 
   # ======== Grafana Service ========
 

@@ -50,6 +50,34 @@ services:
 
   # ========================= Stat Services =========================
 
+  # ======== Grafana Service ========
+
+  grafana:
+
+    build:
+      context: ./observability/grafana
+      dockerfile: Dockerfile
+
+    pull_policy: never
+    image: fantasy_league_grafana:1.0
+
+    container_name: fl_grafana
+
+    ports:
+      - "3000:3000"
+
+    networks:
+      - fantasy_league_network
+
+    depends_on:
+      loki:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+
+
   # ======== Alloy Service ========
 
   alloy:

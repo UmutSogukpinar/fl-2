@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>dotnet-NotificationService-609fa6a1-4475-4965-ada5-c18702594b9c</UserSecretsId>
+    <UserSecretsId>dotnet-FantasyLeague.Notification.Worker-d8fe89b0-4ebf-4d12-b763-b31d8b8dc478</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

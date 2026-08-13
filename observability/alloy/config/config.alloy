@@ -1,0 +1,37 @@
+otelcol.receiver.otlp "default" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+    metrics = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    traces  = [otelcol.exporter.otlphttp.jaeger.input]
+    logs    = [otelcol.exporter.otlphttp.loki.input]
+    metrics = [otelcol.exporter.otlphttp.prometheus.input]
+  }
+}
+
+otelcol.exporter.otlphttp "jaeger" {
+  client {
+    endpoint = "http://jaeger:4318"
+  }
+}
+
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = "http://loki:3100/otlp"
+  }
+}
+
+otelcol.exporter.otlphttp "prometheus" {
+  client {
+    endpoint = "http://prometheus:9090/api/v1/otlp"
+  }
+}

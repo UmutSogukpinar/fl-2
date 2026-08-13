@@ -11,6 +11,8 @@ services:
 
     image: fantasy_league_backend:1.0
 
+    container_name: fl_backend
+
     environment:
       ApiSports__ApiKey: ${API_SPORTS_KEY:?API_SPORTS_KEY must be set in .env}
 
@@ -50,33 +52,59 @@ services:
 
   # ======== Alloy Service ========
 
+  alloy:
+
+    build:
+      context: ./observability/alloy
+      dockerfile: Dockerfile
+
+    pull_policy: never
+
+    image: fantasy_league_alloy:1.0
+
+    container_name: fl_alloy
+
+    ports:
+      - "12345:12345"
+
+    depends_on:
+      loki:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+
+    networks:
+      - fantasy_league_network
+
+    restart: unless-stopped
+
   # ======== Loki Service ========
 
   loki:
 
-      build:
-        context: ./observability/loki
-        dockerfile: Dockerfile
+    build:
+      context: ./observability/loki
+      dockerfile: Dockerfile
 
-      pull_policy: never
+    pull_policy: never
 
-      image: fantasy_league_loki:1.0
+    image: fantasy_league_loki:1.0
 
-      container_name: loki
+    container_name: fl_loki
 
-      volumes:
-        - loki-data:/loki
+    volumes:
+      - loki-data:/loki
 
-      networks:
-        - fantasy_league_network
+    networks:
+      - fantasy_league_network
 
-      restart: unless-stopped
+    restart: unless-stopped
 
-      healthcheck:
-        test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 
   # ======== Jaeger Service ========
@@ -91,10 +119,19 @@ services:
 
     image: fantasy_league_jaeger:1.0
 
+    container_name: fl_jaeger
+
     networks:
-          - fantasy_league_network
+      - fantasy_league_network
 
     restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:13133/status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 
 # =========== Network Configuration ===========
@@ -116,21 +153,7 @@ volumes:
       o: bind
       device: "C:/fantasy_league/logs/"
 
-  jaeger-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "C:/fantasy_league/traces/"
-
-  prometheus-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "C:/fantasy_league/metrics/"
-
-  allohy-data:
+  alloy-data:
     driver: local
     driver_opts:
       type: none

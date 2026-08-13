@@ -53,7 +53,7 @@ FROM build AS compile
 RUN dotnet publish \
     src/FantasyLeague.WebApi/FantasyLeague.WebApi.csproj \
     --configuration Release \
-    --no-restore \
+    --no-build \
     --output /publish
 
 # =============================================

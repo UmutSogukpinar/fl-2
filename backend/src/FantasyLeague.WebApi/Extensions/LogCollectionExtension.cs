@@ -26,7 +26,9 @@ public static class LogCollectionExtension
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing
                 .UseGrafana()
-                .AddOtlpExporter(options => ConfigureExporter(options, alloyEndpoint, "v1/traces")))
+                .AddOtlpExporter(options => ConfigureExporter(options, alloyEndpoint, "v1/traces")));
+
+        builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics => metrics
                 .UseGrafana()
                 .AddOtlpExporter(options => ConfigureExporter(options, alloyEndpoint, "v1/metrics")));

@@ -3,6 +3,7 @@ using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Trace;
 using FantasyLeague.WebApi.Options;
+using OpenTelemetry.Metrics;
 
 namespace FantasyLeague.WebApi.Extensions;
 
@@ -25,20 +26,23 @@ public static class LogCollectionExtension
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing
                 .UseGrafana()
-                .AddOtlpExporter(options => ConfigureExporter(options, alloyEndpoint)));
+                .AddOtlpExporter(options => ConfigureExporter(options, alloyEndpoint, "v1/traces")))
+            .WithMetrics(metrics => metrics
+                .UseGrafana()
+                .AddOtlpExporter(options => ConfigureExporter(options, alloyEndpoint, "v1/metrics")));
 
-        builder.Logging.AddOpenTelemetry(options =>
+        builder.Logging.AddOpenTelemetry(logging =>
         {
-            options.UseGrafana();
-            options.AddOtlpExporter(exporter => ConfigureExporter(exporter, alloyEndpoint));
+            logging.UseGrafana();
+            logging.AddOtlpExporter(exporter => ConfigureExporter(exporter, alloyEndpoint, "v1/logs"));
         });
 
         return builder;
     }
 
-    private static void ConfigureExporter(OtlpExporterOptions options, Uri endpoint)
+    private static void ConfigureExporter(OtlpExporterOptions options, Uri endpoint, string signalPath)
     {
-        options.Endpoint = endpoint;
+        options.Endpoint = new Uri($"{endpoint.AbsoluteUri.TrimEnd('/')}/{signalPath}");
         options.Protocol = OtlpExportProtocol.HttpProtobuf;
     }
 }

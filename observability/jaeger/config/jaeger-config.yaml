@@ -1,0 +1,5 @@
+jaeger_storage:
+  backends:
+    some_trace_storage:
+      memory:
+        max_traces: 100000

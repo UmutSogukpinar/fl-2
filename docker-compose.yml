@@ -7,6 +7,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
 
+    pull_policy: never
+
     image: fantasy_league_backend:1.0
 
     environment:
@@ -14,6 +16,7 @@ services:
 
     ports:
       - "5129:8080"
+
     restart: unless-stopped
 
     networks:
@@ -27,6 +30,8 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
+
+    pull_policy: never
 
     image: fantasy_league_web:1.0
 
@@ -43,13 +48,19 @@ services:
 
   # ========================= Stat Services =========================
 
-  # ==== Loki Service ====
+  # ======== Alloy Service ========
+
+  # ======== Loki Service ========
 
   loki:
 
       build:
         context: ./observability/loki
         dockerfile: Dockerfile
+
+      pull_policy: never
+
+      image: fantasy_league_loki:1.0
 
       container_name: loki
 
@@ -68,6 +79,23 @@ services:
         retries: 5
 
 
+  # ======== Jaeger Service ========
+
+  jaeger:
+
+    build:
+      context: ./observability/jaeger
+      dockerfile: Dockerfile
+
+    pull_policy: never
+
+    image: fantasy_league_jaeger:1.0
+
+    networks:
+          - fantasy_league_network
+
+    restart: unless-stopped
+
 
 # =========== Network Configuration ===========
 
@@ -80,9 +108,31 @@ networks:
 # =========== Volume Configuration ===========
 
 volumes:
+
   loki-data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: "C:/logs/"
+      device: "C:/fantasy_league/logs/"
+
+  jaeger-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "C:/fantasy_league/traces/"
+
+  prometheus-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "C:/fantasy_league/metrics/"
+
+  allohy-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "C:/fantasy_league/alloy/"

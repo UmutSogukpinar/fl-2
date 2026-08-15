@@ -1,2 +1,7 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FantasyLeague.Notification.Infrastructure/FantasyLeague.Notification.Infrastructure.csproj" Id="3bdb67d6-d537-4c2a-b41a-ae5e2610b835" />
+    <Project Path="src/FantasyLeague.Notification.Application/FantasyLeague.Notification.Application.csproj" />
+    <Project Path="src/FantasyLeague.Notification.Worker/FantasyLeague.Notification.Worker.csproj" />
+  </Folder>
 </Solution>

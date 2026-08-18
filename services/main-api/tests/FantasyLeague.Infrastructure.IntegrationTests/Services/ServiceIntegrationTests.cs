@@ -1,5 +1,6 @@
 using FantasyLeague.Application.Common.Interfaces.Caching;
 using FantasyLeague.Application.Common.Interfaces.ExternalServices;
+using FantasyLeague.Application.Common.Interfaces.Messaging;
 using FantasyLeague.Application.Common.Interfaces.Security;
 using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.Services.Drafts;
@@ -120,7 +121,8 @@ public sealed class ServiceIntegrationTests(PostgreSqlFixture database) : IAsync
             new FantasyTeamRepository(context),
             new LeagueRepository(context),
             new LeagueSetupRepository(context),
-            new UserRepository(context));
+            new UserRepository(context),
+            new TestIntegrationEventPublisher());
 
         var response = await service.GetByIdAsync(team.Id);
 
@@ -163,6 +165,16 @@ public sealed class ServiceIntegrationTests(PostgreSqlFixture database) : IAsync
 
         public bool Verify(string password, string passwordHash) =>
             passwordHash == Hash(password);
+    }
+
+    private sealed class TestIntegrationEventPublisher
+        : IIntegrationEventPublisher
+    {
+        public Task PublishAsync<TMessage>(
+            string publisherName,
+            TMessage message,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class TestCacheService : ICacheService

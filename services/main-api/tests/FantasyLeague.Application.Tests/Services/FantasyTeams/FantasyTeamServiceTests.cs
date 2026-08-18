@@ -5,6 +5,7 @@ using FantasyLeague.Domain.Entities.Users;
 
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
+using FantasyLeague.Application.Common.Interfaces.Messaging;
 using FantasyLeague.Application.DTOs.Requests.FantasyTeams;
 using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Requests.Leagues;
@@ -13,6 +14,7 @@ using FantasyLeague.Application.DTOs.Responses.Leagues;
 using FantasyLeague.Application.DTOs.Responses.Users;
 using FantasyLeague.Application.Models;
 using FantasyLeague.Application.Services.FantasyTeams;
+using FantasyLeague.Application.IntegrationEvents;
 using FantasyLeague.Domain.Entities;
 using Moq;
 
@@ -24,6 +26,7 @@ public sealed class FantasyTeamServiceTests
     private readonly Mock<ILeagueRepository> _leagueRepository = new();
     private readonly Mock<ILeagueSetupRepository> _leagueSetupRepository = new();
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IIntegrationEventPublisher> _eventPublisher = new();
     private readonly FantasyTeamService _service;
 
     public FantasyTeamServiceTests()
@@ -32,7 +35,8 @@ public sealed class FantasyTeamServiceTests
             _teamRepository.Object,
             _leagueRepository.Object,
             _leagueSetupRepository.Object,
-            _userRepository.Object);
+            _userRepository.Object,
+            _eventPublisher.Object);
         _teamRepository
             .Setup(repository => repository.GetRosterStateAsync(
                 It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -535,11 +539,43 @@ public sealed class FantasyTeamServiceTests
         var awayPlayerId = Guid.NewGuid();
         var request = new CreateTransferRequest(
             awayTeamId, [homePlayerId], [awayPlayerId]);
+        var awayOwner = new User
+        {
+            Username = "away-owner",
+            Email = "away@example.com",
+            Password = "hash"
+        };
+        var homeTeam = new FantasyTeam
+        {
+            Id = homeTeamId,
+            Name = "Home Team",
+            LeagueId = Guid.NewGuid(),
+            OwnerId = Guid.NewGuid()
+        };
+        var awayTeam = new FantasyTeam
+        {
+            Id = awayTeamId,
+            Name = "Away Team",
+            LeagueId = homeTeam.LeagueId,
+            OwnerId = awayOwner.Id
+        };
         _teamRepository
             .Setup(repository =>
                 repository.ValidateExistenceOfFantasyTeamIdAndNbaPlayerId(
                     homeTeamId, awayTeamId, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(TradeValidationResult.None);
+        _teamRepository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                homeTeamId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(homeTeam);
+        _teamRepository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                awayTeamId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(awayTeam);
+        _userRepository
+            .Setup(repository => repository.GetTrackedByIdAsync(
+                awayOwner.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(awayOwner);
 
         var transferId = Guid.NewGuid();
         _teamRepository.Setup(repository => repository.CreateTransferAsync(
@@ -556,6 +592,12 @@ public sealed class FantasyTeamServiceTests
             request.RequestedPlayerIds,
             It.IsAny<CancellationToken>()), Times.Once);
         _teamRepository.Verify(repository => repository.SaveChangesAsync(
+            It.IsAny<CancellationToken>()), Times.Once);
+        _eventPublisher.Verify(publisher => publisher.PublishAsync(
+            IntegrationEventPublisherNames.EmailNotification,
+            It.Is<EmailNotificationRequested>(notification =>
+                notification.Recipient == awayOwner.Email &&
+                notification.CorrelationId == transferId),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

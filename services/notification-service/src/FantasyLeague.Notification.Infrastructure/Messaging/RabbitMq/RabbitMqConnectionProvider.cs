@@ -5,7 +5,7 @@ using RabbitMQ.Client;
 
 namespace FantasyLeague.Notification.Infrastructure.Messaging.RabbitMq;
 
-public sealed class RabbitMqConnectionProvider(
+public sealed partial class RabbitMqConnectionProvider(
     IOptions<RabbitMqOptions> options,
     ILogger<RabbitMqConnectionProvider> _logger)
     : IRabbitMqConnectionProvider, IAsyncDisposable
@@ -14,6 +14,7 @@ public sealed class RabbitMqConnectionProvider(
     private readonly SemaphoreSlim _connectionLock = new(1, 1);
 
     private IConnection? _connection;
+    private int _disposed;
 
 
     /// <summary>
@@ -23,6 +24,8 @@ public sealed class RabbitMqConnectionProvider(
     public async Task<IConnection> GetConnectionAsync(
         CancellationToken cancellation = default)
     {
+        ThrowIfDisposed();
+
         var clientProvidedName = "fantasy-league:notification-service";
 
         if (_connection is { IsOpen: true })
@@ -32,6 +35,8 @@ public sealed class RabbitMqConnectionProvider(
 
         try
         {
+            ThrowIfDisposed();
+
             if (_connection is { IsOpen: true })
                 return _connection;
 
@@ -55,12 +60,10 @@ public sealed class RabbitMqConnectionProvider(
 
             return _connection;
         }
-        catch(Exception ex)
+        catch (Exception exception)
         {
-            _logger.LogError(
-                ex,
-                "RabbitMQ connection could not be established." +
-                "Host: {HostName}, Port: {Port}, VirtualHost: {VirtualHost}",
+            LogConnectionFailure(
+                exception,
                 _options.HostName,
                 _options.Port,
                 _options.VirtualHost);
@@ -73,6 +76,18 @@ public sealed class RabbitMqConnectionProvider(
         }
 
     }
+
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Error,
+        Message =
+            "RabbitMQ connection could not be established. " +
+            "Host: {HostName}, Port: {Port}, VirtualHost: {VirtualHost}")]
+    private partial void LogConnectionFailure(
+        Exception exception,
+        string hostName,
+        int port,
+        string virtualHost);
 
     public async Task<IChannel> CreateChannelAsync(
         CancellationToken cancellation = default)
@@ -87,14 +102,33 @@ public sealed class RabbitMqConnectionProvider(
 
     public async ValueTask DisposeAsync()
     {
-        if (_connection is not null)
+        if (Interlocked.Exchange(ref _disposed, 1) == 1)
+            return;
+
+        await _connectionLock.WaitAsync();
+
+        try
         {
-            if (_connection.IsOpen)
-                await _connection.CloseAsync();
+            if (_connection is not null)
+            {
+                if (_connection.IsOpen)
+                    await _connection.CloseAsync();
 
-            await _connection.DisposeAsync();
+                await _connection.DisposeAsync();
+                _connection = null;
+            }
         }
+        finally
+        {
+            _connectionLock.Release();
+            _connectionLock.Dispose();
+        }
+    }
 
-        _connectionLock.Dispose();
+    private void ThrowIfDisposed()
+    {
+        ObjectDisposedException.ThrowIf(
+            Volatile.Read(ref _disposed) == 1,
+            this);
     }
 }

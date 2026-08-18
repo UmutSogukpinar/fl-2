@@ -2,9 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FantasyLeague.WebApi.Options;
 
-public sealed class AlloyOptions
+public sealed class OpenTelemetryOptions
 {
-    public const string SectionName = "Alloy";
+    public const string SectionName = "OpenTelemetry";
 
     [Required]
     [Url]

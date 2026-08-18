@@ -1,8 +1,6 @@
-﻿using FantasyLeague.Notification.Infrastructure.Messaging.RabbitMq;
-using RabbitMQ.Client;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using RabbitMQ.Client;
+
+using FantasyLeague.Notification.Worker.Configuration.RabbitMq;
 
 namespace FantasyLeague.Notification.Worker.Consumers;
 
@@ -36,10 +34,11 @@ public sealed partial class EmailNotificationConsumer
         CancellationToken cancellation)
     {
         await channel.BasicQosAsync(
-        prefetchSize: 0,
-        prefetchCount: _emailConsumerOptions.PrefetchCount,
-        global: false,
-        cancellationToken: cancellation);
+            prefetchSize: 0,
+            prefetchCount: _emailConsumerOptions.PrefetchCount,
+            global: false,
+            cancellationToken: cancellation
+        );
     }
 
     private async Task ConfigureQueueDeclareAsync(
@@ -50,7 +49,8 @@ public sealed partial class EmailNotificationConsumer
             durable: true,
             exclusive: false,
             autoDelete: false,
-            cancellationToken: cancellation);
+            cancellationToken: cancellation
+        );
     }
 
     private async Task ConfigureExchangeDeclaration(
@@ -76,6 +76,7 @@ public sealed partial class EmailNotificationConsumer
             queue: _emailConsumerOptions.QueueName,
             exchange: options.ExchangeName,
             routingKey: options.RoutingKey,
-            cancellationToken: cancellation);
+            cancellationToken: cancellation
+        );
     }
 }

@@ -1,6 +1,6 @@
+using FantasyLeague.Notification.Worker.Configuration.RabbitMq;
 using FantasyLeague.Notification.Infrastructure.Messaging.RabbitMq;
 using Microsoft.Extensions.Options;
-using RabbitMQ.Client;
 
 
 namespace FantasyLeague.Notification.Worker.Consumers;

@@ -1,7 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using RabbitMqExchangeType = RabbitMQ.Client.ExchangeType;
 
-namespace FantasyLeague.Notification.Infrastructure.Messaging.RabbitMq;
+
+namespace FantasyLeague.Notification.Worker.Configuration.RabbitMq;
 
 public sealed class RabbitMqConsumerOptions
 {

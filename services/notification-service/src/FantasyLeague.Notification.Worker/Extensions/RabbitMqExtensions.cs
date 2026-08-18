@@ -1,4 +1,5 @@
 ﻿using FantasyLeague.Notification.Infrastructure.Messaging.RabbitMq;
+using FantasyLeague.Notification.Worker.Configuration.RabbitMq;
 
 namespace FantasyLeague.Notification.Worker.Extensions;
 

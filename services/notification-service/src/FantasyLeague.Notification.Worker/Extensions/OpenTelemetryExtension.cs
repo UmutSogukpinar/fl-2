@@ -1,27 +1,28 @@
 ﻿using Grafana.OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
-using OpenTelemetry.Trace;
-using FantasyLeague.WebApi.Options;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 
-namespace FantasyLeague.WebApi.Extensions;
+using FantasyLeague.Notification.Worker.Configuration.OpenTelemetry;
 
-public static class LogCollectionExtension
+namespace FantasyLeague.Notification.Worker.Extensions;
+
+internal static class OpenTelemetryExtension
 {
-    public static WebApplicationBuilder ConfigureLogging(
-        this WebApplicationBuilder builder)
+    public static HostApplicationBuilder ConfigureLogging(
+        this HostApplicationBuilder builder)
     {
-        builder.Services.AddValidatedOptions<AlloyOptions>(
+        builder.Services.AddValidatedOptions<OpenTelemetryOptions>(
             builder.Configuration,
-            AlloyOptions.SectionName);
+            OpenTelemetryOptions.SectionName);
 
-        var alloyOptions = builder.Configuration
-            .GetRequiredOptions<AlloyOptions>(
-                AlloyOptions.SectionName
+        var telemetryOptions = builder.Configuration
+            .GetRequiredOptions<OpenTelemetryOptions>(
+                OpenTelemetryOptions.SectionName
             );
 
-        var alloyEndpoint = new Uri(alloyOptions.OtlpEndpoint);
+        var alloyEndpoint = new Uri(telemetryOptions.OtlpEndpoint);
 
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();

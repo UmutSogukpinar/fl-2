@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using RabbitMqExchangeType = RabbitMQ.Client.ExchangeType;
 
 namespace FantasyLeague.Notification.Infrastructure.Messaging.RabbitMq;
 
@@ -28,4 +29,14 @@ public sealed class RabbitMqBindingOptions
 
     [Required]
     public string RoutingKey { get; init; } = string.Empty;
+
+    [AllowedValues(
+        null,
+        RabbitMqExchangeType.Direct,
+        RabbitMqExchangeType.Topic,
+        RabbitMqExchangeType.Fanout,
+        RabbitMqExchangeType.Headers,
+        ErrorMessage =
+            "ExchangeType must be direct, topic, fanout, or headers.")]
+    public string? ExchangeType { get; init; } = string.Empty;
 }

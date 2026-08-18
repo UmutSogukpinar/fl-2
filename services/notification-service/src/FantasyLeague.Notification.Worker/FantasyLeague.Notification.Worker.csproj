@@ -1,10 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>dotnet-FantasyLeague.Notification.Worker-d8fe89b0-4ebf-4d12-b763-b31d8b8dc478</UserSecretsId>
+    <AssemblyName>FantasyLeague.Notification.Worker</AssemblyName>
+
   </PropertyGroup>
 
   <ItemGroup>

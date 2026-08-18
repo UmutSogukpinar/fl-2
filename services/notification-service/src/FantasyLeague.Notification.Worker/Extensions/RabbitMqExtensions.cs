@@ -2,7 +2,7 @@
 
 namespace FantasyLeague.Notification.Worker.Extensions;
 
-public static class RabbitMqExtensions
+internal static class RabbitMqExtensions
 {
     public static IServiceCollection AddRabbitMqConsumers(
         this IServiceCollection services,
@@ -28,9 +28,14 @@ public static class RabbitMqExtensions
 
     private static void AddConsumerOptions(
         IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration
+    )
     {
-        AddConsumerOptions(services, configuration, RabbitMqConsumerNames.Email);
+        AddConsumerOptions(
+            services,
+            configuration,
+            RabbitMqConsumerNames.Email
+        );
     }
 
     private static void AddConsumerOptions(
@@ -51,7 +56,9 @@ public static class RabbitMqExtensions
                         binding is not null &&
                         !string.IsNullOrWhiteSpace(binding.ExchangeName) &&
                         !string.IsNullOrWhiteSpace(binding.RoutingKey)),
-                "Every RabbitMQ binding must have an exchange name and a routing key.")
+                "Every RabbitMQ binding must have" +
+                "an exchange nameand a routing key."
+            )
             .ValidateOnStart();
     }
 }

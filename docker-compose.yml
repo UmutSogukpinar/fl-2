@@ -7,7 +7,7 @@ services:
   main-api:
 
     build:
-      context: .services/main-api
+      context: ./services/main-api
       dockerfile: Dockerfile
 
     pull_policy: never

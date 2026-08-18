@@ -2,7 +2,7 @@ using FantasyLeague.Notification.Worker.Consumers;
 
 namespace FantasyLeague.Notification.Worker.Extensions;
 
-public static class NotificationConsumerExtensions
+internal static class NotificationConsumerExtensions
 {
     public static IServiceCollection AddNotificationConsumers(
         this IServiceCollection services)

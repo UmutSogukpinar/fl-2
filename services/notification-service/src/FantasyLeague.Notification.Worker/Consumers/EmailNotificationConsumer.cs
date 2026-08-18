@@ -1,26 +1,38 @@
 using FantasyLeague.Notification.Infrastructure.Messaging.RabbitMq;
 using Microsoft.Extensions.Options;
+using RabbitMQ.Client;
+
 
 namespace FantasyLeague.Notification.Worker.Consumers;
 
-public sealed class EmailNotificationConsumer
+public sealed partial class EmailNotificationConsumer
 (
+    IRabbitMqConnectionProvider _connProvider,
     ILogger<EmailNotificationConsumer> _logger,
-    IOptionsMonitor<RabbitMqConsumerOptions> consumerOptions) : BackgroundService
+    IOptionsMonitor<RabbitMqConsumerOptions> consumerOptions)
+    : BackgroundService
 {
-    private readonly RabbitMqConsumerOptions _options =
+    private readonly RabbitMqConsumerOptions _emailConsumerOptions =
         consumerOptions.Get(RabbitMqConsumerNames.Email);
 
     protected override async Task ExecuteAsync(
         CancellationToken cancellation)
     {
-        _logger.LogInformation(
-            "Email Notification Consumer is starting for queue {QueueName}.",
-            _options.QueueName);
+        var conn = await _connProvider.GetConnectionAsync(cancellation);
 
-        while (!cancellation.IsCancellationRequested)
-        {
-            await Task.Delay(1000, cancellation);
-        }
+        await using var channel = await conn
+            .CreateChannelAsync(cancellationToken: cancellation);
+
+        await ConfigureChannelAsync(channel, cancellation);
+
+        LogNotificationConsumer(_emailConsumerOptions.QueueName);
+        await Task.Delay(Timeout.InfiniteTimeSpan, cancellation);
     }
+
+   
+    // Logger utils
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "Processing {QueueName} items")]
+    private partial void LogNotificationConsumer(string queueName);
 }

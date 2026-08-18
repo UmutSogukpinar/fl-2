@@ -26,6 +26,10 @@ services:
     networks:
       - fantasy_league_network
 
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
 
   # ========== Notification Service ==========
 
@@ -35,8 +39,17 @@ services:
       context: ./services/notification-service
       dockerfile: Dockerfile
 
+    container_name: fl_notification_service
+
     pull_policy: never
     image: fantasy_league_notification_service:1.0
+
+    networks:
+      - fantasy_league_network
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
 
 
   # ==== Web Service ====
@@ -62,6 +75,40 @@ services:
 
     networks:
       - fantasy_league_network
+
+
+  # ========================= Messsage Broker Services =========================
+
+  # RabbitMq Service
+
+  rabbitmq:
+
+    build:
+      context: ./infrastructure/rabbitmq
+      dockerfile: Dockerfile
+
+    pull_policy: never
+    image: fantasy_league_rabbitmq:1.0
+
+    container_name: fl_rabbitmq
+
+    networks:
+      - fantasy_league_network
+
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST}
+
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   # ========================= Observation Services =========================
 
@@ -219,23 +266,9 @@ networks:
 
 volumes:
 
-  loki-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "C:/fantasy_league/logs/"
+  loki-data: {}
 
-  alloy-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "C:/fantasy_league/alloy/"
+  prometheus-data: {}
 
-  prometheus-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "C:/fantasy_league/metrics/"
+  rabbitmq-data: {}
+

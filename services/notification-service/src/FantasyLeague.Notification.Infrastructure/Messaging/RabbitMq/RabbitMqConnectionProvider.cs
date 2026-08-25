@@ -12,6 +12,7 @@ public sealed partial class RabbitMqConnectionProvider(
 {
     private const int InitialRetryDelaySeconds = 2;
     private const int MaximumRetryDelaySeconds = 30;
+    private const ushort ConsumerDispatchConcurrency = 5;
     private static readonly CreateChannelOptions ConsumerChannelOptions = new(
         publisherConfirmationsEnabled: true,
         publisherConfirmationTrackingEnabled: true);
@@ -62,6 +63,7 @@ public sealed partial class RabbitMqConnectionProvider(
 
                 AutomaticRecoveryEnabled = true,
                 TopologyRecoveryEnabled = true,
+                ConsumerDispatchConcurrency = ConsumerDispatchConcurrency,
 
                 ClientProvidedName = clientProvidedName
 

@@ -10,6 +10,9 @@ public sealed partial class RabbitMqConnectionProvider(
     ILogger<RabbitMqConnectionProvider> _logger)
     : IRabbitMqConnectionProvider, IAsyncDisposable
 {
+    private const int InitialRetryDelaySeconds = 2;
+    private const int MaximumRetryDelaySeconds = 30;
+
     private readonly RabbitMqOptions _options = options.Value;
     private readonly SemaphoreSlim _connectionLock = new(1, 1);
 
@@ -40,6 +43,12 @@ public sealed partial class RabbitMqConnectionProvider(
             if (_connection is { IsOpen: true })
                 return _connection;
 
+            if (_connection is not null)
+            {
+                await _connection.DisposeAsync();
+                _connection = null;
+            }
+
             var factory = new ConnectionFactory
             {
                 HostName = _options.HostName,
@@ -55,20 +64,47 @@ public sealed partial class RabbitMqConnectionProvider(
 
             };
 
-            _connection = await factory.CreateConnectionAsync(
-                cancellation);
+            var retryCount = 0;
+            var retryDelaySeconds = InitialRetryDelaySeconds;
 
-            return _connection;
-        }
-        catch (Exception exception)
-        {
-            LogConnectionFailure(
-                exception,
-                _options.HostName,
-                _options.Port,
-                _options.VirtualHost);
+            while (true)
+            {
+                try
+                {
+                    _connection = await factory.CreateConnectionAsync(
+                        cancellation);
 
-            throw;
+                    if (retryCount > 0)
+                        LogConnectionRecovered(retryCount);
+
+                    return _connection;
+                }
+                catch (OperationCanceledException)
+                    when (cancellation.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception exception)
+                {
+                    retryCount++;
+
+                    LogConnectionRetry(
+                        exception,
+                        _options.HostName,
+                        _options.Port,
+                        _options.VirtualHost,
+                        retryCount,
+                        retryDelaySeconds);
+
+                    await Task.Delay(
+                        TimeSpan.FromSeconds(retryDelaySeconds),
+                        cancellation);
+
+                    retryDelaySeconds = Math.Min(
+                        retryDelaySeconds * 2,
+                        MaximumRetryDelaySeconds);
+                }
+            }
         }
         finally
         {
@@ -79,15 +115,24 @@ public sealed partial class RabbitMqConnectionProvider(
 
     [LoggerMessage(
         EventId = 1,
-        Level = LogLevel.Error,
+        Level = LogLevel.Warning,
         Message =
             "RabbitMQ connection could not be established. " +
-            "Host: {HostName}, Port: {Port}, VirtualHost: {VirtualHost}")]
-    private partial void LogConnectionFailure(
+            "Host: {HostName}, Port: {Port}, VirtualHost: {VirtualHost}. " +
+            "Retry {RetryCount} in {RetryDelaySeconds} seconds.")]
+    private partial void LogConnectionRetry(
         Exception exception,
         string hostName,
         int port,
-        string virtualHost);
+        string virtualHost,
+        int retryCount,
+        int retryDelaySeconds);
+
+    [LoggerMessage(
+        EventId = 2,
+        Level = LogLevel.Information,
+        Message = "RabbitMQ connection established after {RetryCount} retries.")]
+    private partial void LogConnectionRecovered(int retryCount);
 
     public async Task<IChannel> CreateChannelAsync(
         CancellationToken cancellation = default)

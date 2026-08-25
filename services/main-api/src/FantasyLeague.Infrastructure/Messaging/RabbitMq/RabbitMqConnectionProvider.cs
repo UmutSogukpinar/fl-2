@@ -11,6 +11,10 @@ public sealed class RabbitMqConnectionProvider(
     ILogger<RabbitMqConnectionProvider> logger)
     : IRabbitMqConnectionProvider, IAsyncDisposable
 {
+    private static readonly CreateChannelOptions PublisherChannelOptions = new(
+        publisherConfirmationsEnabled: true,
+        publisherConfirmationTrackingEnabled: true);
+
     private readonly RabbitMqOptions _options = options.Value;
     private readonly SemaphoreSlim _connectionLock = new(1, 1);
     private IConnection? _connection;
@@ -77,6 +81,7 @@ public sealed class RabbitMqConnectionProvider(
         var connection = await GetConnectionAsync(cancellationToken);
 
         return await connection.CreateChannelAsync(
+            PublisherChannelOptions,
             cancellationToken: cancellationToken);
     }
 

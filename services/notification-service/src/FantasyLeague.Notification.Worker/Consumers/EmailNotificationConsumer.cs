@@ -34,7 +34,7 @@ public sealed partial class EmailNotificationConsumer
     }
 
    
-    // == Logger utils ==
+    // ====== Logger utils ======
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "Processing {QueueName} items")]

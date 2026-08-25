@@ -7,6 +7,35 @@ public sealed partial class EmailNotificationConsumer
 {
     private const string RetryCountHeader = "x-retry-count";
 
+    private async Task RouteOrRequeueFailedMessageAsync(
+        IChannel channel,
+        BasicDeliverEventArgs eventArgs,
+        CancellationToken cancellation)
+    {
+        try
+        {
+            await RouteFailedMessageAsync(channel, eventArgs, cancellation);
+        }
+        catch (OperationCanceledException)
+            when (cancellation.IsCancellationRequested)
+        {
+            // The original message remains unacknowledged and returns to the
+            // queue when the channel closes during shutdown.
+        }
+        catch (Exception routingException)
+        {
+            LogFailedMessageRoutingFailure(
+                routingException,
+                eventArgs.BasicProperties.MessageId);
+
+            await channel.BasicNackAsync(
+                eventArgs.DeliveryTag,
+                multiple: false,
+                requeue: true,
+                cancellationToken: cancellation);
+        }
+    }
+
     private async Task RouteFailedMessageAsync(
         IChannel channel,
         BasicDeliverEventArgs eventArgs,
@@ -87,7 +116,7 @@ public sealed partial class EmailNotificationConsumer
         int retryCount)
     {
         var headers = source.Headers is null
-            ? new Dictionary<string, object?>()
+            ? []
             : new Dictionary<string, object?>(source.Headers);
 
         headers[RetryCountHeader] = retryCount;

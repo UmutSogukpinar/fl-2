@@ -14,36 +14,71 @@ public sealed class EfInboxMessageStore(
         string payload,
         CancellationToken cancellation = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(messageType);
-        ArgumentException.ThrowIfNullOrWhiteSpace(payload);
+        ValidateMessage(messageId, messageType, payload);
 
         await using var context =
             await contextFactory.CreateDbContextAsync(cancellation);
         var messages = context.Set<InboxMessage>();
-        var inboxMessage = await messages.SingleOrDefaultAsync(
-            message => message.MessageId == messageId,
+        var inboxMessage = await FindMessageAsync(
+            context,
+            messageId,
             cancellation);
 
-        if (inboxMessage?.ProcessedOnUtc is not null)
+        if (IsAlreadyProcessed(inboxMessage))
             return false;
 
-        if (inboxMessage is null)
-        {
-            inboxMessage = new InboxMessage
-            {
-                MessageId = messageId,
-                MessageType = messageType,
-                Payload = payload
-            };
-
-            messages.Add(inboxMessage);
-        }
+        inboxMessage ??= AddMessage(
+            messages,
+            messageId,
+            messageType,
+            payload);
 
         inboxMessage.AttemptCount++;
 
         await context.SaveChangesAsync(cancellation);
         return true;
+    }
+
+    private static void ValidateMessage(
+        string messageId,
+        string messageType,
+        string payload)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageType);
+        ArgumentException.ThrowIfNullOrWhiteSpace(payload);
+    }
+
+    private static Task<InboxMessage?> FindMessageAsync(
+        NotificationDbContext context,
+        string messageId,
+        CancellationToken cancellation)
+    {
+        return context.Set<InboxMessage>().SingleOrDefaultAsync(
+            message => message.MessageId == messageId,
+            cancellation);
+    }
+
+    private static bool IsAlreadyProcessed(InboxMessage? message)
+    {
+        return message?.ProcessedOnUtc is not null;
+    }
+
+    private static InboxMessage AddMessage(
+        DbSet<InboxMessage> messages,
+        string messageId,
+        string messageType,
+        string payload)
+    {
+        var message = new InboxMessage
+        {
+            MessageId = messageId,
+            MessageType = messageType,
+            Payload = payload
+        };
+
+        messages.Add(message);
+        return message;
     }
 
     public async Task MarkProcessedAsync(
@@ -87,9 +122,7 @@ public sealed class EfInboxMessageStore(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(messageId);
 
-        return await context.Set<InboxMessage>().SingleOrDefaultAsync(
-            message => message.MessageId == messageId,
-            cancellation)
+        return await FindMessageAsync(context, messageId, cancellation)
             ?? throw new InvalidOperationException(
                 $"Inbox message '{messageId}' was not found.");
     }

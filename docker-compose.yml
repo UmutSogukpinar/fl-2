@@ -17,6 +17,9 @@ services:
 
     environment:
       ApiSports__ApiKey: ${API_SPORTS_KEY:?API_SPORTS_KEY must be set in .env}
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: ${RABBITMQ_DEFAULT_VHOST}
 
     ports:
       - "5129:8080"
@@ -76,6 +79,9 @@ services:
       DbSettings__Database: ${NOTIFICATION_DB_NAME:-fantasy_league_notifications}
       DbSettings__Username: ${NOTIFICATION_DB_USER:-postgres}
       DbSettings__Password: ${NOTIFICATION_DB_PASSWORD:-postgres}
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: ${RABBITMQ_DEFAULT_VHOST}
 
     pull_policy: never
     image: fantasy_league_notification_service:1.0

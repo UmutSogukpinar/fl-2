@@ -7,6 +7,7 @@ using FantasyLeague.Application.Common.Validation;
 using FantasyLeague.Application.Common.Pagination;
 using FantasyLeague.Application.DTOs.Requests.Common;
 using FantasyLeague.Application.DTOs.Responses.Common;
+using FantasyLeague.Application.IntegrationEvents;
 
 
 namespace FantasyLeague.Application.Services.FantasyTeams;
@@ -59,6 +60,18 @@ public sealed partial class FantasyTeamService
         CheckConflictForFantasyTeamIdAndNbaPlayerId(
             conflict, initiatingTeamId, request.CounterpartyTeamId);
 
+        var initiatingTeam = await GetTrackedTeamOrThrowAsync(
+            initiatingTeamId,
+            cancellation);
+        var counterpartyTeam = await GetTrackedTeamOrThrowAsync(
+            request.CounterpartyTeamId,
+            cancellation);
+        var recipient = await _userRepository.GetTrackedByIdAsync(
+            counterpartyTeam.OwnerId,
+            cancellation)
+            ?? throw new NotFoundException(
+                $"User '{counterpartyTeam.OwnerId}' was not found.");
+
         var transferId = await _teamRepository.CreateTransferAsync(
             initiatingTeamId,
             request.CounterpartyTeamId,
@@ -66,6 +79,17 @@ public sealed partial class FantasyTeamService
             request.RequestedPlayerIds,
             cancellation);
         await _teamRepository.SaveChangesAsync(cancellation);
+
+        await _eventPublisher.PublishAsync(
+            IntegrationEventPublisherNames.EmailNotification,
+            new EmailNotificationRequested(
+                recipient.Email,
+                "New fantasy trade request",
+                $"{initiatingTeam.Name} sent a trade request to " +
+                $"{counterpartyTeam.Name}.",
+                transferId),
+            cancellation);
+
         return transferId;
     }
 
@@ -156,10 +180,10 @@ public sealed partial class FantasyTeamService
     // ==================== Validations ====================
 
     private static void CheckConflictForFantasyTeamIdAndNbaPlayerId(
-    TradeValidationResult conflict,
-    Guid? homeTeamId = null,
-    Guid? awayTeamId = null,
-    Guid? nbaPlayerId = null)
+        TradeValidationResult conflict,
+        Guid? homeTeamId = null,
+        Guid? awayTeamId = null,
+        Guid? nbaPlayerId = null)
     {
         if (conflict == TradeValidationResult.None)
             return;

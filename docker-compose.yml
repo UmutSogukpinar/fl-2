@@ -1,16 +1,19 @@
 services:
 
-  # ==== Backend Service ====
-  backend:
+  # ========================= Backend Services =========================
+
+  # ========== Main Service ==========
+
+  main-api:
 
     build:
-      context: ./backend
+      context: ./services/main-api
       dockerfile: Dockerfile
 
     pull_policy: never
-    image: fantasy_league_backend:1.0
+    image: fantasy_league_main_api:1.0
 
-    container_name: fl_backend
+    container_name: fl_main_api
 
     environment:
       ApiSports__ApiKey: ${API_SPORTS_KEY:?API_SPORTS_KEY must be set in .env}
@@ -22,6 +25,69 @@ services:
 
     networks:
       - fantasy_league_network
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+
+  # ========== Notification Service ==========
+
+  notification-db:
+
+    image: postgres:18-alpine
+
+    container_name: fl_notification_db
+
+    environment:
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME:-fantasy_league_notifications}
+      POSTGRES_USER: ${NOTIFICATION_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-postgres}
+
+    ports:
+      - "127.0.0.1:5433:5432"
+
+    volumes:
+      - notification-db-data:/var/lib/postgresql
+
+    networks:
+      - fantasy_league_network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  notification-service:
+
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+
+    container_name: fl_notification_service
+
+    environment:
+      DbSettings__Host: notification-db
+      DbSettings__Port: 5432
+      DbSettings__Database: ${NOTIFICATION_DB_NAME:-fantasy_league_notifications}
+      DbSettings__Username: ${NOTIFICATION_DB_USER:-postgres}
+      DbSettings__Password: ${NOTIFICATION_DB_PASSWORD:-postgres}
+
+    pull_policy: never
+    image: fantasy_league_notification_service:1.0
+
+    networks:
+      - fantasy_league_network
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      notification-db:
+        condition: service_healthy
 
 
   # ==== Web Service ====
@@ -41,14 +107,48 @@ services:
       - "0.0.0.0:80:80"
 
     depends_on:
-      - backend
+      - main-api
 
     restart: unless-stopped
 
     networks:
       - fantasy_league_network
 
-  # ========================= Stat Services =========================
+
+  # ========================= Messsage Broker Services =========================
+
+  # RabbitMq Service
+
+  rabbitmq:
+
+    build:
+      context: ./infrastructure/rabbitmq
+      dockerfile: Dockerfile
+
+    pull_policy: never
+    image: fantasy_league_rabbitmq:1.0
+
+    container_name: fl_rabbitmq
+
+    networks:
+      - fantasy_league_network
+
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST}
+
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ========================= Observation Services =========================
 
   # ======== Grafana Service ========
 
@@ -204,23 +304,11 @@ networks:
 
 volumes:
 
-  loki-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "C:/fantasy_league/logs/"
+  loki-data: {}
 
-  alloy-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "C:/fantasy_league/alloy/"
+  prometheus-data: {}
 
-  prometheus-data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: "C:/fantasy_league/metrics/"
+  rabbitmq-data: {}
+
+  notification-db-data: {}
+

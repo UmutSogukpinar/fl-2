@@ -7,17 +7,21 @@ using OpenTelemetry.Metrics;
 
 namespace FantasyLeague.WebApi.Extensions;
 
-public static class LogCollectionExtension
+public static class OpenTelemetryExtension
 {
-    public static WebApplicationBuilder ConfigureLogging(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder ConfigureOpenTelemetry(
+        this WebApplicationBuilder builder)
     {
-        builder.Services.AddValidatedOptions<AlloyOptions>(
+        builder.Services.AddValidatedOptions<OpenTelemetryOptions>(
             builder.Configuration,
-            AlloyOptions.SectionName);
+            OpenTelemetryOptions.SectionName);
 
-        var alloyOptions = builder.Configuration.GetRequiredOptions<AlloyOptions>(
-            AlloyOptions.SectionName);
-        var alloyEndpoint = new Uri(alloyOptions.OtlpEndpoint);
+        var telemetryOptions = builder.Configuration
+            .GetRequiredOptions<OpenTelemetryOptions>(
+                OpenTelemetryOptions.SectionName
+            );
+
+        var otlpEndpoint = new Uri(telemetryOptions.OtlpEndpoint);
 
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
@@ -26,17 +30,17 @@ public static class LogCollectionExtension
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing
                 .UseGrafana()
-                .AddOtlpExporter(options => ConfigureExporter(options, alloyEndpoint, "v1/traces")));
+                .AddOtlpExporter(options => ConfigureExporter(options, otlpEndpoint, "v1/traces")));
 
         builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics => metrics
                 .UseGrafana()
-                .AddOtlpExporter(options => ConfigureExporter(options, alloyEndpoint, "v1/metrics")));
+                .AddOtlpExporter(options => ConfigureExporter(options, otlpEndpoint, "v1/metrics")));
 
         builder.Logging.AddOpenTelemetry(logging =>
         {
             logging.UseGrafana();
-            logging.AddOtlpExporter(exporter => ConfigureExporter(exporter, alloyEndpoint, "v1/logs"));
+            logging.AddOtlpExporter(exporter => ConfigureExporter(exporter, otlpEndpoint, "v1/logs"));
         });
 
         return builder;
@@ -44,7 +48,8 @@ public static class LogCollectionExtension
 
     private static void ConfigureExporter(OtlpExporterOptions options, Uri endpoint, string signalPath)
     {
-        options.Endpoint = new Uri($"{endpoint.AbsoluteUri.TrimEnd('/')}/{signalPath}");
+        options.Endpoint = new Uri(
+            $"{endpoint.AbsoluteUri.TrimEnd('/')}/{signalPath}");
         options.Protocol = OtlpExportProtocol.HttpProtobuf;
     }
 }

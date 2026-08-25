@@ -2,6 +2,7 @@ using FantasyLeague.Domain.Entities.Leagues;
 
 using FantasyLeague.Application.Common.Exceptions;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
+using FantasyLeague.Application.Common.Interfaces.Messaging;
 using FantasyLeague.Application.Common.Normalization;
 using FantasyLeague.Application.Common.Pagination;
 using FantasyLeague.Application.Common.Validation;
@@ -17,7 +18,8 @@ public sealed partial class FantasyTeamService(
     IFantasyTeamRepository _teamRepository,
     ILeagueRepository _leagueRepository,
     ILeagueSetupRepository _leagueSetupRepository,
-    IUserRepository _userRepository
+    IUserRepository _userRepository,
+    IIntegrationEventPublisher _eventPublisher
 ) : IFantasyTeamService
 {
     public async Task<PagedResponse<FantasyTeamResponse>> GetByLeagueIdAsync(

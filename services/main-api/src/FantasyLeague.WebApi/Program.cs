@@ -2,7 +2,7 @@ using FantasyLeague.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.ConfigureLogging();
+builder.ConfigureOpenTelemetry();
 builder.Services
     .AddWebApiServices(builder.Configuration)
     .AddJwtAuthentication(builder.Configuration)

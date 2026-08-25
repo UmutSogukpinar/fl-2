@@ -1,8 +1,11 @@
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text;
 
-namespace FantasyLeague.WebApi.Options;
+namespace FantasyLeague.Notification.Worker.Configuration.OpenTelemetry;
 
-public sealed class AlloyOptions
+internal class OpenTelemetryOptions
 {
     public const string SectionName = "Alloy";
 

@@ -1,4 +1,14 @@
 using System.Text;
+
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Options;
+
+using Hangfire;
+using Hangfire.PostgreSql;
+
 using FantasyLeague.Application.Common.Interfaces.Caching;
 using FantasyLeague.Application.Common.Interfaces.ExternalServices;
 using FantasyLeague.Application.Common.Interfaces.Repositories;
@@ -9,8 +19,10 @@ using FantasyLeague.Application.Services.FantasyTeams;
 using FantasyLeague.Application.Services.Leagues;
 using FantasyLeague.Application.Services.NbaPlayers;
 using FantasyLeague.Application.Services.Users;
+
 using FantasyLeague.Domain.Entities.Auth;
 using FantasyLeague.Domain.Entities.Users;
+
 using FantasyLeague.Infrastructure.Caching;
 using FantasyLeague.Infrastructure.Configuration;
 using FantasyLeague.Infrastructure.Context;
@@ -21,18 +33,13 @@ using FantasyLeague.Infrastructure.Repositories.Leagues;
 using FantasyLeague.Infrastructure.Repositories.NbaPlayers;
 using FantasyLeague.Infrastructure.Repositories.Users;
 using FantasyLeague.Infrastructure.Security;
+
 using FantasyLeague.WebApi.Authorization;
 using FantasyLeague.WebApi.ExceptionHandlers;
 using FantasyLeague.WebApi.Jobs.Drafts;
 using FantasyLeague.WebApi.Jobs.Matches;
 using FantasyLeague.WebApi.Jobs.NbaPlayers;
-using Hangfire;
-using Hangfire.PostgreSql;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.Options;
+
 
 namespace FantasyLeague.WebApi.Extensions;
 
@@ -50,6 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
         services.AddSingleton<ICacheService, MemoryCacheService>();
+        services.AddRabbitMqMessaging(configuration);
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IJwtService, JwtService>();
@@ -72,6 +80,10 @@ public static class ServiceCollectionExtensions
         services.AddValidatedOptions<ApiSportsOptions>(
             configuration,
             ApiSportsOptions.SectionName);
+        services.AddValidatedOptions<RabbitMqOptions>(
+            configuration,
+            RabbitMqOptions.SectionName);
+
         services.AddHttpClient<INbaPlayersApiClient, ApiSportsClient>((serviceProvider, client) =>
         {
             var options = serviceProvider.GetRequiredService<IOptions<ApiSportsOptions>>().Value;

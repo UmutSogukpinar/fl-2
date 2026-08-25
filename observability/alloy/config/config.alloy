@@ -3,6 +3,22 @@ otelcol.receiver.otlp "default" {
     endpoint = "0.0.0.0:4318"
   }
 
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  output {
+    traces  = [otelcol.processor.memory_limiter.default.input]
+    logs    = [otelcol.processor.memory_limiter.default.input]
+    metrics = [otelcol.processor.memory_limiter.default.input]
+  }
+}
+
+otelcol.processor.memory_limiter "default" {
+  check_interval = "1s"
+  limit          = "512MiB"
+  spike_limit    = "100MiB"
+
   output {
     traces  = [otelcol.processor.batch.default.input]
     logs    = [otelcol.processor.batch.default.input]
@@ -11,6 +27,10 @@ otelcol.receiver.otlp "default" {
 }
 
 otelcol.processor.batch "default" {
+  timeout             = "200ms"
+  send_batch_size     = 2000
+  send_batch_max_size = 3000
+
   output {
     traces  = [otelcol.exporter.otlphttp.jaeger.input]
     logs    = [otelcol.exporter.otlphttp.loki.input]

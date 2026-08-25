@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-FantasyLeague.Notification.Worker-d8fe89b0-4ebf-4d12-b763-b31d8b8dc478</UserSecretsId>
+    <AssemblyName>FantasyLeague.Notification.Worker</AssemblyName>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grafana.OpenTelemetry" Version="1.11.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
+    <PackageReference Include="RabbitMQ.Client" Version="7.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FantasyLeague.Notification.Application\FantasyLeague.Notification.Application.csproj" />
+    <ProjectReference Include="..\FantasyLeague.Notification.Infrastructure\FantasyLeague.Notification.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

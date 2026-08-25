@@ -1,0 +1,86 @@
+{
+  "queues": [
+    {
+      "name": "fantasy-league.notification.email",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "fantasy-league.notification.email.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 30000,
+        "x-dead-letter-exchange": "fantasy-league.events",
+        "x-dead-letter-routing-key": "notification.email"
+      }
+    },
+    {
+      "name": "fantasy-league.notification.email.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 86400000
+      }
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "fantasy-league.events",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "fantasy-league.notification.retry",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "fantasy-league.notification.dead-letter",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "fantasy-league.events",
+      "vhost": "/",
+      "destination": "fantasy-league.notification.email",
+      "destination_type": "queue",
+      "routing_key": "notification.email",
+      "arguments": {}
+    },
+    {
+      "source": "fantasy-league.notification.retry",
+      "vhost": "/",
+      "destination": "fantasy-league.notification.email.retry",
+      "destination_type": "queue",
+      "routing_key": "notification.email.retry",
+      "arguments": {}
+    },
+    {
+      "source": "fantasy-league.notification.dead-letter",
+      "vhost": "/",
+      "destination": "fantasy-league.notification.email.dlq",
+      "destination_type": "queue",
+      "routing_key": "notification.email.dead-letter",
+      "arguments": {}
+    }
+  ]
+}

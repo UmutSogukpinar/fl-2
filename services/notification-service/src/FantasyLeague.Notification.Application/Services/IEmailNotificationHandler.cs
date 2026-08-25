@@ -1,6 +1,6 @@
 using FantasyLeague.Notification.Application.IntegrationEvents;
 
-namespace FantasyLeague.Notification.Application.Common.Interfaces;
+namespace FantasyLeague.Notification.Application.Services;
 
 public interface IEmailNotificationHandler
 {

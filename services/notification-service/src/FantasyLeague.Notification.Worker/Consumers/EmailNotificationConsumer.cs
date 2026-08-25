@@ -1,6 +1,8 @@
 using FantasyLeague.Notification.Application.Common.Interfaces;
 using FantasyLeague.Notification.Worker.Configuration.RabbitMq;
 using FantasyLeague.Notification.Infrastructure.Messaging.RabbitMq;
+using FantasyLeague.Notification.Application.Services;
+
 using Microsoft.Extensions.Options;
 
 

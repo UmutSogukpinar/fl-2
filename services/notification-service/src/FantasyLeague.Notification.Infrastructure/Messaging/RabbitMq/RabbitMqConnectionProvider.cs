@@ -12,6 +12,9 @@ public sealed partial class RabbitMqConnectionProvider(
 {
     private const int InitialRetryDelaySeconds = 2;
     private const int MaximumRetryDelaySeconds = 30;
+    private static readonly CreateChannelOptions ConsumerChannelOptions = new(
+        publisherConfirmationsEnabled: true,
+        publisherConfirmationTrackingEnabled: true);
 
     private readonly RabbitMqOptions _options = options.Value;
     private readonly SemaphoreSlim _connectionLock = new(1, 1);
@@ -141,6 +144,7 @@ public sealed partial class RabbitMqConnectionProvider(
             await GetConnectionAsync(cancellation);
 
         return await connection.CreateChannelAsync(
+            ConsumerChannelOptions,
             cancellationToken: cancellation
         );
     }

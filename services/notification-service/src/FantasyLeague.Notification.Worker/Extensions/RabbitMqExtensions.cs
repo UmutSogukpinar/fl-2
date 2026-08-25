@@ -58,7 +58,36 @@ internal static class RabbitMqExtensions
                         !string.IsNullOrWhiteSpace(binding.ExchangeName) &&
                         !string.IsNullOrWhiteSpace(binding.RoutingKey)),
                 "Every RabbitMQ binding must have" +
-                "an exchange nameand a routing key."
+                " an exchange name and a routing key."
+            )
+            .Validate(
+                options =>
+                    options.Retry is not null &&
+                    options.DeadLetter is not null &&
+                    !string.IsNullOrWhiteSpace(options.Retry.QueueName) &&
+                    !string.IsNullOrWhiteSpace(options.Retry.ExchangeName) &&
+                    !string.IsNullOrWhiteSpace(options.Retry.RoutingKey) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.Retry.ReturnExchangeName) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.Retry.ReturnRoutingKey) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.DeadLetter.QueueName) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.DeadLetter.ExchangeName) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.DeadLetter.RoutingKey) &&
+                    options.Retry.DelayMilliseconds is
+                        >= 1000 and <= 86_400_000 &&
+                    options.Retry.MaxDeliveryAttempts is >= 1 and <= 100 &&
+                    new[]
+                    {
+                        options.QueueName,
+                        options.Retry.QueueName,
+                        options.DeadLetter.QueueName
+                    }.Distinct(StringComparer.Ordinal).Count() == 3,
+                "Main, retry, and dead-letter queue settings must be " +
+                "complete and use distinct queue names."
             )
             .ValidateOnStart();
     }

@@ -19,4 +19,8 @@
 
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FantasyLeague.Notification.Application\FantasyLeague.Notification.Application.csproj" />
+  </ItemGroup>
+
 </Project>

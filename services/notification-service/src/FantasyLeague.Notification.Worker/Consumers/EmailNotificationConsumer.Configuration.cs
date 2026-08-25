@@ -127,11 +127,17 @@ public sealed partial class EmailNotificationConsumer
             options.ExchangeName,
             cancellation);
 
+        var arguments = new Dictionary<string, object?>
+        {
+            ["x-message-ttl"] = options.TimeToLiveMilliseconds
+        };
+
         await channel.QueueDeclareAsync(
             queue: options.QueueName,
             durable: true,
             exclusive: false,
             autoDelete: false,
+            arguments: arguments,
             cancellationToken: cancellation);
 
         await channel.QueueBindAsync(

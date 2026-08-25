@@ -82,4 +82,7 @@ public sealed class RabbitMqDeadLetterOptions
 
     [Required]
     public string RoutingKey { get; init; } = string.Empty;
+
+    [Range(1000, 604_800_000)]
+    public int TimeToLiveMilliseconds { get; init; } = 86_400_000;
 }

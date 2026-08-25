@@ -1,3 +1,4 @@
+using FantasyLeague.Notification.Application.Common.Interfaces;
 using FantasyLeague.Notification.Worker.Configuration.RabbitMq;
 using FantasyLeague.Notification.Infrastructure.Messaging.RabbitMq;
 using Microsoft.Extensions.Options;
@@ -8,6 +9,7 @@ namespace FantasyLeague.Notification.Worker.Consumers;
 public sealed partial class EmailNotificationConsumer
 (
     IRabbitMqConnectionProvider _connProvider,
+    IEmailNotificationHandler _notificationHandler,
     ILogger<EmailNotificationConsumer> _logger,
     IOptionsMonitor<RabbitMqConsumerOptions> consumerOptions)
     : BackgroundService
@@ -24,15 +26,23 @@ public sealed partial class EmailNotificationConsumer
             .CreateChannelAsync(cancellationToken: cancellation);
 
         await ConfigureChannelAsync(channel, cancellation);
+        await StartConsumingAsync(channel, cancellation);
 
         LogNotificationConsumer(_emailConsumerOptions.QueueName);
         await Task.Delay(Timeout.InfiniteTimeSpan, cancellation);
     }
 
    
-    // Logger utils
+    // == Logger utils ==
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "Processing {QueueName} items")]
     private partial void LogNotificationConsumer(string queueName);
+
+    [LoggerMessage(Level = LogLevel.Error,
+        Message = "Email notification could not be processed. " +
+            "MessageId: {MessageId}")]
+    private partial void LogEmailNotificationFailure(
+        Exception exception,
+        string? messageId);
 }

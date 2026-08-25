@@ -33,6 +33,35 @@ services:
 
   # ========== Notification Service ==========
 
+  notification-db:
+
+    image: postgres:18-alpine
+
+    container_name: fl_notification_db
+
+    environment:
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME:-fantasy_league_notifications}
+      POSTGRES_USER: ${NOTIFICATION_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-postgres}
+
+    ports:
+      - "127.0.0.1:5433:5432"
+
+    volumes:
+      - notification-db-data:/var/lib/postgresql
+
+    networks:
+      - fantasy_league_network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   notification-service:
 
     build:
@@ -40,6 +69,13 @@ services:
       dockerfile: Dockerfile
 
     container_name: fl_notification_service
+
+    environment:
+      DbSettings__Host: notification-db
+      DbSettings__Port: 5432
+      DbSettings__Database: ${NOTIFICATION_DB_NAME:-fantasy_league_notifications}
+      DbSettings__Username: ${NOTIFICATION_DB_USER:-postgres}
+      DbSettings__Password: ${NOTIFICATION_DB_PASSWORD:-postgres}
 
     pull_policy: never
     image: fantasy_league_notification_service:1.0
@@ -49,6 +85,8 @@ services:
 
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      notification-db:
         condition: service_healthy
 
 
@@ -271,4 +309,6 @@ volumes:
   prometheus-data: {}
 
   rabbitmq-data: {}
+
+  notification-db-data: {}
 

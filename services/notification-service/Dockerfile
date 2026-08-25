@@ -45,6 +45,10 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 
 WORKDIR /App
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=compile /publish ./
 
 ENTRYPOINT ["dotnet", "FantasyLeague.Notification.Worker.dll"]

@@ -8,6 +8,7 @@ builder.ConfigureLogging();
 // builder.Services.
 builder.Services.AddNotificationConsumers();
 builder.Services.AddRabbitMqConsumers(builder.Configuration);
+builder.Services.AddNotificationPersistence(builder.Configuration);
 
 builder.Services.AddSingleton<
     IRabbitMqConnectionProvider,
@@ -15,4 +16,7 @@ builder.Services.AddSingleton<
 >();
 
 var app = builder.Build();
+
+await app.MigrateNotificationDatabaseAsync();
+
 app.Run();

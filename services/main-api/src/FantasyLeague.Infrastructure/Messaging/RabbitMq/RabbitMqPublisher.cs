@@ -1,15 +1,18 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 
 using FantasyLeague.Application.Common.Interfaces.Messaging;
 using FantasyLeague.Infrastructure.Configuration;
 
 namespace FantasyLeague.Infrastructure.Messaging.RabbitMq;
 
-public sealed class RabbitMqPublisher(
+public sealed partial class RabbitMqPublisher(
     IRabbitMqConnectionProvider connectionProvider,
-    IOptionsMonitor<RabbitMqPublisherOptions> publisherOptions)
+    IOptionsMonitor<RabbitMqPublisherOptions> publisherOptions,
+    ILogger<RabbitMqPublisher> logger)
     : IIntegrationEventPublisher
 {
     public async Task PublishAsync<TMessage>(
@@ -35,12 +38,42 @@ public sealed class RabbitMqPublisher(
             Type = typeof(TMessage).FullName
         };
 
-        await channel.BasicPublishAsync(
-            options.ExchangeName,
-            options.RoutingKey,
-            mandatory: true,
-            properties,
-            body,
-            cancellation);
+        try
+        {
+            await channel.BasicPublishAsync(
+                options.ExchangeName,
+                options.RoutingKey,
+                mandatory: true,
+                properties,
+                body,
+                cancellation);
+        }
+        catch (PublishException exception)
+        {
+            LogPublishFailure(
+                logger,
+                exception,
+                publisherName,
+                options.ExchangeName,
+                options.RoutingKey,
+                properties.MessageId,
+                exception.IsReturn);
+        }
     }
+
+    [LoggerMessage(
+        EventId = 1,
+        Level = LogLevel.Error,
+        Message = "RabbitMQ message could not be published. " +
+            "Publisher: {PublisherName}, Exchange: {ExchangeName}, " +
+            "RoutingKey: {RoutingKey}, MessageId: {MessageId}, " +
+            "Unroutable: {IsReturn}")]
+    private static partial void LogPublishFailure(
+        ILogger logger,
+        Exception exception,
+        string publisherName,
+        string exchangeName,
+        string routingKey,
+        string messageId,
+        bool isReturn);
 }

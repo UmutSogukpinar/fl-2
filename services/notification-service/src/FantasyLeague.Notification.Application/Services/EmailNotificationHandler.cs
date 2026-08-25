@@ -5,10 +5,11 @@ using Microsoft.Extensions.Logging;
 namespace FantasyLeague.Notification.Application.Services;
 
 public sealed partial class EmailNotificationHandler(
-    ILogger<EmailNotificationHandler> logger)
+    ILogger<EmailNotificationHandler> _logger,
+    IEmailSender _emailSender)
     : IEmailNotificationHandler
 {
-    public Task HandleAsync(
+    public async Task HandleAsync(
         EmailNotificationRequested notification,
         CancellationToken cancellation = default)
     {
@@ -16,23 +17,39 @@ public sealed partial class EmailNotificationHandler(
         cancellation.ThrowIfCancellationRequested();
 
         LogEmailNotification(
-            logger,
+            _logger,
+            notification.Recipient,
+            notification.Subject,
+            notification.CorrelationId);
+
+        await _emailSender.SendAsync(
             notification.Recipient,
             notification.Subject,
             notification.Body,
-            notification.CorrelationId);
+            cancellation);
 
-        return Task.CompletedTask;
+        LogEmailNotificationSent(
+            _logger,
+            notification.Recipient,
+            notification.CorrelationId);
     }
 
     [LoggerMessage(
         Level = LogLevel.Information,
         Message = "Email notification received. Recipient: {Recipient}, " +
-            "Subject: {Subject}, Body: {Body}, CorrelationId: {CorrelationId}")]
+            "Subject: {Subject}, CorrelationId: {CorrelationId}")]
     private static partial void LogEmailNotification(
         ILogger logger,
         string recipient,
         string subject,
-        string body,
+        Guid correlationId);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Email notification sent. Recipient: {Recipient}, " +
+            "CorrelationId: {CorrelationId}")]
+    private static partial void LogEmailNotificationSent(
+        ILogger logger,
+        string recipient,
         Guid correlationId);
 }

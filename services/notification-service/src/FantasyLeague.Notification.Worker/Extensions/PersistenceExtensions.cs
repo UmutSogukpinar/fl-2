@@ -1,7 +1,7 @@
 using FantasyLeague.Notification.Application.Common.Interfaces;
 using FantasyLeague.Notification.Infrastructure.Configuration;
-using FantasyLeague.Notification.Infrastructure.Context;
-using FantasyLeague.Notification.Infrastructure.Messaging.Inbox;
+using FantasyLeague.Notification.Infrastructure.Persistence;
+using FantasyLeague.Notification.Infrastructure.Persistence.Inbox;
 using Microsoft.EntityFrameworkCore;
 
 namespace FantasyLeague.Notification.Worker.Extensions;

@@ -1,8 +1,8 @@
-using FantasyLeague.Notification.Infrastructure.Messaging.Inbox;
+using FantasyLeague.Notification.Infrastructure.Persistence.Inbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace FantasyLeague.Notification.Infrastructure.EntityConfigurations.Messaging;
+namespace FantasyLeague.Notification.Infrastructure.Persistence.Configurations;
 
 public sealed class InboxMessageConfiguration
     : IEntityTypeConfiguration<InboxMessage>

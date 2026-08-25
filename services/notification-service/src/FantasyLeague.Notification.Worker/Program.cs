@@ -9,6 +9,7 @@ builder.ConfigureLogging();
 builder.Services.AddNotificationConsumers();
 builder.Services.AddRabbitMqConsumers(builder.Configuration);
 builder.Services.AddNotificationPersistence(builder.Configuration);
+builder.Services.AddMailKitOptions(builder.Configuration);
 
 builder.Services.AddSingleton<
     IRabbitMqConnectionProvider,

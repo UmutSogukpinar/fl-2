@@ -26,4 +26,7 @@ public sealed class MailKitOptions
     public string Password { get; init; } = string.Empty;
 
     public bool UseSsl { get; init; }
+
+    [Range(1_000, 300_000)]
+    public int TimeoutMilliseconds { get; init; } = 30_000;
 }

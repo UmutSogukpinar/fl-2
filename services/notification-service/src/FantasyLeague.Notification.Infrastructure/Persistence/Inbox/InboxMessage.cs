@@ -1,4 +1,4 @@
-namespace FantasyLeague.Notification.Infrastructure.Messaging.Inbox;
+namespace FantasyLeague.Notification.Infrastructure.Persistence.Inbox;
 
 public sealed class InboxMessage
 {

@@ -1,8 +1,8 @@
 using FantasyLeague.Notification.Application.Common.Interfaces;
-using FantasyLeague.Notification.Infrastructure.Context;
+using FantasyLeague.Notification.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace FantasyLeague.Notification.Infrastructure.Messaging.Inbox;
+namespace FantasyLeague.Notification.Infrastructure.Persistence.Inbox;
 
 public sealed class EfInboxMessageStore(
     IDbContextFactory<NotificationDbContext> contextFactory)

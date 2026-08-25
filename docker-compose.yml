@@ -89,6 +89,7 @@ services:
       MailKit__UserName: ${MAILKIT_USERNAME:-notifications@example.com}
       MailKit__Password: ${MAILKIT_PASSWORD:-change-me}
       MailKit__UseSsl: ${MAILKIT_USE_SSL:-false}
+      MailKit__TimeoutMilliseconds: ${MAILKIT_TIMEOUT_MILLISECONDS:-30000}
 
     pull_policy: never
     image: fantasy_league_notification_service:1.0

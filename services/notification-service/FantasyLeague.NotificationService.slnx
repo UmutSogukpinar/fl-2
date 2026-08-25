@@ -4,4 +4,8 @@
     <Project Path="src/FantasyLeague.Notification.Application/FantasyLeague.Notification.Application.csproj" />
     <Project Path="src/FantasyLeague.Notification.Worker/FantasyLeague.Notification.Worker.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FantasyLeague.Notification.UnitTests/FantasyLeague.Notification.UnitTests.csproj" />
+    <Project Path="tests/FantasyLeague.Notification.IntegrationTests/FantasyLeague.Notification.IntegrationTests.csproj" />
+  </Folder>
 </Solution>

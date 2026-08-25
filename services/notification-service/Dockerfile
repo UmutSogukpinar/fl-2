@@ -15,7 +15,8 @@ COPY src/FantasyLeague.Notification.Application/FantasyLeague.Notification.Appli
 COPY src/FantasyLeague.Notification.Infrastructure/FantasyLeague.Notification.Infrastructure.csproj ./src/FantasyLeague.Notification.Infrastructure/FantasyLeague.Notification.Infrastructure.csproj
 COPY src/FantasyLeague.Notification.Worker/FantasyLeague.Notification.Worker.csproj ./src/FantasyLeague.Notification.Worker/FantasyLeague.Notification.Worker.csproj
 
-RUN dotnet restore
+RUN dotnet restore \
+    src/FantasyLeague.Notification.Worker/FantasyLeague.Notification.Worker.csproj
 
 COPY . .
 

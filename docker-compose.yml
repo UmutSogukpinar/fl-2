@@ -18,6 +18,9 @@ services:
     environment:
       ApiSports__ApiKey: ${API_SPORTS_KEY:?API_SPORTS_KEY must be set in .env}
       Redis__ConnectionString: redis:6380,password=${REDIS_PASSWORD:-development-only-password}
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: ${RABBITMQ_DEFAULT_VHOST}
 
     ports:
       - "5129:8080"
@@ -80,6 +83,17 @@ services:
       DbSettings__Database: ${NOTIFICATION_DB_NAME:-fantasy_league_notifications}
       DbSettings__Username: ${NOTIFICATION_DB_USER:-postgres}
       DbSettings__Password: ${NOTIFICATION_DB_PASSWORD:-postgres}
+      RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
+      RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
+      RabbitMq__VirtualHost: ${RABBITMQ_DEFAULT_VHOST}
+      MailKit__Host: ${MAILKIT_HOST:-smtp.gmail.com}
+      MailKit__Port: ${MAILKIT_PORT:-587}
+      MailKit__SenderEmail: ${MAILKIT_SENDER_EMAIL:-notifications@example.com}
+      MailKit__SenderName: ${MAILKIT_SENDER_NAME:-Fantasy League}
+      MailKit__UserName: ${MAILKIT_USERNAME:-notifications@example.com}
+      MailKit__Password: ${MAILKIT_PASSWORD:-change-me}
+      MailKit__UseSsl: ${MAILKIT_USE_SSL:-false}
+      MailKit__TimeoutMilliseconds: ${MAILKIT_TIMEOUT_MILLISECONDS:-30000}
 
     pull_policy: never
     image: fantasy_league_notification_service:1.0

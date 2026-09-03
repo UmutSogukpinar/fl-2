@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace FantasyLeague.Notification.Infrastructure.Context;
+namespace FantasyLeague.Notification.Infrastructure.Persistence;
 
 public sealed class NotificationDbContext(
     DbContextOptions<NotificationDbContext> options)

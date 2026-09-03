@@ -1,4 +1,3 @@
-using FantasyLeague.Notification.Application.Common.Interfaces;
 using FantasyLeague.Notification.Application.Services;
 using FantasyLeague.Notification.Worker.Consumers;
 
@@ -12,6 +11,7 @@ internal static class NotificationConsumerExtensions
         services.AddSingleton<
             IEmailNotificationHandler,
             EmailNotificationHandler>();
+
         services.AddHostedService<EmailNotificationConsumer>();
 
         return services;

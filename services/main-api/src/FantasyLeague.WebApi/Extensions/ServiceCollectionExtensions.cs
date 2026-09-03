@@ -50,13 +50,20 @@ public static class ServiceCollectionExtensions
         IConfiguration configuration)
     {
         services.AddControllers();
-        services.AddMemoryCache();
+        var redisConnectionString = configuration.GetValue<string>("Redis:ConnectionString")
+            ?? throw new InvalidOperationException("Redis:ConnectionString is not configured.");
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = redisConnectionString;
+            options.InstanceName = "fantasy-league:";
+        });
         services.AddSignalR();
         services.AddOpenApi();
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
-        services.AddSingleton<ICacheService, MemoryCacheService>();
+        services.AddSingleton<ICacheService, RedisCacheService>();
         services.AddRabbitMqMessaging(configuration);
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IAuthService, AuthService>();

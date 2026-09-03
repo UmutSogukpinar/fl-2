@@ -17,6 +17,7 @@ services:
 
     environment:
       ApiSports__ApiKey: ${API_SPORTS_KEY:?API_SPORTS_KEY must be set in .env}
+      Redis__ConnectionString: redis:6380,password=${REDIS_PASSWORD:-development-only-password}
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
       RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
       RabbitMq__VirtualHost: ${RABBITMQ_DEFAULT_VHOST}
@@ -31,6 +32,9 @@ services:
 
     depends_on:
       rabbitmq:
+        condition: service_healthy
+
+      redis:
         condition: service_healthy
 
 
@@ -100,6 +104,7 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+
       notification-db:
         condition: service_healthy
 
@@ -129,7 +134,41 @@ services:
       - fantasy_league_network
 
 
-  # ========================= Messsage Broker Services =========================
+  # ========================= Distributed Cache Services =========================
+
+  # Redis Service
+
+  redis:
+
+    build:
+      context: ./infrastructure/redis
+      dockerfile: Dockerfile
+
+    pull_policy: never
+
+    image: fantasy_league_redis:1.0
+
+    container_name: fl_redis
+
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-development-only-password}
+
+    command: [ "redis-server", "/etc/redis/redis.conf", "--requirepass", "${REDIS_PASSWORD:-development-only-password}" ]
+
+    networks:
+      - fantasy_league_network
+
+    volumes:
+      - redis-data:/data
+
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -p 6380 -a \"$$REDIS_PASSWORD\" ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ========================= Message Broker Services =========================
 
   # RabbitMq Service
 
@@ -326,3 +365,4 @@ volumes:
 
   notification-db-data: {}
 
+  redis-data: {}

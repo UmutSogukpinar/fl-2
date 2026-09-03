@@ -141,9 +141,6 @@ services:
 
     command: [ "redis-server", "/etc/redis/redis.conf", "--requirepass", "${REDIS_PASSWORD:-development-only-password}" ]
 
-    ports:
-      - "127.0.0.1:6380:6380"
-
     networks:
       - fantasy_league_network
 
